@@ -1,11 +1,12 @@
 flask
 flask-login
 firebase-admin
+firebase-functions
 scikit-learn
-tensorflow
 pandas
 numpy
 joblib
 imbalanced-learn
 gunicorn
 requests
+scipy

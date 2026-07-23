@@ -53,7 +53,8 @@ class LocalModeHelperTests(unittest.TestCase):
         self.assertIsNone(result)
 
     def test_get_dashboard_returns_none_when_no_db(self):
-        result = flask_app_module.get_dashboard_data_from_firebase('uid_test')
+        with patch.object(flask_app_module, 'db', None):
+            result = flask_app_module.get_dashboard_data_from_firebase('uid_test')
         self.assertIsNone(result)
 
 

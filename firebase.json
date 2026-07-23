@@ -1,5 +1,18 @@
 {
   "firestore": {
     "indexes": "firestore.indexes.json"
+  },
+  "functions": {
+    "source": "car-dss",
+    "runtime": "python312",
+    "ignore": [
+      "venv",
+      "__pycache__",
+      "*.pyc",
+      "tests",
+      "input_images",
+      "output_images",
+      "firebase-service-account.json"
+    ]
   }
 }
