@@ -1,0 +1,463 @@
+{% extends "base.html" %}
+{% block title %}Dashboard สรุปผล — CarDSS{% endblock %}
+
+{% block extra_head %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-container-wide" style="padding-top:48px;">
+
+  <!-- Breadcrumb -->
+  <div class="breadcrumb-cardss fade-in">
+    <a href="{{ url_for('predict_buy_page') }}">หน้าหลัก</a>
+    <span class="sep">›</span>
+    <span class="current">Dashboard สรุปผล</span>
+  </div>
+
+  <!-- Step indicator (all done) -->
+  <div class="steps fade-in">
+    <div class="step-item">
+      <div class="step-circle done"><i class="bi bi-check-lg" style="font-size:14px;"></i></div>
+      <span class="step-label">พยากรณ์ซื้อ/ไม่ซื้อ</span>
+    </div>
+    <div class="step-line done"></div>
+    <div class="step-item">
+      <div class="step-circle done"><i class="bi bi-check-lg" style="font-size:14px;"></i></div>
+      <span class="step-label">ประเภทเชื้อเพลิง</span>
+    </div>
+    <div class="step-line done"></div>
+    <div class="step-item">
+      <div class="step-circle active">3</div>
+      <span class="step-label active">Dashboard</span>
+    </div>
+  </div>
+
+  <!-- Page header -->
+  <div class="page-header fade-in">
+    <h1><i class="bi bi-bar-chart-line me-2 text-brand"></i>Dashboard สรุปผลการวิเคราะห์</h1>
+    <p>แผนภาพข้อมูลสนับสนุนการตัดสินใจซื้อรถยนต์ของคุณ</p>
+  </div>
+
+  <!-- ========================================================
+       RESULT BANNER — ผลลัพธ์เด่นชัด
+       ======================================================== -->
+  <div class="result-banner fade-in" id="resultBanner">
+    <div class="result-banner-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+    <div>
+      <div class="result-banner-title">ผลลัพธ์: คุณเหมาะสมกับ รถยนต์ไฟฟ้า (EV)</div>
+      <div class="result-banner-sub">
+        ความมั่นใจ 78.0% — วิเคราะห์โดย ANN <span class="mock-tag" style="margin-left:8px;">Mock</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       CHARTS ROW: Pie + Bar
+       ======================================================== -->
+  <div class="row g-4 mb-4 fade-in fade-in-delay-1">
+
+    <!-- Pie Chart: สัดส่วนความเหมาะสม -->
+    <div class="col-md-5">
+      <div class="chart-card">
+        <div class="chart-card-title">
+          <i class="bi bi-pie-chart me-2 text-brand"></i>สัดส่วนความเหมาะสมตามประเภทเชื้อเพลิง
+        </div>
+        <div style="position:relative;max-width:320px;margin:0 auto;">
+          <canvas id="pieChart"></canvas>
+        </div>
+        <!-- Legend (manual for better styling) -->
+        <div style="display:flex;justify-content:center;gap:20px;margin-top:16px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="width:12px;height:12px;border-radius:2px;background:var(--color-ev);"></div>
+            <span style="font-size:13px;font-weight:600;">EV <span style="color:var(--text-muted);" id="evPct">78%</span></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="width:12px;height:12px;border-radius:2px;background:var(--color-hybrid);"></div>
+            <span style="font-size:13px;font-weight:600;">Hybrid <span style="color:var(--text-muted);" id="hybridPct">65%</span></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div style="width:12px;height:12px;border-radius:2px;background:var(--color-ice);"></div>
+            <span style="font-size:13px;font-weight:600;">ICE <span style="color:var(--text-muted);" id="icePct">42%</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bar Chart: เปรียบเทียบค่าใช้จ่าย -->
+    <div class="col-md-7">
+      <div class="chart-card">
+        <div class="chart-card-title">
+          <i class="bi bi-bar-chart me-2 text-brand"></i>เปรียบเทียบค่าใช้จ่ายเฉลี่ยต่อเดือน (บาท)
+        </div>
+        <div style="position:relative;">
+          <canvas id="barChart"></canvas>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:12px;text-align:center;">
+          * ข้อมูลจำลอง — ประมาณการค่าใช้จ่ายเฉลี่ยสำหรับเขตบางขุนเทียน
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       INSURANCE CHART: เปรียบเทียบเบี้ยประกัน
+       ======================================================== -->
+  <div class="row g-4 mb-4 fade-in fade-in-delay-1">
+    <div class="col-md-7">
+      <div class="chart-card">
+        <div class="chart-card-title">
+          <i class="bi bi-shield-check me-2 text-brand"></i>เปรียบเทียบเบี้ยประกันภัยชั้น 1 เฉลี่ย (บาท/ปี)
+        </div>
+        <div style="position:relative;">
+          <canvas id="insuranceChart"></canvas>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:12px;text-align:center;">
+          * เบี้ยเฉลี่ยจากข้อมูลรถแนะนำ 15 รุ่น — ซ่อมห้าง ประกันชั้น 1
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-5">
+      <div class="chart-card" style="height:100%;">
+        <div class="chart-card-title">
+          <i class="bi bi-info-circle me-2 text-brand"></i>หมายเหตุ: ประกันภัย EV
+        </div>
+        <div style="font-size:13px;color:var(--text-secondary);line-height:1.8;">
+          <div style="margin-bottom:12px;">
+            <strong style="color:var(--text-primary);"><i class="bi bi-file-earmark-text-fill me-1"></i> กฎ คปภ. (1 มิ.ย. 67)</strong><br>
+            หักค่าเสื่อมแบตเตอรี่ EV ตามอายุ:
+          </div>
+          <table style="width:100%;font-size:12px;border-collapse:collapse;">
+            <tr style="background:var(--bg-secondary);">
+              <td style="padding:6px 10px;font-weight:500;">ปีที่ 1</td>
+              <td style="padding:6px 10px;text-align:right;font-weight:500;color:var(--color-ev);">100%</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 10px;">ปีที่ 2</td>
+              <td style="padding:6px 10px;text-align:right;">90%</td>
+            </tr>
+            <tr style="background:var(--bg-secondary);">
+              <td style="padding:6px 10px;">ปีที่ 3</td>
+              <td style="padding:6px 10px;text-align:right;">80%</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 10px;">ปีที่ 4</td>
+              <td style="padding:6px 10px;text-align:right;">70%</td>
+            </tr>
+            <tr style="background:var(--bg-secondary);">
+              <td style="padding:6px 10px;">ปีที่ 5</td>
+              <td style="padding:6px 10px;text-align:right;">60%</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 10px;">5+ ปี</td>
+              <td style="padding:6px 10px;text-align:right;color:var(--color-ice);">50%</td>
+            </tr>
+          </table>
+          <div style="margin-top:12px;padding:10px;background:var(--bg-secondary);border-radius:6px;font-size:12px;">
+            <strong style="color:var(--color-ice);"><i class="bi bi-exclamation-triangle-fill me-1"></i> ข้อควรรู้</strong><br>
+            • ค่าซ่อม EV ต่อครั้งสูงกว่า ICE <strong>50–60%</strong><br>
+            • Loss Ratio ของ EV สูงเกิน <strong>120%</strong><br>
+            • ส่งผลให้เบี้ยประกัน EV สูงกว่า ICE เฉลี่ย <strong>20–30%</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       SCORE CARDS: คะแนนความสอดคล้อง
+       ======================================================== -->
+  <div class="fade-in fade-in-delay-2 mb-4">
+    <div style="font-size:15px;font-weight:500;color:var(--text-primary);margin-bottom:16px;">
+      <i class="bi bi-speedometer2 me-2 text-brand"></i>คะแนนความสอดคล้องกับพฤติกรรมของคุณ
+    </div>
+    <div class="row g-3">
+      <div class="col-6 col-md-3">
+        <div class="score-card">
+          <div class="score-value text-ev" id="scoreEnergy">92</div>
+          <div class="score-label">ประหยัดพลังงาน</div>
+          <div style="margin-top:8px;">
+            <div class="confidence-bar-wrap" style="height:6px;">
+              <div class="confidence-bar-fill ev" style="width:0%;" data-width="92"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="score-card">
+          <div class="score-value text-hybrid" id="scoreConvenience">75</div>
+          <div class="score-label">ความสะดวก</div>
+          <div style="margin-top:8px;">
+            <div class="confidence-bar-wrap" style="height:6px;">
+              <div class="confidence-bar-fill hybrid" style="width:0%;" data-width="75"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="score-card">
+          <div class="score-value text-ev" id="scoreMaintenance">88</div>
+          <div class="score-label">ค่าบำรุงรักษา</div>
+          <div style="margin-top:8px;">
+            <div class="confidence-bar-wrap" style="height:6px;">
+              <div class="confidence-bar-fill ev" style="width:0%;" data-width="88"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="score-card">
+          <div class="score-value text-ice" id="scoreResale">60</div>
+          <div class="score-label">มูลค่าขายต่อ</div>
+          <div style="margin-top:8px;">
+            <div class="confidence-bar-wrap" style="height:6px;">
+              <div class="confidence-bar-fill ice" style="width:0%;" data-width="60"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       SUMMARY: สรุปเหตุผลแนะนำ
+       ======================================================== -->
+  <div class="summary-card ev fade-in fade-in-delay-3 mb-4">
+    <div class="summary-card-title">
+      <i class="bi bi-lightbulb me-2 text-ev"></i>สรุปเหตุผลแนะนำ
+    </div>
+    <div class="summary-card-text">
+      <p style="margin-bottom:12px;">
+        จากข้อมูลส่วนบุคคล พฤติกรรมการใช้งาน และทัศนคติของคุณ ระบบแนะนำ <strong>รถยนต์ไฟฟ้า (EV)</strong>
+        เนื่องจากเหตุผลดังนี้:
+      </p>
+      <ul style="padding-left:20px;margin:0;line-height:2;">
+        <li>คุณขับรถเป็นประจำในเขตเมือง — EV ประหยัดค่าพลังงานได้สูงถึง 70% เทียบกับรถสันดาป</li>
+        <li>ระยะทางเฉลี่ยต่อวันอยู่ในช่วงที่ EV รองรับได้สะดวก ไม่ต้องกังวลเรื่องแบตหมด</li>
+        <li>มีพื้นที่จอดรถส่วนตัว เอื้อต่อการติดตั้งจุดชาร์จ</li>
+        <li>คะแนนความใส่ใจด้านเทคโนโลยีและสิ่งแวดล้อมสูง สอดคล้องกับแนวคิด EV</li>
+        <li>ค่าบำรุงรักษาต่ำกว่ารถสันดาปมาก เนื่องจากชิ้นส่วนเคลื่อนไหวน้อยกว่า</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Note -->
+  <div class="alert-cardss info fade-in fade-in-delay-3 mb-4">
+    <i class="bi bi-info-circle"></i>
+    <span>ขณะนี้ Dashboard แสดงข้อมูลจำลอง (Mock) — เมื่อโมเดล ML พร้อมใช้งาน ข้อมูลจะถูกแทนที่ด้วยผลวิเคราะห์จริงจาก Firebase</span>
+  </div>
+
+  <!-- Actions -->
+  <div class="text-center fade-in fade-in-delay-3" style="padding-bottom:16px;">
+    <a href="{{ url_for('predict_buy_page') }}" class="btn-cardss-primary" style="padding:14px 36px;">
+      <i class="bi bi-arrow-counterclockwise"></i> เริ่มวิเคราะห์ใหม่
+    </a>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  // ----- MOCK DATA -----
+  var mockScores = { EV: 78, Hybrid: 65, ICE: 42 };
+  var mockCosts = {
+    labels: ['ค่าเชื้อเพลิง', 'ค่าบำรุงรักษา', 'ค่าประกัน'],
+    ev:     [800,  500,  2700],
+    hybrid: [2200, 1200, 1630],
+    ice:    [3800, 2000, 940]
+  };
+
+  // ----- PIE CHART -----
+  var pieCtx = document.getElementById('pieChart').getContext('2d');
+  new Chart(pieCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['EV (ไฟฟ้า)', 'Hybrid (ไฮบริด)', 'ICE (สันดาป)'],
+      datasets: [{
+        data: [mockScores.EV, mockScores.Hybrid, mockScores.ICE],
+        backgroundColor: [
+          getComputedStyle(document.documentElement).getPropertyValue('--color-ev').trim(),
+          getComputedStyle(document.documentElement).getPropertyValue('--color-hybrid').trim(),
+          getComputedStyle(document.documentElement).getPropertyValue('--color-ice').trim()
+        ],
+        borderWidth: 0,
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      cutout: '60%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function (ctx) {
+              return ctx.label + ': ' + ctx.parsed + '%';
+            }
+          },
+          titleFont: { family: "'Noto Sans Thai', sans-serif" },
+          bodyFont: { family: "'Noto Sans Thai', sans-serif" }
+        }
+      },
+      animation: {
+        animateRotate: true,
+        duration: 1200,
+        easing: 'easeOutQuart'
+      }
+    }
+  });
+
+  // ----- BAR CHART -----
+  var barCtx = document.getElementById('barChart').getContext('2d');
+  new Chart(barCtx, {
+    type: 'bar',
+    data: {
+      labels: mockCosts.labels,
+      datasets: [
+        {
+          label: 'EV (ไฟฟ้า)',
+          data: mockCosts.ev,
+          backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--color-ev').trim(),
+          borderRadius: 4,
+          barPercentage: 0.7,
+          categoryPercentage: 0.7
+        },
+        {
+          label: 'Hybrid (ไฮบริด)',
+          data: mockCosts.hybrid,
+          backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--color-hybrid').trim(),
+          borderRadius: 4,
+          barPercentage: 0.7,
+          categoryPercentage: 0.7
+        },
+        {
+          label: 'ICE (สันดาป)',
+          data: mockCosts.ice,
+          backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--color-ice').trim(),
+          borderRadius: 4,
+          barPercentage: 0.7,
+          categoryPercentage: 0.7
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            font: { family: "'Noto Sans Thai', sans-serif", size: 12 }
+          }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-light').trim() || '#F0F0F0' },
+          ticks: {
+            font: { family: "'Noto Sans Thai', sans-serif", size: 12 },
+            callback: function (value) {
+              return value.toLocaleString() + ' ฿';
+            }
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            font: { family: "'Noto Sans Thai', sans-serif", size: 12 },
+            padding: 16,
+            usePointStyle: true,
+            pointStyle: 'rectRounded'
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function (ctx) {
+              return ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString() + ' บาท/เดือน';
+            }
+          },
+          titleFont: { family: "'Noto Sans Thai', sans-serif" },
+          bodyFont: { family: "'Noto Sans Thai', sans-serif" }
+        }
+      },
+      animation: {
+        duration: 1000,
+        easing: 'easeOutQuart'
+      }
+    }
+  });
+
+  // ----- INSURANCE BAR CHART -----
+  var insCtx = document.getElementById('insuranceChart').getContext('2d');
+  new Chart(insCtx, {
+    type: 'bar',
+    data: {
+      labels: ['EV (ไฟฟ้า)', 'Hybrid (ไฮบริด)', 'ICE (สันดาป)'],
+      datasets: [{
+        label: 'เบี้ยประกันชั้น 1 เฉลี่ย (บาท/ปี)',
+        data: [32500, 19600, 11300],
+        backgroundColor: [
+          getComputedStyle(document.documentElement).getPropertyValue('--color-ev').trim(),
+          getComputedStyle(document.documentElement).getPropertyValue('--color-hybrid').trim(),
+          getComputedStyle(document.documentElement).getPropertyValue('--color-ice').trim()
+        ],
+        borderRadius: 6,
+        barPercentage: 0.6
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      scales: {
+        x: {
+          beginAtZero: true,
+          grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-light').trim() || '#F0F0F0' },
+          ticks: {
+            font: { family: "'Noto Sans Thai', sans-serif", size: 12 },
+            callback: function (value) {
+              return value.toLocaleString() + ' ฿';
+            }
+          }
+        },
+        y: {
+          grid: { display: false },
+          ticks: {
+            font: { family: "'Noto Sans Thai', sans-serif", size: 13, weight: 'bold' }
+          }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function (ctx) {
+              return 'เฉลี่ย: ' + ctx.parsed.x.toLocaleString() + ' บาท/ปี';
+            }
+          },
+          titleFont: { family: "'Noto Sans Thai', sans-serif" },
+          bodyFont: { family: "'Noto Sans Thai', sans-serif" }
+        }
+      },
+      animation: {
+        duration: 1000,
+        easing: 'easeOutQuart'
+      }
+    }
+  });
+
+  // ----- ANIMATE SCORE BARS -----
+  var bars = document.querySelectorAll('.confidence-bar-fill[data-width]');
+  bars.forEach(function (bar, i) {
+    setTimeout(function () {
+      bar.style.width = bar.dataset.width + '%';
+    }, 600 + i * 150);
+  });
+
+});
+</script>
+{% endblock %}

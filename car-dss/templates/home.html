@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+{% block title %}CarDSS — ระบบสนับสนุนการตัดสินใจซื้อรถยนต์{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================
+     HERO — full viewport, cinematic dark
+     ============================================================ -->
+<section style="min-height:100vh;display:flex;align-items:center;justify-content:center;
+                background:#171A20;position:relative;overflow:hidden;">
+
+  <!-- Subtle car silhouette -->
+  <div style="position:absolute;bottom:0;right:0;opacity:0.04;pointer-events:none;">
+    <svg width="700" height="280" viewBox="0 0 700 280">
+      <path d="M80 220 Q120 100 250 90 Q350 85 420 90 Q520 95 580 140 Q620 165 660 180 L680 220 Z" fill="white"/>
+      <circle cx="190" cy="235" r="35" fill="white"/>
+      <circle cx="540" cy="235" r="35" fill="white"/>
+    </svg>
+  </div>
+
+  <div style="position:relative;z-index:1;text-align:center;max-width:640px;padding:40px 24px;" class="fade-in">
+
+    <h1 style="font-size:clamp(28px, 5vw, 40px);font-weight:500;color:white;line-height:1.2;margin:0 0 16px 0;">
+      ระบบสนับสนุนการตัดสินใจ<br>ซื้อรถยนต์
+    </h1>
+
+    <div style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:16px;">
+      เขตบางขุนเทียน กรุงเทพมหานคร
+    </div>
+
+    <p style="font-size:14px;color:rgba(255,255,255,0.4);line-height:1.6;max-width:480px;margin:0 auto 40px auto;">
+      ใช้หลักการทำเหมืองข้อมูล (Data Mining) วิเคราะห์ข้อมูลจากแบบสอบถาม 500 ชุด
+      เพื่อช่วยให้คุณตัดสินใจซื้อรถยนต์ได้เหมาะสมกับการใช้งาน
+    </p>
+
+    <!-- CTA Buttons — Tesla style side by side -->
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <a href="{% if current_user and current_user.is_authenticated %}{{ url_for('predict_buy_page') }}{% else %}{{ url_for('login') }}{% endif %}"
+         class="btn-cardss-primary" style="padding:8px 40px;min-height:40px;">
+        เริ่มวิเคราะห์
+      </a>
+      <a href="#features"
+         class="btn-cardss-secondary" style="padding:8px 40px;min-height:40px;">
+        ดูรายละเอียด
+      </a>
+    </div>
+
+    <!-- Sub stats -->
+    <div style="margin-top:40px;display:flex;justify-content:center;gap:32px;flex-wrap:wrap;">
+      <div style="text-align:center;">
+        <div style="font-size:14px;font-weight:500;color:rgba(255,255,255,0.8);">500</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.3);">ชุดข้อมูล</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:14px;font-weight:500;color:rgba(255,255,255,0.8);">25</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.3);">รุ่นรถแนะนำ</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:14px;font-weight:500;color:rgba(255,255,255,0.8);">2</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.3);">โมเดล ML</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scroll indicator -->
+  <div style="position:absolute;bottom:28px;left:50%;transform:translateX(-50%);">
+    <i class="bi bi-chevron-down" style="font-size:20px;color:rgba(255,255,255,0.2);"></i>
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 2: ระบบนี้ช่วยอะไรได้ — white surface
+     ============================================================ -->
+<section id="features" style="padding:80px 24px;background:var(--bg-primary);">
+  <div style="max-width:1040px;margin:0 auto;">
+
+    <div class="text-center fade-in" style="margin-bottom:56px;">
+      <h2 style="font-size:28px;font-weight:500;color:var(--text-primary);margin:0 0 12px 0;">
+        ระบบนี้ช่วยอะไรได้
+      </h2>
+      <p style="font-size:14px;color:var(--text-muted);max-width:420px;margin:0 auto;">
+        3 ฟีเจอร์หลักที่จะช่วยให้คุณตัดสินใจซื้อรถยนต์ได้อย่างมั่นใจ
+      </p>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-md-4 fade-in" style="animation-delay:0.08s;">
+        <div style="background:var(--bg-secondary);border-radius:12px;padding:32px 24px;text-align:center;height:100%;">
+          <i class="bi bi-clipboard-data" style="font-size:32px;margin-bottom:16px;display:block;color:var(--text-primary);"></i>
+          <h3 style="font-size:16px;font-weight:500;color:var(--text-primary);margin:0 0 12px 0;">
+            พยากรณ์ซื้อ/ไม่ซื้อ
+          </h3>
+          <p style="font-size:14px;color:var(--text-muted);line-height:1.6;margin:0;">
+            วิเคราะห์ว่าคุณควรซื้อรถยนต์ตอนนี้หรือไม่ จากข้อมูลส่วนบุคคลและปัจจัยทางการเงิน
+          </p>
+        </div>
+      </div>
+
+      <div class="col-md-4 fade-in" style="animation-delay:0.16s;">
+        <div style="background:var(--bg-secondary);border-radius:12px;padding:32px 24px;text-align:center;height:100%;">
+          <i class="bi bi-fuel-pump" style="font-size:32px;margin-bottom:16px;display:block;color:var(--text-primary);"></i>
+          <h3 style="font-size:16px;font-weight:500;color:var(--text-primary);margin:0 0 12px 0;">
+            แนะนำประเภทเชื้อเพลิง
+          </h3>
+          <p style="font-size:14px;color:var(--text-muted);line-height:1.6;margin:0;">
+            เปรียบเทียบ EV / Hybrid / สันดาป ว่าแบบไหนเหมาะกับพฤติกรรมการใช้งานของคุณ
+          </p>
+        </div>
+      </div>
+
+      <div class="col-md-4 fade-in" style="animation-delay:0.24s;">
+        <div style="background:var(--bg-secondary);border-radius:12px;padding:32px 24px;text-align:center;height:100%;">
+          <i class="bi bi-bar-chart-line" style="font-size:32px;margin-bottom:16px;display:block;color:var(--text-primary);"></i>
+          <h3 style="font-size:16px;font-weight:500;color:var(--text-primary);margin:0 0 12px 0;">
+            Dashboard ข้อมูล
+          </h3>
+          <p style="font-size:14px;color:var(--text-muted);line-height:1.6;margin:0;">
+            แผนภาพเปรียบเทียบค่าใช้จ่าย เบี้ยประกัน อัตราสิ้นเปลือง ช่วยตัดสินใจรอบด้าน
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 3: เทคโนโลยีที่ใช้ — Light Ash surface
+     ============================================================ -->
+<section style="padding:64px 24px;background:var(--bg-secondary);">
+  <div style="max-width:1040px;margin:0 auto;">
+
+    <div class="text-center fade-in" style="margin-bottom:40px;">
+      <h2 style="font-size:28px;font-weight:500;color:var(--text-primary);margin:0;">
+        เทคโนโลยีที่ใช้
+      </h2>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-6 col-md-3 fade-in" style="animation-delay:0.08s;">
+        <div style="text-align:center;padding:24px 16px;">
+          <i class="bi bi-cpu" style="font-size:32px;margin-bottom:12px;display:block;color:var(--text-primary);"></i>
+          <div style="font-size:14px;font-weight:500;color:var(--text-primary);margin-bottom:4px;">Machine Learning</div>
+          <div style="font-size:13px;color:var(--text-muted);">SVM & ANN</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 fade-in" style="animation-delay:0.16s;">
+        <div style="text-align:center;padding:24px 16px;">
+          <i class="bi bi-graph-up-arrow" style="font-size:32px;margin-bottom:12px;display:block;color:var(--text-primary);"></i>
+          <div style="font-size:14px;font-weight:500;color:var(--text-primary);margin-bottom:4px;">Data Mining</div>
+          <div style="font-size:13px;color:var(--text-muted);">วิเคราะห์ข้อมูล 500 ชุด</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 fade-in" style="animation-delay:0.24s;">
+        <div style="text-align:center;padding:24px 16px;">
+          <i class="bi bi-database-fill-check" style="font-size:32px;margin-bottom:12px;display:block;color:var(--text-primary);"></i>
+          <div style="font-size:14px;font-weight:500;color:var(--text-primary);margin-bottom:4px;">Firebase</div>
+          <div style="font-size:13px;color:var(--text-muted);">ฐานข้อมูลเรียลไทม์</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 fade-in" style="animation-delay:0.32s;">
+        <div style="text-align:center;padding:24px 16px;">
+          <i class="bi bi-pie-chart-fill" style="font-size:32px;margin-bottom:12px;display:block;color:var(--text-primary);"></i>
+          <div style="font-size:14px;font-weight:500;color:var(--text-primary);margin-bottom:4px;">Chart.js</div>
+          <div style="font-size:13px;color:var(--text-muted);">แผนภาพแบบ Interactive</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 4: ประเภทรถยนต์ — white surface
+     ============================================================ -->
+<section style="padding:80px 24px;background:var(--bg-primary);">
+  <div style="max-width:1040px;margin:0 auto;">
+
+    <div class="text-center fade-in" style="margin-bottom:48px;">
+      <h2 style="font-size:28px;font-weight:500;color:var(--text-primary);margin:0 0 12px 0;">
+        ประเภทรถยนต์ที่ครอบคลุม
+      </h2>
+      <p style="font-size:14px;color:var(--text-muted);max-width:420px;margin:0 auto;">
+        รวม 25 รุ่น ครอบคลุมทุกประเภทเชื้อเพลิงในตลาดไทย
+      </p>
+    </div>
+
+    <div class="row g-4">
+      <!-- EV -->
+      <div class="col-md-4 fade-in" style="animation-delay:0.08s;">
+        <div style="background:var(--bg-secondary);border-radius:12px;padding:32px 24px;text-align:center;height:100%;">
+          <i class="bi bi-lightning-charge-fill text-ev" style="font-size:40px;margin-bottom:12px;display:block;"></i>
+          <h3 style="font-size:16px;font-weight:500;color:var(--text-primary);margin:0 0 8px 0;">
+            รถยนต์ไฟฟ้า (EV)
+          </h3>
+          <span class="badge-cardss ev" style="margin-bottom:16px;">8 รุ่น</span>
+          <div style="font-size:13px;color:var(--text-muted);line-height:2;text-align:left;margin-top:16px;">
+            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">Tesla Model 3 / Model Y</div>
+            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">BYD Atto 3 / Dolphin / Seal</div>
+            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">MG MG4 Electric</div>
+            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">GWM ORA Good Cat</div>
+            <div style="padding:6px 0;">Volvo EX30</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hybrid -->
+      <div class="col-md-4 fade-in" style="animation-delay:0.16s;">
+        <div style="background:var(--bg-secondary);border-radius:12px;padding:32px 24px;text-align:center;height:100%;">
+          <i class="bi bi-battery-charging text-hybrid" style="font-size:40px;margin-bottom:12px;display:block;"></i>
+          <h3 style="font-size:16px;font-weight:500;color:var(--text-primary);margin:0 0 8px 0;">
+            รถยนต์ไฮบริด (HEV)
+          </h3>
+          <span class="badge-cardss hybrid" style="margin-bottom:16px;">12 รุ่น</span>
+          <div style="font-size:13px;color:var(--text-muted);line-height:2;text-align:left;margin-top:16px;">
+            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">Toyota Corolla Cross / Yaris Ativ / Yaris Cross / Camry HEV</div>
+            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">Honda City / Civic / HR-V / Accord / CR-V e:HEV</div>
+            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">Nissan Kicks e-Power</div>
+            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">Mitsubishi Xpander Cross HEV</div>
+            <div style="padding:6px 0;">Hyundai Stargazer X HEV</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ICE -->
+      <div class="col-md-4 fade-in" style="animation-delay:0.24s;">
+        <div style="background:var(--bg-secondary);border-radius:12px;padding:32px 24px;text-align:center;height:100%;">
+          <i class="bi bi-fuel-pump-fill text-ice" style="font-size:40px;margin-bottom:12px;display:block;"></i>
+          <h3 style="font-size:16px;font-weight:500;color:var(--text-primary);margin:0 0 8px 0;">
+            รถยนต์สันดาป (ICE)
+          </h3>
+          <span class="badge-cardss ice" style="margin-bottom:16px;">5 รุ่น</span>
+          <div style="font-size:13px;color:var(--text-muted);line-height:2;text-align:left;margin-top:16px;">
+            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">Mazda 2</div>
+            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">Toyota Yaris Ativ</div>
+            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">Honda City Turbo</div>
+            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">Nissan Almera Turbo</div>
+            <div style="padding:6px 0;">Mitsubishi Attrage</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 5: เกี่ยวกับโครงงาน — Light Ash
+     ============================================================ -->
+<section style="padding:80px 24px;background:var(--bg-secondary);">
+  <div style="max-width:700px;margin:0 auto;">
+
+    <div class="text-center fade-in" style="margin-bottom:40px;">
+      <h2 style="font-size:28px;font-weight:500;color:var(--text-primary);margin:0;">
+        เกี่ยวกับโครงงาน
+      </h2>
+    </div>
+
+    <div class="fade-in" style="background:var(--bg-surface);border-radius:12px;padding:40px 36px;">
+      <p style="font-size:14px;color:var(--text-secondary);line-height:1.8;margin:0 0 28px 0;text-align:center;">
+        โครงงานนี้เป็นส่วนหนึ่งของการศึกษาตามหลักสูตรวิทยาศาสตรบัณฑิต
+        สาขาวิชาเทคโนโลยีสารสนเทศ
+        มหาวิทยาลัยเทคโนโลยีราชมงคลกรุงเทพ ปีการศึกษา 2568
+      </p>
+
+      <div style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center;">
+        <!-- ผู้จัดทำ -->
+        <div style="flex:1;min-width:240px;padding:20px;background:var(--bg-secondary);border-radius:8px;">
+          <div style="font-size:12px;font-weight:500;color:var(--text-muted);margin-bottom:12px;">
+            ผู้จัดทำ
+          </div>
+          <div style="font-size:14px;color:var(--text-primary);line-height:2;">
+            นายธนภัทร ภมรพล<br>
+            นายรัตนกร พุ่มกระจันทร์
+          </div>
+        </div>
+
+        <!-- อาจารย์ที่ปรึกษา -->
+        <div style="flex:1;min-width:240px;padding:20px;background:var(--bg-secondary);border-radius:8px;">
+          <div style="font-size:12px;font-weight:500;color:var(--text-muted);margin-bottom:12px;">
+            อาจารย์ที่ปรึกษา
+          </div>
+          <div style="font-size:14px;color:var(--text-primary);line-height:2;">
+            ผู้ช่วยศาสตราจารย์ ดร.อรสา พัสดุ
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-top:24px;padding-top:20px;border-top:1px solid var(--border-light);">
+        <span style="font-size:13px;color:var(--text-muted);">
+          มหาวิทยาลัยเทคโนโลยีราชมงคลกรุงเทพ
+        </span>
+      </div>
+    </div>
+
+    <!-- Final CTA -->
+    <div class="text-center fade-in" style="margin-top:48px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <a href="{% if current_user and current_user.is_authenticated %}{{ url_for('predict_buy_page') }}{% else %}{{ url_for('login') }}{% endif %}"
+         class="btn-cardss-primary" style="padding:8px 40px;min-height:40px;">
+        เริ่มวิเคราะห์เลย
+      </a>
+    </div>
+
+  </div>
+</section>
+
+{% endblock %}

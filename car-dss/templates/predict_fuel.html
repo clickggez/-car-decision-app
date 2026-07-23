@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+{% block title %}พยากรณ์ประเภทเชื้อเพลิง — CarDSS{% endblock %}
+
+{% block content %}
+<div class="page-container">
+
+  <!-- Breadcrumb -->
+  <div class="breadcrumb-cardss fade-in">
+    <a href="{{ url_for('predict_buy_page') }}">พยากรณ์ซื้อ/ไม่ซื้อ</a>
+    <span class="sep">›</span>
+    <span class="current">พยากรณ์ประเภทเชื้อเพลิง</span>
+  </div>
+
+  <!-- Step indicator -->
+  <div class="steps fade-in">
+    <div class="step-item">
+      <div class="step-circle done"><i class="bi bi-check-lg" style="font-size:14px;"></i></div>
+      <span class="step-label">พยากรณ์ซื้อ/ไม่ซื้อ</span>
+    </div>
+    <div class="step-line done"></div>
+    <div class="step-item">
+      <div class="step-circle active">2</div>
+      <span class="step-label active">ประเภทเชื้อเพลิง</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item">
+      <div class="step-circle">3</div>
+      <span class="step-label">Dashboard</span>
+    </div>
+  </div>
+
+  <!-- Page header -->
+  <div class="page-header fade-in">
+    <h1><i class="bi bi-fuel-pump me-2 text-brand"></i>พยากรณ์ประเภทเชื้อเพลิงที่เหมาะสม</h1>
+    <p>กรอกพฤติกรรมการใช้งานรถยนต์และทัศนคติของคุณ เพื่อให้ระบบแนะนำประเภทเชื้อเพลิงที่เหมาะสมที่สุด</p>
+  </div>
+
+  <!-- Prerequisite notice -->
+  <div class="alert-cardss success fade-in" style="margin-bottom:28px;">
+    <i class="bi bi-check-circle"></i>
+    ผลการพยากรณ์ก่อนหน้า: <strong>แนะนำให้ซื้อรถยนต์</strong> — กรุณากรอกข้อมูลเพิ่มเติมเพื่อวิเคราะห์ประเภทเชื้อเพลิง
+  </div>
+
+  <form method="POST" action="{{ url_for('api_predict_fuel') }}" id="predictFuelForm" novalidate>
+
+    <!-- ========================================================
+         SECTION 1: พฤติกรรมการใช้งานรถยนต์
+         ======================================================== -->
+    <div class="card-cardss mb-4 fade-in fade-in-delay-1">
+      <div class="section-header-cardss ev">
+        <i class="bi bi-speedometer2 me-2"></i>ส่วนที่ 1 — พฤติกรรมการใช้งานรถยนต์
+      </div>
+
+      <div class="row g-3">
+
+        <!-- ลักษณะการใช้งาน -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="usage_type">ลักษณะการใช้งาน <span style="color:var(--color-danger);">*</span></label>
+            <select id="usage_type" name="usage_type" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกลักษณะการใช้งาน —</option>
+              <option value="city">ขับในเมืองเป็นหลัก</option>
+              <option value="highway">ขับนอกเมืองเป็นหลัก</option>
+              <option value="both">ทั้งในและนอกเมือง</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ความถี่ใช้รถ -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="frequency">ความถี่ในการใช้รถ <span style="color:var(--color-danger);">*</span></label>
+            <select id="frequency" name="frequency" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกความถี่ —</option>
+              <option value="occasional">เป็นครั้งคราว</option>
+              <option value="1-2days">1–2 วัน/สัปดาห์</option>
+              <option value="3-4days">3–4 วัน/สัปดาห์</option>
+              <option value="5-6days">5–6 วัน/สัปดาห์</option>
+              <option value="everyday">ทุกวัน</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ระยะทางเฉลี่ยต่อวัน -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="distance">ระยะทางเฉลี่ยต่อวัน <span style="color:var(--color-danger);">*</span></label>
+            <select id="distance" name="distance" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกระยะทาง —</option>
+              <option value="lt10">น้อยกว่า 10 กม.</option>
+              <option value="10-30">10–30 กม.</option>
+              <option value="31-50">31–50 กม.</option>
+              <option value="51-70">51–70 กม.</option>
+              <option value="71-90">71–90 กม.</option>
+              <option value="90+">มากกว่า 90 กม.</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ประสบการณ์รถที่เคยใช้ -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="prev_car">ประสบการณ์รถที่เคยใช้ <span style="color:var(--color-danger);">*</span></label>
+            <select id="prev_car" name="prev_car" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกประเภทรถที่เคยใช้ —</option>
+              <option value="ice">สันดาป (น้ำมัน)</option>
+              <option value="hybrid">ไฮบริด</option>
+              <option value="ev">ไฟฟ้า (EV)</option>
+              <option value="none">ยังไม่เคยใช้รถ</option>
+            </select>
+          </div>
+        </div>
+
+      </div><!-- /row -->
+    </div>
+
+    <!-- ========================================================
+         SECTION 2: ทัศนคติและความกังวล
+         ======================================================== -->
+    <div class="card-cardss mb-4 fade-in fade-in-delay-2">
+      <div class="section-header-cardss hybrid">
+        <i class="bi bi-chat-square-dots me-2"></i>ส่วนที่ 2 — ทัศนคติและความกังวล
+      </div>
+
+      <!-- สิ่งสำคัญในการเลือกซื้อ (Checkbox) -->
+      <div class="form-group-cardss">
+        <label class="form-label-cardss">
+          สิ่งสำคัญในการเลือกซื้อรถยนต์ <span style="color:var(--color-danger);">*</span>
+          <span style="font-size:12px;font-weight:400;color:var(--text-muted);margin-left:4px;">(เลือกได้หลายข้อ)</span>
+        </label>
+        <div class="checkbox-grid" id="priorityGrid">
+          <label class="checkbox-item">
+            <input type="checkbox" name="priority" value="price"> ราคารถ
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="priority" value="installment"> ผ่อนชำระ
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="priority" value="fuel_cost"> ค่าน้ำมัน
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="priority" value="electricity_cost"> ค่าไฟฟ้า
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="priority" value="maintenance_cost"> ค่าซ่อมบำรุง
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="priority" value="performance"> สมรรถนะ
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="priority" value="design"> ดีไซน์/รูปลักษณ์
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="priority" value="technology"> เทคโนโลยี
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="priority" value="value"> ความคุ้มค่า
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="priority" value="warranty"> การรับประกัน
+          </label>
+        </div>
+        <div id="priority-err" style="display:none;font-size:12px;color:var(--brand-primary);margin-top:8px;"></div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="row g-3">
+
+        <!-- ความใส่ใจด้านเทคโนโลยีและสิ่งแวดล้อม -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="tech_env_concern">
+              ความใส่ใจด้านเทคโนโลยีและสิ่งแวดล้อม <span style="color:var(--color-danger);">*</span>
+            </label>
+            <select id="tech_env_concern" name="tech_env_concern" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกระดับความสำคัญ —</option>
+              <option value="5">5 — มากที่สุด (ใส่ใจมาก)</option>
+              <option value="4">4 — มาก</option>
+              <option value="3">3 — ปานกลาง</option>
+              <option value="2">2 — น้อย</option>
+              <option value="1">1 — น้อยที่สุด (ไม่ค่อยสนใจ)</option>
+            </select>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+              คะแนน 5 = ใส่ใจเรื่องสิ่งแวดล้อมและนวัตกรรมมากที่สุด
+            </div>
+          </div>
+        </div>
+
+        <!-- ความกังวลเรื่องราคาขายต่อและค่าบำรุงรักษา -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="resale_maintenance_concern">
+              ความกังวลเรื่องราคาขายต่อและค่าบำรุงรักษา <span style="color:var(--color-danger);">*</span>
+            </label>
+            <select id="resale_maintenance_concern" name="resale_maintenance_concern" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกระดับความกังวล —</option>
+              <option value="5">5 — กังวลมากที่สุด</option>
+              <option value="4">4 — กังวลมาก</option>
+              <option value="3">3 — ปานกลาง</option>
+              <option value="2">2 — กังวลน้อย</option>
+              <option value="1">1 — ไม่ค่อยกังวล</option>
+            </select>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+              คะแนน 5 = กังวลเรื่องมูลค่าขายต่อและค่าซ่อมมากที่สุด
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /row -->
+    </div>
+
+    <!-- Submit -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 fade-in fade-in-delay-3">
+      <a href="{{ url_for('result_buy') }}" class="btn-cardss-secondary">
+        <i class="bi bi-arrow-left"></i> กลับหน้าก่อนหน้า
+      </a>
+      <button type="submit" class="btn-cardss-primary" style="padding:16px 48px;font-size:16px;">
+        <i class="bi bi-cpu"></i> วิเคราะห์ประเภทรถ
+      </button>
+    </div>
+
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Toggle checkbox styling
+document.querySelectorAll('.checkbox-item input[type="checkbox"]').forEach(function(cb) {
+  cb.addEventListener('change', function() {
+    const label = this.closest('.checkbox-item');
+    if (this.checked) {
+      label.classList.add('checked');
+    } else {
+      label.classList.remove('checked');
+    }
+  });
+});
+
+// Form validation
+document.getElementById('predictFuelForm').addEventListener('submit', function(e) {
+  let valid = true;
+
+  // Check selects
+  const selects = this.querySelectorAll('select[required]');
+  selects.forEach(function(sel) {
+    if (!sel.value) {
+      sel.style.borderColor = 'var(--brand-primary)';
+      sel.style.boxShadow = '0 0 0 3px var(--brand-primary-light)';
+      valid = false;
+    } else {
+      sel.style.borderColor = '';
+      sel.style.boxShadow = '';
+    }
+  });
+
+  // Check at least one priority checkbox
+  const checked = document.querySelectorAll('input[name="priority"]:checked');
+  const priorityErr = document.getElementById('priority-err');
+  if (checked.length === 0) {
+    priorityErr.textContent = 'กรุณาเลือกอย่างน้อย 1 ข้อ';
+    priorityErr.style.display = 'block';
+    document.getElementById('priorityGrid').style.border = '1px solid var(--brand-primary)';
+    document.getElementById('priorityGrid').style.borderRadius = '4px';
+    document.getElementById('priorityGrid').style.padding = '8px';
+    valid = false;
+  } else {
+    priorityErr.style.display = 'none';
+    document.getElementById('priorityGrid').style.border = '';
+    document.getElementById('priorityGrid').style.padding = '';
+  }
+
+  if (!valid) {
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+});
+
+// Remove errors on change
+document.querySelectorAll('select').forEach(function(sel) {
+  sel.addEventListener('change', function() {
+    this.style.borderColor = '';
+    this.style.boxShadow = '';
+  });
+});
+</script>
+{% endblock %}

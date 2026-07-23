@@ -1,0 +1,47 @@
+{% extends 'admin/base.html' %}
+{% block title %}Admin — รถยนต์{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h3 class="mb-0">จัดการข้อมูลรถ</h3>
+  <a href="{{ url_for('admin_cars_add') }}" class="btn btn-dark btn-sm"><i class="bi bi-plus-lg"></i> เพิ่มรถ</a>
+</div>
+
+{% for ftype, items in cars.items() %}
+<div class="card-admin">
+  <h5>
+    <span class="badge-type badge-{{ ftype|lower }}">{{ ftype }}</span>
+    {{ items|length }} คัน
+  </h5>
+  <table class="table table-sm mt-3" style="font-size:14px;">
+    <thead>
+      <tr>
+        <th>ยี่ห้อ / รุ่น</th>
+        <th>ราคา</th>
+        <th>ระยะทาง</th>
+        <th style="width:160px;text-align:right;">การจัดการ</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in items %}
+      <tr>
+        <td><strong>{{ c.brand }}</strong> {{ c.model }}</td>
+        <td>{{ c.price }}</td>
+        <td>{{ c.range_km }}</td>
+        <td style="text-align:right;">
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin_cars_edit', fuel_type=ftype, index=loop.index0) }}">
+            <i class="bi bi-pencil"></i> แก้ไข
+          </a>
+          <form method="post" action="{{ url_for('admin_cars_delete', fuel_type=ftype, index=loop.index0) }}"
+                onsubmit="return confirm('ลบ {{ c.brand }} {{ c.model }}?');" style="display:inline;">
+            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="text-muted text-center py-3">ไม่มีรถในหมวดนี้</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endfor %}
+{% endblock %}

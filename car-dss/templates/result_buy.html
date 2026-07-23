@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}ผลพยากรณ์การตัดสินใจซื้อรถยนต์ — CarDSS{% endblock %}
+
+{% block content %}
+<div class="page-container-narrow" style="padding-top:56px;padding-bottom:56px;">
+
+  <!-- Step indicator -->
+  <div class="steps fade-in">
+    <div class="step-item">
+      <div class="step-circle done"><i class="bi bi-check-lg" style="font-size:14px;"></i></div>
+      <span class="step-label">พยากรณ์ซื้อ/ไม่ซื้อ</span>
+    </div>
+    <div class="step-line done"></div>
+    <div class="step-item">
+      <div class="step-circle {% if result.result == 'ซื้อ' %}active{% endif %}">2</div>
+      <span class="step-label {% if result.result == 'ซื้อ' %}active{% endif %}">ประเภทเชื้อเพลิง</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item">
+      <div class="step-circle">3</div>
+      <span class="step-label">Dashboard</span>
+    </div>
+  </div>
+
+  <!-- Result circle + main result -->
+  <div class="text-center fade-in" style="margin-bottom:36px;">
+    <div class="result-circle {{ 'buy' if result.result == 'ซื้อ' else 'no-buy' }} mb-4" style="margin-bottom:20px !important;">
+      {% if result.result == 'ซื้อ' %}
+        <i class="bi bi-check-circle-fill" style="color:#00A550;"></i>
+      {% else %}
+        <i class="bi bi-x-circle-fill" style="color:#C40818;"></i>
+      {% endif %}
+    </div>
+
+    <div style="margin-bottom:8px;">
+      <span class="mock-tag">{{ result.model_used }}</span>
+    </div>
+
+    <h1 class="result-title" style="color:{{ '#00A550' if result.result == 'ซื้อ' else '#C40818' }};">
+      {% if result.result == 'ซื้อ' %}
+        แนะนำ: ซื้อรถยนต์
+      {% else %}
+        ยังไม่เหมาะสม: ไม่แนะนำให้ซื้อ
+      {% endif %}
+    </h1>
+    <p class="result-subtitle">
+      {% if result.result == 'ซื้อ' %}
+        ระบบวิเคราะห์แล้วพบว่าคุณมีความพร้อมและเหมาะสมในการซื้อรถยนต์
+      {% else %}
+        ระบบวิเคราะห์แล้วพบว่าปัจจุบันยังไม่เหมาะสมในการซื้อรถยนต์
+      {% endif %}
+    </p>
+
+    <!-- Confidence bar -->
+    <div style="max-width:320px;margin:0 auto 8px;">
+      <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:6px;">
+        <span style="color:var(--text-muted);">ความมั่นใจของโมเดล</span>
+        <span style="color:{{ '#00A550' if result.result == 'ซื้อ' else '#C40818' }};">
+          {{ (result.confidence * 100) | round(1) }}%
+        </span>
+      </div>
+      <div class="confidence-bar-wrap">
+        <div class="confidence-bar-fill {% if result.result != 'ซื้อ' %}{% endif %}"
+             style="width:0%;background:{{ '#00A550' if result.result == 'ซื้อ' else '#C40818' }};"
+             data-width="{{ (result.confidence * 100) | round(1) }}">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stat cards -->
+  <div class="row g-3 fade-in fade-in-delay-1 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-value" style="color:{{ '#00A550' if result.result == 'ซื้อ' else '#C40818' }};">
+          {{ (result.confidence * 100) | round(1) }}%
+        </div>
+        <div class="stat-label">ความมั่นใจ</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-value" style="font-size:16px;padding-top:6px;">
+          {{ result.model_used.split('(')[0].strip() }}
+        </div>
+        <div class="stat-label">โมเดลที่ใช้</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-value" style="font-size:18px;">
+          {% if result.confidence >= 0.8 %}สูง{% elif result.confidence >= 0.6 %}ปานกลาง{% else %}ต่ำ{% endif %}
+        </div>
+        <div class="stat-label">ระดับความเชื่อมั่น</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-value" style="font-size:18px;">Binary</div>
+        <div class="stat-label">ประเภทโมเดล</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail card -->
+  <div class="card-cardss fade-in fade-in-delay-2 mb-4" style="background:var(--bg-secondary);">
+    <div style="font-size:14px;font-weight:500;color:var(--text-primary);margin-bottom:12px;">
+      <i class="bi bi-info-circle me-2 text-brand"></i>รายละเอียดผลการวิเคราะห์
+    </div>
+    {% if result.result == 'ซื้อ' %}
+    <p style="font-size:14px;color:var(--text-secondary);margin:0;line-height:1.8;">
+      จากข้อมูลที่คุณกรอก ระบบประเมินว่าคุณมี<strong>ความพร้อมทางการเงิน</strong> สภาพแวดล้อม
+      และปัจจัยต่างๆ ที่เอื้อต่อการซื้อรถยนต์
+      กรุณาดำเนินการต่อเพื่อวิเคราะห์ว่า<strong>ประเภทเชื้อเพลิงใด</strong>เหมาะสมกับไลฟ์สไตล์ของคุณมากที่สุด
+    </p>
+    {% else %}
+    <p style="font-size:14px;color:var(--text-secondary);margin:0;line-height:1.8;">
+      จากข้อมูลที่คุณกรอก ระบบพบว่าปัจจุบันยังมีปัจจัยบางประการที่<strong>อาจเป็นอุปสรรค</strong>ต่อการซื้อรถยนต์
+      เช่น งบประมาณ สภาพที่พักอาศัย หรือความจำเป็นในการใช้รถ
+      คุณสามารถลองปรับข้อมูลและทำการพยากรณ์ใหม่ได้
+    </p>
+    {% endif %}
+  </div>
+
+  <!-- Action buttons -->
+  <div class="fade-in fade-in-delay-3">
+    {% if result.result == 'ซื้อ' %}
+    <!-- ซื้อ → แสดงปุ่มไปหน้า predict_fuel (<<extend>>) -->
+    <div class="text-center mb-3">
+      <a href="{{ url_for('predict_fuel_page') }}" class="btn-cardss-primary" style="padding:16px 36px;font-size:15px;width:100%;justify-content:center;">
+        <i class="bi bi-fuel-pump"></i> วิเคราะห์ประเภทเชื้อเพลิง
+        <i class="bi bi-arrow-right ms-1"></i>
+      </a>
+    </div>
+    <div class="text-center">
+      <a href="{{ url_for('dashboard') }}" class="btn-cardss-secondary" style="width:100%;justify-content:center;">
+        <i class="bi bi-bar-chart-line"></i> ดู Dashboard
+      </a>
+    </div>
+    {% else %}
+    <!-- ไม่ซื้อ → ซ่อนปุ่ม predict_fuel (<<extend>> condition ไม่ผ่าน) -->
+    <div class="text-center mb-3">
+      <a href="{{ url_for('predict_buy_page') }}" class="btn-cardss-primary" style="padding:16px 36px;font-size:15px;width:100%;justify-content:center;">
+        <i class="bi bi-arrow-left"></i> กรอกข้อมูลใหม่อีกครั้ง
+      </a>
+    </div>
+    <div class="text-center">
+      <a href="{{ url_for('dashboard') }}" class="btn-cardss-secondary" style="width:100%;justify-content:center;">
+        <i class="bi bi-bar-chart-line"></i> ดู Dashboard
+      </a>
+    </div>
+    {% endif %}
+
+    <div class="text-center mt-3">
+      <a href="{{ url_for('predict_buy_page') }}" class="btn-cardss-ghost" style="font-size:13px;">
+        <i class="bi bi-arrow-counterclockwise me-1"></i> เริ่มต้นใหม่
+      </a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Animate confidence bar on load
+window.addEventListener('load', function () {
+  const bar = document.querySelector('.confidence-bar-fill');
+  if (bar) {
+    const target = bar.dataset.width || '0';
+    setTimeout(() => { bar.style.width = target + '%'; }, 300);
+  }
+});
+</script>
+{% endblock %}

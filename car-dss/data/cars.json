@@ -1,0 +1,524 @@
+{
+  "EV": [
+    {
+      "brand": "Tesla",
+      "model": "Model 3 Standard RWD",
+      "price": "1,149,000",
+      "range_km": "534",
+      "image": "cars/tesla-model-3.png",
+      "image_icon": "bi-lightning-charge-fill",
+      "color": "#E82127",
+      "highlights": [
+        "Autopilot มาตรฐาน",
+        "Supercharger ทั่วไทยกว่า 40 สถานี",
+        "0-100 กม./ชม. ใน 6.1 วินาที"
+      ],
+      "monthly_cost": "~800 ฿/เดือน (ค่าไฟ)",
+      "best_for": "คนรักเทคโนโลยี ต้องการสมรรถนะสูง ชาร์จสะดวก",
+      "fuel_consumption": {
+        "km_per_kwh": "7.1",
+        "baht_per_km": "0.46",
+        "wltp_kwh_100km": "14.0"
+      },
+      "insurance_class1": "51,000–58,500"
+    },
+    {
+      "brand": "BYD",
+      "model": "Atto 3 Extended Range",
+      "price": "769,900",
+      "range_km": "480",
+      "image": "cars/byd-atto-3.png",
+      "image_icon": "bi-ev-front-fill",
+      "color": "#00A650",
+      "highlights": [
+        "แบตเตอรี่ Blade 60.48 kWh",
+        "SUV ไฟฟ้า ประกอบไทย",
+        "รับประกันแบต 8 ปี/160,000 กม."
+      ],
+      "monthly_cost": "~700 ฿/เดือน (ค่าไฟ)",
+      "best_for": "ต้องการ SUV ไฟฟ้า พื้นที่กว้าง วิ่งไกล",
+      "fuel_consumption": {
+        "km_per_kwh": "6.2",
+        "baht_per_km": "0.53",
+        "wltp_kwh_100km": "16.0"
+      },
+      "insurance_class1": "28,400–35,000"
+    },
+    {
+      "brand": "MG",
+      "model": "MG4 Electric D MY2026",
+      "price": "579,900",
+      "range_km": "450",
+      "image": "cars/mg-mg4.png",
+      "image_icon": "bi-ev-front-fill",
+      "color": "#CF0A2C",
+      "highlights": [
+        "ไมเนอร์เชนจ์ 2026 ภายในใหม่หมด",
+        "มอเตอร์ 170 แรงม้า",
+        "Lifetime Warranty มอเตอร์+แบต"
+      ],
+      "monthly_cost": "~650 ฿/เดือน (ค่าไฟ)",
+      "best_for": "ต้องการ EV ราคาดี ศูนย์บริการครอบคลุมทั่วไทย",
+      "fuel_consumption": {
+        "km_per_kwh": "6.5",
+        "baht_per_km": "0.50",
+        "wltp_kwh_100km": "15.4"
+      },
+      "insurance_class1": "23,000–25,000"
+    },
+    {
+      "brand": "BYD",
+      "model": "Dolphin Standard Range",
+      "price": "599,900",
+      "range_km": "435",
+      "image": "cars/byd-dolphin.png",
+      "image_icon": "bi-ev-front-fill",
+      "color": "#1A1A2E",
+      "highlights": [
+        "BYD Blade Battery (LFP) 50.25 kWh",
+        "มอเตอร์ 95 แรงม้า 180 นม.",
+        "ดีไซน์ Ocean-X ภายในกว้าง"
+      ],
+      "monthly_cost": "~700 ฿/เดือน (ค่าไฟ)",
+      "best_for": "ต้องการ EV แฮทช์แบ็ก คุ้มค่า แบตใหญ่วิ่งไกล",
+      "fuel_consumption": {
+        "km_per_kwh": "6.8",
+        "baht_per_km": "0.48",
+        "wltp_kwh_100km": "14.7"
+      },
+      "insurance_class1": "20,000–24,000"
+    },
+    {
+      "brand": "GWM",
+      "model": "ORA 05 500 Ultra",
+      "price": "899,000",
+      "range_km": "480",
+      "image": "cars/gwm-ora-05.png",
+      "image_icon": "bi-ev-front-fill",
+      "color": "#6B4C9A",
+      "highlights": [
+        "ดีไซน์ย้อนยุคโดดเด่น",
+        "แบต LFP 57.7 kWh ประกอบไทย",
+        "จอ 10.25 นิ้ว + กล้อง 360 องศา"
+      ],
+      "monthly_cost": "~700 ฿/เดือน (ค่าไฟ)",
+      "best_for": "ชอบดีไซน์เฉพาะตัว วิ่งไกลบ่อย",
+      "fuel_consumption": {
+        "km_per_kwh": "6.3",
+        "baht_per_km": "0.52",
+        "wltp_kwh_100km": "15.9"
+      },
+      "insurance_class1": "40,000–50,000"
+    },
+    {
+      "brand": "BYD",
+      "model": "Seal Dynamic",
+      "price": "1,099,900",
+      "range_km": "550",
+      "image": "cars/byd-seal.png",
+      "image_icon": "bi-ev-front-fill",
+      "color": "#1A1A2E",
+      "highlights": [
+        "ซีดานไฟฟ้าสมรรถนะสูง 313 แรงม้า",
+        "แบต Blade 82.56 kWh",
+        "0-100 กม./ชม. ใน 5.9 วินาที"
+      ],
+      "monthly_cost": "~850 ฿/เดือน (ค่าไฟ)",
+      "best_for": "ต้องการซีดาน EV สมรรถนะสูง วิ่งไกล",
+      "fuel_consumption": {
+        "km_per_kwh": "6.7",
+        "baht_per_km": "0.49",
+        "wltp_kwh_100km": "14.9"
+      },
+      "insurance_class1": "24,000–46,000"
+    },
+    {
+      "brand": "Volvo",
+      "model": "EX30 Single Motor Extended",
+      "price": "1,190,000",
+      "range_km": "480",
+      "image": "cars/volvo-ex30.png",
+      "image_icon": "bi-ev-front-fill",
+      "color": "#003057",
+      "highlights": [
+        "SUV ไฟฟ้าพรีเมียม ดีไซน์สแกนดิเนเวีย",
+        "Google Built-in",
+        "ระบบความปลอดภัยระดับ 5 ดาว"
+      ],
+      "monthly_cost": "~800 ฿/เดือน (ค่าไฟ)",
+      "best_for": "ต้องการ EV พรีเมียม ดีไซน์มินิมอล ปลอดภัยสูง",
+      "fuel_consumption": {
+        "km_per_kwh": "6.0",
+        "baht_per_km": "0.55",
+        "wltp_kwh_100km": "16.7"
+      },
+      "insurance_class1": "42,000–55,000"
+    },
+    {
+      "brand": "Tesla",
+      "model": "Model Y Long Range RWD",
+      "price": "1,599,000",
+      "range_km": "600",
+      "image": "cars/tesla-model-y.png",
+      "image_icon": "bi-ev-front-fill",
+      "color": "#E82127",
+      "highlights": [
+        "SUV ไฟฟ้าขายดีที่สุดในโลก",
+        "Autopilot + Supercharger ทั่วไทย",
+        "พื้นที่บรรทุก 2,158 ลิตร"
+      ],
+      "monthly_cost": "~900 ฿/เดือน (ค่าไฟ)",
+      "best_for": "ต้องการ SUV ไฟฟ้าวิ่งไกล ครอบครัว เทคโนโลยีชั้นนำ",
+      "fuel_consumption": {
+        "km_per_kwh": "6.5",
+        "baht_per_km": "0.50",
+        "wltp_kwh_100km": "15.4"
+      },
+      "insurance_class1": "43,200–73,000"
+    }
+  ],
+  "Hybrid": [
+    {
+      "brand": "Toyota",
+      "model": "Corolla Cross HEV Smart MY2026",
+      "price": "989,000",
+      "range_km": "850 (รวม)",
+      "image": "cars/toyota-corollacross-hev.png",
+      "image_icon": "bi-battery-charging",
+      "color": "#1A1A1A",
+      "highlights": [
+        "ไฮบริดประหยัด 24 กม./ลิตร",
+        "Toyota Safety Sense 3.0",
+        "ศูนย์บริการมากที่สุดในไทย"
+      ],
+      "monthly_cost": "~2,000 ฿/เดือน (น้ำมัน)",
+      "best_for": "ต้องการความมั่นใจ ศูนย์ซ่อมเยอะ ประหยัดน้ำมัน",
+      "fuel_consumption": {
+        "km_per_liter": "23.8"
+      },
+      "insurance_class1": "16,855–20,000"
+    },
+    {
+      "brand": "Honda",
+      "model": "Civic e:HEV EL",
+      "price": "949,000",
+      "range_km": "900 (รวม)",
+      "image": "cars/civic-ehev.png",
+      "image_icon": "bi-battery-charging",
+      "color": "#CC0000",
+      "highlights": [
+        "ระบบ e:HEV 2 มอเตอร์",
+        "ดีไซน์ซีดานสปอร์ต",
+        "Honda SENSING ครบชุด"
+      ],
+      "monthly_cost": "~1,800 ฿/เดือน (น้ำมัน)",
+      "best_for": "ชอบซีดานสปอร์ต ไฮบริดประหยัดน้ำมัน",
+      "fuel_consumption": {
+        "km_per_liter": "25.6"
+      },
+      "insurance_class1": "20,000–35,000"
+    },
+    {
+      "brand": "Nissan",
+      "model": "Kicks e-Power VL MY2026",
+      "price": "849,900",
+      "range_km": "750 (รวม)",
+      "image": "cars/nissan-kicks-epower.png",
+      "image_icon": "bi-battery-charging",
+      "color": "#C3002F",
+      "highlights": [
+        "e-Power เครื่องปั่นไฟ มอเตอร์ขับ",
+        "ProPILOT ช่วยขับกึ่งอัตโนมัติ",
+        "นั่งสบาย Zero Gravity"
+      ],
+      "monthly_cost": "~2,100 ฿/เดือน (น้ำมัน)",
+      "best_for": "ชอบสัมผัสการขับแบบ EV แต่ไม่ต้องชาร์จ",
+      "fuel_consumption": {
+        "km_per_liter": "23.3"
+      },
+      "insurance_class1": "18,000–22,000"
+    },
+    {
+      "brand": "Mitsubishi",
+      "model": "Xpander Cross HEV MY2026",
+      "price": "969,000",
+      "range_km": "800 (รวม)",
+      "image": "cars/xpeander-cross.png",
+      "image_icon": "bi-battery-charging",
+      "color": "#ED1C24",
+      "highlights": [
+        "7 ที่นั่ง ถุงลม 6 ใบ กล้อง 360 องศา",
+        "ระบบ Hybrid ประหยัดน้ำมัน",
+        "ภายในทูโทนใหม่ MY2026"
+      ],
+      "monthly_cost": "~2,300 ฿/เดือน (น้ำมัน)",
+      "best_for": "ครอบครัวใหญ่ ต้องการ 7 ที่นั่ง ปลอดภัยสูง",
+      "fuel_consumption": {
+        "km_per_liter": "19.2"
+      },
+      "insurance_class1": "18,000–24,000"
+    },
+    {
+      "brand": "Hyundai",
+      "model": "Stargazer X HEV",
+      "price": "879,000",
+      "range_km": "720 (รวม)",
+      "image": "cars/hyundai-stargazer-x-hev.png",
+      "image_icon": "bi-battery-charging",
+      "color": "#002C5F",
+      "highlights": [
+        "ดีไซน์ Parametric ล้ำยุค",
+        "SmartSense ระบบช่วยขับ",
+        "ห้องโดยสารกว้าง 7 ที่นั่ง"
+      ],
+      "monthly_cost": "~2,200 ฿/เดือน (น้ำมัน)",
+      "best_for": "ชอบดีไซน์โมเดิร์น เน้นเทคโนโลยีความปลอดภัย",
+      "fuel_consumption": {
+        "km_per_liter": "20.5"
+      },
+      "insurance_class1": "17,000–22,000"
+    },
+    {
+      "brand": "Toyota",
+      "model": "Yaris Ativ HEV Smart",
+      "price": "639,000",
+      "range_km": "950 (รวม)",
+      "image": "cars/toyota-yaris-ativ-hev.png",
+      "image_icon": "bi-battery-charging",
+      "color": "#1A1A1A",
+      "highlights": [
+        "ไฮบริดราคาเริ่มต้นถูกที่สุด",
+        "ประหยัด 27.5 กม./ลิตร",
+        "Toyota Safety Sense"
+      ],
+      "monthly_cost": "~1,500 ฿/เดือน (น้ำมัน)",
+      "best_for": "งบจำกัด ต้องการไฮบริดคันแรก ขับในเมือง",
+      "fuel_consumption": {
+        "km_per_liter": "27.5"
+      },
+      "insurance_class1": "14,000–18,000"
+    },
+    {
+      "brand": "Honda",
+      "model": "City e:HEV SV",
+      "price": "739,000",
+      "range_km": "900 (รวม)",
+      "image": "cars/honda-city-ehev.png",
+      "image_icon": "bi-battery-charging",
+      "color": "#CC0000",
+      "highlights": [
+        "e:HEV 2 มอเตอร์ ขับเงียบ",
+        "Honda SENSING ครบชุด",
+        "เบาะ Ultra Seat อเนกประสงค์"
+      ],
+      "monthly_cost": "~1,600 ฿/เดือน (น้ำมัน)",
+      "best_for": "ต้องการซีดานไฮบริด ห้องเก็บของกว้าง",
+      "fuel_consumption": {
+        "km_per_liter": "27.8"
+      },
+      "insurance_class1": "15,000–20,000"
+    },
+    {
+      "brand": "Toyota",
+      "model": "Yaris Cross HEV Smart MY2026",
+      "price": "859,000",
+      "range_km": "850 (รวม)",
+      "image": "cars/toyota-yaris-cross-hev.png",
+      "image_icon": "bi-battery-charging",
+      "color": "#1A1A1A",
+      "highlights": [
+        "B-SUV ไฮบริด ขนาดกะทัดรัด",
+        "E-Four ขับเคลื่อน 4 ล้อ",
+        "Toyota Safety Sense 3.0"
+      ],
+      "monthly_cost": "~1,800 ฿/เดือน (น้ำมัน)",
+      "best_for": "ต้องการ SUV ขนาดเล็ก ประหยัดน้ำมัน ขับง่ายในเมือง",
+      "fuel_consumption": {
+        "km_per_liter": "25.0"
+      },
+      "insurance_class1": "16,000–21,000"
+    },
+    {
+      "brand": "Honda",
+      "model": "HR-V e:HEV EL",
+      "price": "1,069,000",
+      "range_km": "800 (รวม)",
+      "image": "cars/honda-hr-v-ehev.png",
+      "image_icon": "bi-battery-charging",
+      "color": "#CC0000",
+      "highlights": [
+        "SUV ไฮบริด ดีไซน์สปอร์ต",
+        "e:HEV 131 แรงม้า",
+        "Honda SENSING + กล้อง LaneWatch"
+      ],
+      "monthly_cost": "~2,000 ฿/เดือน (น้ำมัน)",
+      "best_for": "ต้องการ SUV ไฮบริดขนาดกลาง ขับสนุก",
+      "fuel_consumption": {
+        "km_per_liter": "24.0"
+      },
+      "insurance_class1": "12,510–30,000"
+    },
+    {
+      "brand": "Honda",
+      "model": "Accord e:HEV EL",
+      "price": "1,529,000",
+      "range_km": "1,000 (รวม)",
+      "image": "cars/honda-accord-ehev.png",
+      "image_icon": "bi-battery-charging",
+      "color": "#CC0000",
+      "highlights": [
+        "ซีดานพรีเมียมไฮบริด 204 แรงม้า",
+        "Honda SENSING 360",
+        "เบาะหนังปรับไฟฟ้า หลังคาซันรูฟ"
+      ],
+      "monthly_cost": "~2,200 ฿/เดือน (น้ำมัน)",
+      "best_for": "ต้องการซีดานพรีเมียม สมรรถนะสูง ห้องโดยสารหรู",
+      "fuel_consumption": {
+        "km_per_liter": "23.3"
+      },
+      "insurance_class1": "30,000–42,000"
+    },
+    {
+      "brand": "Honda",
+      "model": "CR-V e:HEV EL",
+      "price": "1,619,000",
+      "range_km": "900 (รวม)",
+      "image": "cars/honda-cr-v-ehev.png",
+      "image_icon": "bi-battery-charging",
+      "color": "#CC0000",
+      "highlights": [
+        "SUV ไฮบริดพรีเมียม 207 แรงม้า",
+        "Honda SENSING 360 + กล้อง 360",
+        "พื้นที่บรรทุกมาก ห้องโดยสารกว้าง"
+      ],
+      "monthly_cost": "~2,400 ฿/เดือน (น้ำมัน)",
+      "best_for": "ครอบครัวต้องการ SUV พรีเมียม พื้นที่กว้าง ไฮบริดประหยัด",
+      "fuel_consumption": {
+        "km_per_liter": "21.0"
+      },
+      "insurance_class1": "32,000–45,000"
+    },
+    {
+      "brand": "Toyota",
+      "model": "Camry HEV Premium MY2026",
+      "price": "1,555,000",
+      "range_km": "1,100 (รวม)",
+      "image": "cars/toyota-camry-hev.png",
+      "image_icon": "bi-battery-charging",
+      "color": "#1A1A1A",
+      "highlights": [
+        "ซีดานพรีเมียมไฮบริด 225 แรงม้า",
+        "TNGA-K แพลตฟอร์ม",
+        "Toyota Safety Sense 3.0 + JBL 9 ลำโพง"
+      ],
+      "monthly_cost": "~2,100 ฿/เดือน (น้ำมัน)",
+      "best_for": "ต้องการซีดานพรีเมียม นั่งสบาย ราคาขายต่อดี",
+      "fuel_consumption": {
+        "km_per_liter": "23.5"
+      },
+      "insurance_class1": "13,100–40,000"
+    }
+  ],
+  "ICE": [
+    {
+      "brand": "Mazda",
+      "model": "Mazda 2 1.3 Signature Sedan",
+      "price": "659,000",
+      "range_km": "680",
+      "image": "cars/mazda-2.png",
+      "image_icon": "bi-fuel-pump-fill",
+      "color": "#910000",
+      "highlights": [
+        "ดีไซน์ KODO สวยเฉียบ",
+        "SKYACTIV-G ประหยัดน้ำมัน",
+        "i-Activsense ครบชุด"
+      ],
+      "monthly_cost": "~3,000 ฿/เดือน (น้ำมัน)",
+      "best_for": "ชอบขับสนุก ดีไซน์พรีเมียมในกลุ่ม Eco Car",
+      "fuel_consumption": {
+        "km_per_liter": "18.5"
+      },
+      "insurance_class1": "8,000–15,000"
+    },
+    {
+      "brand": "Toyota",
+      "model": "Yaris Ativ 1.2 Premium",
+      "price": "699,000",
+      "range_km": "750",
+      "image": "cars/toyota-ativ.png",
+      "image_icon": "bi-fuel-pump-fill",
+      "color": "#1A1A1A",
+      "highlights": [
+        "ประหยัดน้ำมัน 21 กม./ลิตร",
+        "T-Connect จอทัชสกรีน 9 นิ้ว",
+        "ราคาขายต่อสูงที่สุดในกลุ่ม"
+      ],
+      "monthly_cost": "~2,800 ฿/เดือน (น้ำมัน)",
+      "best_for": "มั่นใจเรื่องราคาขายต่อ ศูนย์บริการเยอะทั่วไทย",
+      "fuel_consumption": {
+        "km_per_liter": "23.3"
+      },
+      "insurance_class1": "7,500–14,000"
+    },
+    {
+      "brand": "Honda",
+      "model": "City 1.0 Turbo SV",
+      "price": "739,000",
+      "range_km": "720",
+      "image": "cars/honda-city.png",
+      "image_icon": "bi-fuel-pump-fill",
+      "color": "#CC0000",
+      "highlights": [
+        "เทอร์โบ 122 แรงม้า แรงสุดในกลุ่ม",
+        "Honda SENSING",
+        "เบาะ Ultra Seat พับได้หลายแบบ"
+      ],
+      "monthly_cost": "~3,000 ฿/เดือน (น้ำมัน)",
+      "best_for": "ต้องการกำลังเครื่องยนต์สูง แต่ยังประหยัด",
+      "fuel_consumption": {
+        "km_per_liter": "18.5"
+      },
+      "insurance_class1": "9,000–16,000"
+    },
+    {
+      "brand": "Nissan",
+      "model": "Almera 1.0 Turbo VL MY2026",
+      "price": "699,000",
+      "range_km": "700",
+      "image": "cars/nissan-almera.png",
+      "image_icon": "bi-fuel-pump-fill",
+      "color": "#C3002F",
+      "highlights": [
+        "เทอร์โบ ประหยัด 23 กม./ลิตร",
+        "Nissan Intelligent Mobility",
+        "ห้องโดยสารกว้างสุดในคลาส"
+      ],
+      "monthly_cost": "~2,600 ฿/เดือน (น้ำมัน)",
+      "best_for": "นั่งสบาย เน้นห้องโดยสารกว้าง ผู้โดยสารหลังสุขสบาย",
+      "fuel_consumption": {
+        "km_per_liter": "23.3"
+      },
+      "insurance_class1": "7,500–13,000"
+    },
+    {
+      "brand": "Mitsubishi",
+      "model": "Attrage Smart AT",
+      "price": "584,000",
+      "range_km": "760",
+      "image": "cars/mitsubishi-attrage.png",
+      "image_icon": "bi-fuel-pump-fill",
+      "color": "#ED1C24",
+      "highlights": [
+        "ราคาคุ้มค่า เครื่อง 1.2 ลิตร MIVEC",
+        "ประหยัดน้ำมัน 23 กม./ลิตร",
+        "รับประกัน 5 ปี / 100,000 กม."
+      ],
+      "monthly_cost": "~2,500 ฿/เดือน (น้ำมัน)",
+      "best_for": "งบจำกัด มองหารถคันแรก ค่าบำรุงรักษาต่ำ",
+      "fuel_consumption": {
+        "km_per_liter": "21.7"
+      },
+      "insurance_class1": "8,000–14,000"
+    }
+  ]
+}

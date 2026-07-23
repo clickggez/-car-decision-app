@@ -1,0 +1,11 @@
+flask
+flask-login
+firebase-admin
+scikit-learn
+tensorflow
+pandas
+numpy
+joblib
+imbalanced-learn
+gunicorn
+requests

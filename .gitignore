@@ -1,0 +1,33 @@
+# Firebase credentials — ห้ามคอมมิต
+firebase-service-account.json
+*/firebase-service-account.json
+**/firebase-service-account.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.env
+.venv
+
+# Flask / app data
+instance/
+.webassets-cache
+
+# Unused working dirs (not referenced by app.py — only static/img/cars is served)
+car-dss/input_images/
+car-dss/output_images/
+
+# Local data (อาจมีข้อมูลผู้ใช้)
+car-dss/data/users_local.json
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp

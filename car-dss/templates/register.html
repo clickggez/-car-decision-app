@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}สมัครสมาชิก — CarDSS{% endblock %}
+
+{% block content %}
+<div style="min-height:calc(100vh - 56px);background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;padding:48px 16px;">
+  <div class="login-card fade-in" style="max-width:440px;border-radius:12px;">
+
+    <!-- Header -->
+    <div style="text-align:center;margin-bottom:32px;">
+      <a href="{{ url_for('login') }}" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted);text-decoration:none;margin-bottom:20px;">
+        <i class="bi bi-arrow-left"></i> กลับหน้าเข้าสู่ระบบ
+      </a>
+      <h2 style="font-size:20px;font-weight:500;color:var(--text-primary);margin-bottom:4px;">สมัครสมาชิก</h2>
+      <p style="font-size:14px;color:var(--text-muted);margin:0;">สร้างบัญชีเพื่อเริ่มใช้งาน CarDSS</p>
+    </div>
+
+    {% if error %}
+    <div class="alert-cardss error mb-4">
+      <i class="bi bi-exclamation-circle"></i> {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('register') }}" id="registerForm" novalidate>
+
+      <div class="form-group-cardss">
+        <label class="form-label-cardss" for="username">ชื่อผู้ใช้</label>
+        <input type="text" id="username" name="username" class="form-control-cardss"
+               placeholder="ตั้งชื่อผู้ใช้ (ภาษาอังกฤษ, ตัวเลข, _)"
+               autocomplete="username" required minlength="3" maxlength="30"
+               value="{{ request.form.get('username', '') }}">
+        <div id="username-err" style="display:none;font-size:12px;color:var(--color-danger);margin-top:4px;"></div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">3-30 ตัวอักษร ใช้ได้: a-z, 0-9, _</div>
+      </div>
+
+      <div class="form-group-cardss">
+        <label class="form-label-cardss" for="password">รหัสผ่าน</label>
+        <div style="position:relative;">
+          <input type="password" id="password" name="password" class="form-control-cardss"
+                 placeholder="ตั้งรหัสผ่าน (อย่างน้อย 8 ตัวอักษร)"
+                 autocomplete="new-password" required minlength="8">
+          <button type="button" aria-label="แสดง/ซ่อน"
+                  style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:16px;"
+                  onclick="togglePassword('password', this)">
+            <i class="bi bi-eye"></i>
+          </button>
+        </div>
+        <div id="password-err" style="display:none;font-size:12px;color:var(--color-danger);margin-top:4px;"></div>
+
+        <!-- Password strength -->
+        <div style="margin-top:8px;">
+          <div class="confidence-bar-wrap" style="height:4px;">
+            <div id="pw-strength-bar" class="confidence-bar-fill" style="width:0%;transition:width 0.33s;"></div>
+          </div>
+          <div id="pw-strength-text" style="font-size:11px;color:var(--text-muted);margin-top:4px;"></div>
+        </div>
+      </div>
+
+      <div class="form-group-cardss">
+        <label class="form-label-cardss" for="confirm_password">ยืนยันรหัสผ่าน</label>
+        <div style="position:relative;">
+          <input type="password" id="confirm_password" name="confirm_password" class="form-control-cardss"
+                 placeholder="กรอกรหัสผ่านอีกครั้ง"
+                 autocomplete="new-password" required>
+          <button type="button" aria-label="แสดง/ซ่อน"
+                  style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:16px;"
+                  onclick="togglePassword('confirm_password', this)">
+            <i class="bi bi-eye"></i>
+          </button>
+        </div>
+        <div id="confirm-err" style="display:none;font-size:12px;color:var(--color-danger);margin-top:4px;"></div>
+      </div>
+
+      <!-- Terms note -->
+      <div style="background:var(--bg-secondary);border-radius:4px;padding:12px 16px;font-size:13px;color:var(--text-muted);margin-bottom:20px;">
+        <i class="bi bi-info-circle me-1"></i>
+        ข้อมูลที่กรอกจะถูกเก็บเป็นความลับและใช้เพื่อการวิจัยเท่านั้น
+      </div>
+
+      <button type="submit" class="btn-cardss-primary w-100 justify-content-center" style="padding:8px;min-height:40px;">
+        สมัครสมาชิก
+      </button>
+    </form>
+
+    <div style="text-align:center;margin-top:20px;padding-top:20px;border-top:1px solid var(--border-light);">
+      <span style="font-size:14px;color:var(--text-muted);">มีบัญชีแล้ว? </span>
+      <a href="{{ url_for('login') }}"
+         style="font-size:14px;font-weight:600;color:#3b82f6;text-decoration:underline;text-underline-offset:3px;transition:color 0.2s,opacity 0.2s;"
+         onmouseover="this.style.color='#60a5fa';this.style.opacity='0.9'"
+         onmouseout="this.style.color='#3b82f6';this.style.opacity='1'">เข้าสู่ระบบ</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Password strength indicator
+const pwInput = document.getElementById('password');
+const confirmInput = document.getElementById('confirm_password');
+
+if (pwInput) {
+  pwInput.addEventListener('input', function () {
+    const val = this.value;
+    let strength = 0;
+    if (val.length >= 8) strength++;
+    if (/[A-Z]/.test(val)) strength++;
+    if (/[0-9]/.test(val)) strength++;
+    if (/[^A-Za-z0-9]/.test(val)) strength++;
+
+    const bar = document.getElementById('pw-strength-bar');
+    const txt = document.getElementById('pw-strength-text');
+    const colors = ['', '#C40818', '#F5A623', '#0072CE', '#00A550'];
+    const labels = ['', 'อ่อนมาก', 'อ่อน', 'ปานกลาง', 'แข็งแรง'];
+
+    bar.style.width = (strength * 25) + '%';
+    bar.style.background = colors[strength] || '';
+    txt.textContent = strength > 0 ? 'ความปลอดภัย: ' + labels[strength] : '';
+    txt.style.color = colors[strength] || '';
+  });
+}
+
+// Register form validation
+const registerForm = document.getElementById('registerForm');
+if (registerForm) {
+  registerForm.addEventListener('submit', function (e) {
+    let valid = true;
+
+    const username = document.getElementById('username');
+    const usernameErr = document.getElementById('username-err');
+    if (!/^[a-zA-Z0-9_]{3,30}$/.test(username.value.trim())) {
+      usernameErr.textContent = 'ชื่อผู้ใช้ต้องมี 3-30 ตัวอักษร (a-z, 0-9, _)';
+      usernameErr.style.display = 'block';
+      username.style.borderColor = 'var(--color-danger)';
+      valid = false;
+    } else {
+      usernameErr.style.display = 'none';
+      username.style.borderColor = '';
+    }
+
+    const pw = document.getElementById('password');
+    const pwErr = document.getElementById('password-err');
+    if (pw.value.length < 8) {
+      pwErr.textContent = 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร';
+      pwErr.style.display = 'block';
+      pw.style.borderColor = 'var(--color-danger)';
+      valid = false;
+    } else {
+      pwErr.style.display = 'none';
+      pw.style.borderColor = '';
+    }
+
+    const confirm = document.getElementById('confirm_password');
+    const confirmErr = document.getElementById('confirm-err');
+    if (pw.value !== confirm.value) {
+      confirmErr.textContent = 'รหัสผ่านไม่ตรงกัน กรุณากรอกใหม่';
+      confirmErr.style.display = 'block';
+      confirm.style.borderColor = 'var(--color-danger)';
+      valid = false;
+    } else {
+      confirmErr.style.display = 'none';
+      confirm.style.borderColor = '';
+    }
+
+    if (!valid) e.preventDefault();
+  });
+}
+</script>
+{% endblock %}

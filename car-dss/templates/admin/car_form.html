@@ -1,0 +1,92 @@
+{% extends 'admin/base.html' %}
+{% block title %}{{ 'เพิ่มรถ' if mode=='add' else 'แก้ไขรถ' }}{% endblock %}
+{% block content %}
+<a href="{{ url_for('admin_cars') }}" class="text-muted" style="font-size:13px;text-decoration:none;"><i class="bi bi-arrow-left"></i> กลับ</a>
+<h3 class="mt-2 mb-4">{{ 'เพิ่มรถใหม่' if mode=='add' else 'แก้ไข: ' + car.brand + ' ' + car.model }}</h3>
+
+<form method="post" class="card-admin">
+  <div class="row g-3">
+    <div class="col-md-3">
+      <label class="form-label">ประเภทเชื้อเพลิง *</label>
+      <select name="fuel_type" class="form-select" required>
+        {% for t in ['EV','Hybrid','ICE'] %}
+          <option value="{{ t }}" {% if fuel_type==t %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">ยี่ห้อ *</label>
+      <input name="brand" class="form-control" required value="{{ car.brand if car else '' }}">
+    </div>
+    <div class="col-md-5">
+      <label class="form-label">รุ่น *</label>
+      <input name="model" class="form-control" required value="{{ car.model if car else '' }}">
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">ราคา (บาท)</label>
+      <input name="price" class="form-control" value="{{ car.price if car else '' }}" placeholder="999,000">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">ระยะทาง (กม.)</label>
+      <input name="range_km" class="form-control" value="{{ car.range_km if car else '' }}" placeholder="500">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">ค่าใช้จ่ายต่อเดือน</label>
+      <input name="monthly_cost" class="form-control" value="{{ car.monthly_cost if car else '' }}" placeholder="~2,000 ฿/เดือน">
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">รูปภาพ (path ใน static/images/)</label>
+      <input name="image" class="form-control" value="{{ car.image if car else '' }}" placeholder="cars/toyota-yaris.png">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">ไอคอน (Bootstrap Icon)</label>
+      <input name="image_icon" class="form-control" value="{{ car.image_icon if car else 'bi-car-front-fill' }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">สีแบรนด์ (hex)</label>
+      <input name="color" type="color" class="form-control form-control-color" value="{{ car.color if car else '#1A1A1A' }}">
+    </div>
+
+    <div class="col-12">
+      <label class="form-label">จุดเด่น (บรรทัดละ 1 ข้อ)</label>
+      <textarea name="highlights" class="form-control" rows="4">{% if car and car.highlights %}{{ car.highlights|join('\n') }}{% endif %}</textarea>
+    </div>
+
+    <div class="col-12">
+      <label class="form-label">เหมาะสำหรับ</label>
+      <input name="best_for" class="form-control" value="{{ car.best_for if car else '' }}">
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">ประกันชั้น 1 (ช่วงราคา)</label>
+      <input name="insurance_class1" class="form-control" value="{{ car.insurance_class1 if car else '' }}" placeholder="10,000–20,000">
+    </div>
+
+    <div class="col-12"><hr><h6>อัตราสิ้นเปลือง (ใส่เฉพาะที่เกี่ยวข้อง)</h6></div>
+    {% set fc = car.fuel_consumption if car and car.fuel_consumption else {} %}
+    <div class="col-md-3">
+      <label class="form-label">กม./ลิตร (ICE/Hybrid)</label>
+      <input name="fc_km_per_liter" class="form-control" value="{{ fc.km_per_liter or '' }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">กม./kWh (EV)</label>
+      <input name="fc_km_per_kwh" class="form-control" value="{{ fc.km_per_kwh or '' }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">บาท/กม. (EV)</label>
+      <input name="fc_baht_per_km" class="form-control" value="{{ fc.baht_per_km or '' }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">kWh/100km (EV)</label>
+      <input name="fc_wltp_kwh_100km" class="form-control" value="{{ fc.wltp_kwh_100km or '' }}">
+    </div>
+  </div>
+
+  <div class="mt-4 d-flex gap-2">
+    <button class="btn btn-dark">{{ 'เพิ่มรถ' if mode=='add' else 'บันทึก' }}</button>
+    <a href="{{ url_for('admin_cars') }}" class="btn btn-outline-secondary">ยกเลิก</a>
+  </div>
+</form>
+{% endblock %}

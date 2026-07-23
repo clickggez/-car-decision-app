@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+{% block title %}พยากรณ์การตัดสินใจซื้อรถยนต์ — CarDSS{% endblock %}
+
+{% block content %}
+<div class="page-container">
+
+  <!-- Breadcrumb -->
+  <div class="breadcrumb-cardss fade-in">
+    <a href="{{ url_for('predict_buy_page') }}">หน้าหลัก</a>
+    <span class="sep">›</span>
+    <span class="current">พยากรณ์การตัดสินใจซื้อรถยนต์</span>
+  </div>
+
+  <!-- Step indicator -->
+  <div class="steps fade-in">
+    <div class="step-item">
+      <div class="step-circle active">1</div>
+      <span class="step-label active">พยากรณ์ซื้อ/ไม่ซื้อ</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item">
+      <div class="step-circle">2</div>
+      <span class="step-label">ประเภทเชื้อเพลิง</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item">
+      <div class="step-circle">3</div>
+      <span class="step-label">Dashboard</span>
+    </div>
+  </div>
+
+  <!-- Page header -->
+  <div class="page-header fade-in">
+    <h1><i class="bi bi-clipboard-data me-2 text-brand"></i>พยากรณ์การตัดสินใจซื้อรถยนต์</h1>
+    <p>กรอกข้อมูลส่วนบุคคลและปัจจัยการเลือกซื้อเพื่อให้ระบบวิเคราะห์ความเหมาะสม</p>
+  </div>
+
+  <!-- Mock / Real model notice -->
+  <div class="alert-cardss info fade-in" style="margin-bottom:28px;">
+    <i class="bi bi-info-circle"></i>
+    {% if use_mock %}
+    <span>ขณะนี้ระบบอยู่ในโหมด <span class="mock-tag">Mock</span> — ผลลัพธ์เป็นข้อมูลจำลอง (โมเดล ML จะพร้อมใช้เมื่อเก็บข้อมูลครบ)</span>
+    {% else %}
+    <span>ขณะนี้ระบบใช้ <span class="mock-tag">โมเดล ML จริง</span> — ผลลัพธ์มาจากการพยากรณ์ด้วยข้อมูลที่เทรนไว้ (ยังเป็นชุดข้อมูลทดสอบ ไม่ใช่ผลสำรวจจริง)</span>
+    {% endif %}
+  </div>
+
+  <form method="POST" action="{{ url_for('api_predict_buy') }}" id="predictBuyForm" novalidate>
+
+    <!-- ========================================================
+         SECTION 1: ข้อมูลส่วนบุคคล
+         ======================================================== -->
+    <div class="card-cardss mb-4 fade-in fade-in-delay-1">
+      <div class="section-header-cardss">
+        <i class="bi bi-person-fill me-2"></i>ส่วนที่ 1 — ข้อมูลส่วนบุคคล
+      </div>
+
+      <div class="row g-3">
+
+        <!-- เพศ -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="gender">เพศ <span style="color:var(--color-danger);">*</span></label>
+            <select id="gender" name="gender" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกเพศ —</option>
+              <option value="male">ชาย</option>
+              <option value="female">หญิง</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- อายุ -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="age">อายุ <span style="color:var(--color-danger);">*</span></label>
+            <select id="age" name="age" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกช่วงอายุ —</option>
+              <option value="20-23">20–23 ปี</option>
+              <option value="24-26">24–26 ปี</option>
+              <option value="27-30">27–30 ปี</option>
+              <option value="31-40">31–40 ปี</option>
+              <option value="41-50">41–50 ปี</option>
+              <option value="51-60">51–60 ปี</option>
+              <option value="60+">60 ปีขึ้นไป</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- จำนวนบุตร -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="children">จำนวนบุตร <span style="color:var(--color-danger);">*</span></label>
+            <select id="children" name="children" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกจำนวนบุตร —</option>
+              <option value="0">ไม่มี</option>
+              <option value="1">1 คน</option>
+              <option value="2">2 คน</option>
+              <option value="3">3 คน</option>
+              <option value="3+">มากกว่า 3 คน</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ระดับการศึกษา -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="education">ระดับการศึกษา <span style="color:var(--color-danger);">*</span></label>
+            <select id="education" name="education" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกระดับการศึกษา —</option>
+              <option value="below_m3">ต่ำกว่า ม.3</option>
+              <option value="m3">ม.3</option>
+              <option value="m6">ม.6</option>
+              <option value="vocational">ปวช./ปวส.</option>
+              <option value="bachelor">ปริญญาตรี</option>
+              <option value="master">ปริญญาโท</option>
+              <option value="phd">ปริญญาเอก</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- อาชีพ -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="occupation">อาชีพ <span style="color:var(--color-danger);">*</span></label>
+            <select id="occupation" name="occupation" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกอาชีพ —</option>
+              <option value="student">นักศึกษา</option>
+              <option value="freelance">อาชีพอิสระ</option>
+              <option value="soe">รัฐวิสาหกิจ</option>
+              <option value="private">พนักงานบริษัทเอกชน</option>
+              <option value="government">ข้าราชการ</option>
+              <option value="business_owner">เจ้าของกิจการ</option>
+              <option value="trader">ค้าขาย</option>
+              <option value="farmer_fisher">ชาวประมง/เกษตรกร</option>
+              <option value="other">อื่นๆ</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- จำนวนสมาชิกครอบครัว -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="family_size">จำนวนสมาชิกครอบครัว <span style="color:var(--color-danger);">*</span></label>
+            <select id="family_size" name="family_size" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกจำนวนสมาชิก —</option>
+              <option value="1-2">1–2 คน</option>
+              <option value="3-4">3–4 คน</option>
+              <option value="5+">5 คนขึ้นไป</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ลักษณะที่พักอาศัย -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="housing_type">ลักษณะที่พักอาศัย <span style="color:var(--color-danger);">*</span></label>
+            <select id="housing_type" name="housing_type" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกประเภทที่พัก —</option>
+              <option value="house">บ้านเดี่ยว</option>
+              <option value="townhome">ทาวน์โฮม</option>
+              <option value="condo">คอนโด/อพาร์ตเมนต์</option>
+              <option value="dormitory">หอพัก</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- สถานะการครอบครองที่พัก -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="housing_status">สถานะที่พักอาศัย <span style="color:var(--color-danger);">*</span></label>
+            <select id="housing_status" name="housing_status" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกสถานะที่พัก —</option>
+              <option value="own">เจ้าของ</option>
+              <option value="rent">เช่า</option>
+              <option value="family">พักกับครอบครัว</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- พื้นที่จอดรถ -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="parking">พื้นที่จอดรถ <span style="color:var(--color-danger);">*</span></label>
+            <select id="parking" name="parking" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกพื้นที่จอดรถ —</option>
+              <option value="private">มีส่วนตัว</option>
+              <option value="common">มีส่วนกลาง</option>
+              <option value="none">ไม่มี</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- รายได้เฉลี่ยต่อเดือน -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="income">รายได้เฉลี่ยต่อเดือน <span style="color:var(--color-danger);">*</span></label>
+            <select id="income" name="income" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกช่วงรายได้ —</option>
+              <option value="lt15000">ต่ำกว่า 15,000 บาท</option>
+              <option value="15001-25000">15,001–25,000 บาท</option>
+              <option value="25001-35000">25,001–35,000 บาท</option>
+              <option value="35001-50000">35,001–50,000 บาท</option>
+              <option value="50001-75000">50,001–75,000 บาท</option>
+              <option value="75000+">75,000 บาทขึ้นไป</option>
+            </select>
+          </div>
+        </div>
+
+      </div><!-- /row -->
+    </div>
+
+    <!-- ========================================================
+         SECTION 2: ปัจจัยการเลือกซื้อ
+         ======================================================== -->
+    <div class="card-cardss mb-4 fade-in fade-in-delay-2">
+      <div class="section-header-cardss orange">
+        <i class="bi bi-list-check me-2"></i>ส่วนที่ 2 — ปัจจัยการเลือกซื้อรถยนต์
+      </div>
+
+      <div class="row g-3">
+
+        <!-- งบประมาณซื้อรถ -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="budget">งบประมาณซื้อรถ <span style="color:var(--color-danger);">*</span></label>
+            <select id="budget" name="budget" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกงบประมาณ —</option>
+              <option value="lt500000">ต่ำกว่า 500,000 บาท</option>
+              <option value="500001-800000">500,001–800,000 บาท</option>
+              <option value="800001-1200000">800,001–1,200,000 บาท</option>
+              <option value="1200001-1500000">1,200,001–1,500,000 บาท</option>
+              <option value="1500000+">1,500,000 บาทขึ้นไป</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ข้อกังวล/ปัญหาการใช้งาน -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="concern">ข้อกังวลหลักในการใช้รถ <span style="color:var(--color-danger);">*</span></label>
+            <select id="concern" name="concern" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกข้อกังวล —</option>
+              <option value="fuel_price">ราคาน้ำมัน</option>
+              <option value="electricity_cost">ค่าไฟฟ้า</option>
+              <option value="charging_station">สถานีชาร์จ</option>
+              <option value="gas_station">ปั๊มน้ำมัน</option>
+              <option value="service_center">ศูนย์บริการ/อะไหล่</option>
+              <option value="battery_life">อายุแบตเตอรี่</option>
+              <option value="maintenance">ค่าซ่อมบำรุง</option>
+              <option value="resale_value">มูลค่าขายต่อ</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- วัตถุประสงค์การใช้รถ -->
+        <div class="col-12">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="purpose">วัตถุประสงค์หลักในการใช้รถ <span style="color:var(--color-danger);">*</span></label>
+            <select id="purpose" name="purpose" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกวัตถุประสงค์ —</option>
+              <option value="commute">เดินทางไปทำงาน/เรียน</option>
+              <option value="trade">ค้าขาย/ธุรกิจ</option>
+              <option value="travel">ท่องเที่ยว</option>
+              <option value="convenience">ความสะดวกสบายทั่วไป</option>
+              <option value="avoid_public">หลีกเลี่ยงการใช้ขนส่งมวลชน</option>
+            </select>
+          </div>
+        </div>
+
+      </div><!-- /row -->
+    </div>
+
+    <!-- Submit -->
+    <div class="text-center fade-in fade-in-delay-3" style="margin-top:8px;">
+      <button type="submit" class="btn-cardss-primary" style="padding:16px 48px;font-size:16px;">
+        <i class="bi bi-cpu"></i> วิเคราะห์ผล
+      </button>
+      <p style="font-size:13px;color:var(--text-muted);margin-top:12px;">
+        <i class="bi bi-shield-check me-1"></i>ข้อมูลของคุณจะถูกเก็บเป็นความลับและใช้เพื่อการวิจัยเท่านั้น
+      </p>
+    </div>
+
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Validate all selects before submit
+document.getElementById('predictBuyForm').addEventListener('submit', function(e) {
+  const selects = this.querySelectorAll('select[required]');
+  let valid = true;
+  selects.forEach(function(sel) {
+    if (!sel.value) {
+      sel.style.borderColor = 'var(--brand-primary)';
+      sel.style.boxShadow = '0 0 0 3px var(--brand-primary-light, #EEF2FD)';
+      valid = false;
+    } else {
+      sel.style.borderColor = '';
+      sel.style.boxShadow = '';
+    }
+  });
+  if (!valid) {
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Show error banner
+    const banner = document.createElement('div');
+    banner.className = 'alert-cardss error fade-in';
+    banner.style.marginBottom = '16px';
+    banner.innerHTML = '<i class="bi bi-exclamation-circle"></i> กรุณากรอกข้อมูลให้ครบทุกช่อง';
+    const form = document.getElementById('predictBuyForm');
+    const existing = form.querySelector('.alert-cardss.error');
+    if (existing) existing.remove();
+    form.insertBefore(banner, form.firstChild);
+  }
+});
+
+// Remove red border on change
+document.querySelectorAll('select').forEach(function(sel) {
+  sel.addEventListener('change', function() {
+    this.style.borderColor = '';
+    this.style.boxShadow = '';
+  });
+});
+</script>
+{% endblock %}

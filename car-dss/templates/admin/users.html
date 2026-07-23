@@ -1,0 +1,41 @@
+{% extends 'admin/base.html' %}
+{% block title %}Admin — ผู้ใช้{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h3 class="mb-0">ผู้ใช้ ({{ users|length }})</h3>
+  <form class="d-flex gap-2" method="get">
+    <input class="form-control form-control-sm" type="text" name="q" value="{{ q }}" placeholder="ค้นหา username..." style="width:240px;">
+    <button class="btn btn-sm btn-dark">ค้นหา</button>
+    {% if q %}<a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin_users') }}">ล้าง</a>{% endif %}
+  </form>
+</div>
+
+<div class="card-admin p-0" style="overflow:hidden;">
+  <table class="table mb-0" style="font-size:14px;">
+    <thead style="background:#f8f9fa;">
+      <tr>
+        <th style="padding:14px 20px;">ชื่อผู้ใช้</th>
+        <th>สมัครเมื่อ</th>
+        <th style="width:120px;text-align:right;padding-right:20px;">การจัดการ</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td style="padding:14px 20px;"><strong>{{ u.username }}</strong></td>
+        <td class="text-muted">{{ u.created_at }}</td>
+        <td style="text-align:right;padding-right:20px;">
+          <form method="post" action="{{ url_for('admin_users_delete', username=u.username) }}"
+                onsubmit="return confirm('ลบผู้ใช้ {{ u.username }}?');" style="display:inline;">
+            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> ลบ</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="3" class="text-center text-muted py-4">ไม่มีผู้ใช้</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="text-muted mt-3" style="font-size:12px;">* แสดงเฉพาะผู้ใช้ที่สมัครผ่าน local mode (ไม่มี Firebase) — ผู้ใช้ Firebase ต้องจัดการผ่าน Firebase Console</p>
+{% endblock %}

@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}ผลพยากรณ์ประเภทเชื้อเพลิง — CarDSS{% endblock %}
+
+{% block content %}
+<div class="page-container" style="padding-top:56px;padding-bottom:56px;">
+
+  <!-- Step indicator -->
+  <div class="steps fade-in">
+    <div class="step-item">
+      <div class="step-circle done"><i class="bi bi-check-lg" style="font-size:14px;"></i></div>
+      <span class="step-label">พยากรณ์ซื้อ/ไม่ซื้อ</span>
+    </div>
+    <div class="step-line done"></div>
+    <div class="step-item">
+      <div class="step-circle done"><i class="bi bi-check-lg" style="font-size:14px;"></i></div>
+      <span class="step-label">ประเภทเชื้อเพลิง</span>
+    </div>
+    <div class="step-line done"></div>
+    <div class="step-item">
+      <div class="step-circle active">3</div>
+      <span class="step-label active">Dashboard</span>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <div class="text-center fade-in mb-4">
+    <div style="margin-bottom:12px;">
+      <span class="mock-tag">{{ result.model_used }}</span>
+    </div>
+    <h1 class="result-title">ผลพยากรณ์ประเภทเชื้อเพลิง</h1>
+    <p class="result-subtitle">ระบบวิเคราะห์แล้วและแนะนำประเภทเชื้อเพลิงที่เหมาะสมกับคุณดังนี้</p>
+  </div>
+
+  <!-- Fuel type result cards -->
+  <div class="row g-3 fade-in fade-in-delay-1 mb-4">
+
+    {% set fuel_order = result.scores | dictsort(by='value') | reverse | list %}
+
+    {% for fuel_name, score in fuel_order %}
+      {% set is_recommended = loop.first %}
+      {% set fuel_key = 'ev' if fuel_name == 'EV' else ('hybrid' if fuel_name == 'Hybrid' else 'ice') %}
+      {% set fuel_icon = 'bi-lightning-charge-fill' if fuel_name == 'EV' else ('bi-battery-charging' if fuel_name == 'Hybrid' else 'bi-fuel-pump-fill') %}
+      {% set fuel_thai = 'รถยนต์ไฟฟ้า (EV)' if fuel_name == 'EV' else ('รถยนต์ไฮบริด' if fuel_name == 'Hybrid' else 'รถยนต์สันดาป (ICE)') %}
+      {% set fuel_color = 'var(--color-ev)' if fuel_name == 'EV' else ('var(--color-hybrid)' if fuel_name == 'Hybrid' else 'var(--color-ice)') %}
+      {% set fuel_desc = 'ประหยัดค่าพลังงาน เหมาะกับการขับในเมือง ลดมลพิษ' if fuel_name == 'EV' else ('สมดุลระหว่างประหยัดพลังงานและความสะดวกในการเติมเชื้อเพลิง' if fuel_name == 'Hybrid' else 'ราคาซ่อมบำรุงต่ำ สถานีบริการครอบคลุม เหมาะกับทางไกล') %}
+
+      <div class="col-12">
+        <div class="fuel-card {{ 'recommended' if is_recommended else '' }} {{ 'recommended-hybrid' if (is_recommended and fuel_name == 'Hybrid') else '' }} {{ 'recommended-ice' if (is_recommended and fuel_name == 'ICE') else '' }}">
+
+          {% if is_recommended %}
+          <div class="badge-recommended" style="background:{{ fuel_color }};">
+            <i class="bi bi-star-fill"></i> แนะนำอันดับ 1
+          </div>
+          {% endif %}
+
+          <div class="d-flex align-items-center justify-content-between gap-3" style="margin-top: {{ '8px' if is_recommended else '0' }};">
+            <div class="d-flex align-items-center gap-16" style="gap:16px;">
+              <div style="font-size:36px;width:52px;text-align:center;color:{{ fuel_color }};"><i class="bi {{ fuel_icon }}"></i></div>
+              <div>
+                <div style="font-size:18px;font-weight:500;color:var(--text-primary);margin-bottom:2px;">
+                  {{ fuel_thai }}
+                </div>
+                <div style="font-size:13px;color:var(--text-muted);">{{ fuel_desc }}</div>
+              </div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-size:32px;font-weight:500;color:{{ fuel_color }};line-height:1;">{{ score }}%</div>
+              <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin-top:2px;">ความเหมาะสม</div>
+            </div>
+          </div>
+
+          <!-- Progress bar -->
+          <div style="margin-top:14px;">
+            <div class="confidence-bar-wrap">
+              <div class="confidence-bar-fill {{ fuel_key }}"
+                   style="width:0%;"
+                   data-width="{{ score }}">
+              </div>
+            </div>
+          </div>
+
+          <!-- Badge -->
+          <div style="margin-top:10px;">
+            <span class="badge-cardss {{ fuel_key }}">
+              {% if fuel_name == 'EV' %}<i class="bi bi-lightning-charge-fill"></i> Electric Vehicle
+              {% elif fuel_name == 'Hybrid' %}<i class="bi bi-battery-charging"></i> Hybrid Electric
+              {% else %}<i class="bi bi-fuel-pump-fill"></i> Internal Combustion Engine
+              {% endif %}
+            </span>
+          </div>
+
+        </div>
+      </div>
+    {% endfor %}
+
+  </div>
+
+  <!-- Confidence + model stats -->
+  <div class="row g-3 fade-in fade-in-delay-2 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-value text-ev">{{ (result.confidence * 100) | round(1) }}%</div>
+        <div class="stat-label">ความมั่นใจ</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-value" style="font-size:16px;padding-top:6px;">
+          {{ result.model_used.split('(')[0].strip() }}
+        </div>
+        <div class="stat-label">โมเดลที่ใช้</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-value" style="font-size:18px;">Multi-class</div>
+        <div class="stat-label">ประเภทโมเดล</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-value" style="font-size:18px;">3</div>
+        <div class="stat-label">จำนวน Class</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary note -->
+  <div class="summary-card ev fade-in fade-in-delay-2 mb-4">
+    <div class="summary-card-title">
+      <i class="bi bi-lightbulb me-2 text-ev"></i>สรุปผลการวิเคราะห์
+    </div>
+    <div class="summary-card-text">
+      {% if result.result == 'ไฟฟ้า (EV)' %}
+      จากพฤติกรรมการใช้งานและทัศนคติของคุณ ระบบแนะนำ <strong>รถยนต์ไฟฟ้า (EV)</strong>
+      เนื่องจากคุณขับในระยะทางที่เหมาะสม ใส่ใจสิ่งแวดล้อม และมีสถานที่จอดรถส่วนตัวสำหรับการชาร์จ
+      {% elif result.result == 'ไฮบริด' %}
+      จากพฤติกรรมการใช้งานและทัศนคติของคุณ ระบบแนะนำ <strong>รถยนต์ไฮบริด</strong>
+      เนื่องจากคุณขับทั้งในและนอกเมือง และต้องการความยืดหยุ่นในการใช้เชื้อเพลิง
+      {% else %}
+      จากพฤติกรรมการใช้งานและทัศนคติของคุณ ระบบแนะนำ <strong>รถยนต์สันดาป (ICE)</strong>
+      เนื่องจากคุณเดินทางระยะไกล และต้องการความสะดวกในการเติมเชื้อเพลิง
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Action buttons -->
+  <div class="text-center fade-in fade-in-delay-3">
+    <a href="{{ url_for('recommend') }}" class="btn-cardss-primary" style="padding:16px 48px;font-size:16px;width:100%;justify-content:center;margin-bottom:12px;">
+      <i class="bi bi-car-front-fill"></i> ดูรถยนต์แนะนำ 5 รุ่น
+      <i class="bi bi-arrow-right ms-1"></i>
+    </a>
+    <a href="{{ url_for('dashboard') }}" class="btn-cardss-secondary" style="padding:14px 48px;font-size:15px;width:100%;justify-content:center;margin-bottom:12px;">
+      <i class="bi bi-bar-chart-line"></i> ดู Dashboard สรุปผล
+    </a>
+    <a href="{{ url_for('predict_buy_page') }}" class="btn-cardss-ghost" style="font-size:13px;">
+      <i class="bi bi-arrow-counterclockwise me-1"></i> เริ่มต้นใหม่
+    </a>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Animate all bars on load (staggered)
+window.addEventListener('load', function () {
+  const bars = document.querySelectorAll('.confidence-bar-fill[data-width]');
+  bars.forEach(function (bar, i) {
+    setTimeout(function () {
+      bar.style.width = bar.dataset.width + '%';
+    }, 300 + i * 200);
+  });
+});
+</script>
+{% endblock %}

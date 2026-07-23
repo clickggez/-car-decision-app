@@ -1,0 +1,31 @@
+{% extends 'admin/base.html' %}
+{% block title %}Admin — ภาพรวม{% endblock %}
+{% block content %}
+<h3 class="mb-4">ภาพรวมระบบ</h3>
+<div class="row g-3">
+  <div class="col-md-4">
+    <div class="card-admin">
+      <div class="text-muted" style="font-size:12px;">ผู้ใช้ทั้งหมด (local)</div>
+      <div style="font-size:32px;font-weight:600;">{{ stats.user_count }}</div>
+      <a href="{{ url_for('admin_users') }}" style="font-size:13px;">จัดการผู้ใช้ →</a>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-admin">
+      <div class="text-muted" style="font-size:12px;">รถในฐานข้อมูล</div>
+      <div style="font-size:32px;font-weight:600;">{{ stats.car_count }}</div>
+      <a href="{{ url_for('admin_cars') }}" style="font-size:13px;">จัดการรถ →</a>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-admin">
+      <div class="text-muted" style="font-size:12px;">แยกตามประเภท</div>
+      <div style="display:flex;gap:14px;margin-top:8px;">
+        <div><span class="badge-type badge-ev">EV</span> <strong>{{ stats.car_by_type.get('EV', 0) }}</strong></div>
+        <div><span class="badge-type badge-hybrid">Hybrid</span> <strong>{{ stats.car_by_type.get('Hybrid', 0) }}</strong></div>
+        <div><span class="badge-type badge-ice">ICE</span> <strong>{{ stats.car_by_type.get('ICE', 0) }}</strong></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

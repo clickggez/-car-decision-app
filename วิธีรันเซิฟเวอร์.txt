@@ -1,0 +1,28 @@
+
+● ไม่ต้องเริ่มใหม่หมด — ไฟล์ทั้งหมดที่แก้ไปยังอยู่ครบ (app.py, templates, css, รูปภาพ)
+
+  แค่เปิด cmd ใหม่แล้วรันเว็บอีกครั้ง:
+
+  cd C:\Users\click\Desktop\car-decision-app\car-dss
+  python app.py
+
+
+
+user: click
+pass : 12qwaszx
+
+
+
+ โปรเจกต์นี้เป็น Multi-Agent workspace ของ CarDSS
+  ก่อนเริ่มงาน ให้อ่านไฟล์ตามลำดับ:
+  1. .cursorrules
+  2. agent-docs/01-architecture.md
+  3. agent-docs/02-design-system.md
+  4. agent-docs/03-task-board.md
+  5. agent-docs/04-handoff.md (ด้านบนสุดคือล่าสุด)
+
+  แล้วเลือกงานจาก "สิ่งที่ต้องทำ" ใน task board
+  หลังทำเสร็จ ต้องอัปเดต task board + เขียน handoff log
+
+  หมายเหตุ: งานถัดไปที่ priority สูงสุดตอนนี้คือ QA: Edge cases ของ predict_fuel form — Agent ใหม่อ่าน handoff entry วันที่ 2026-04-20
+   จะเห็นว่าใช้โครงสร้างเทสเดียวกับ predict_buy ได้
