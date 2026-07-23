@@ -1,7 +1,6 @@
 flask
 flask-login
 firebase-admin
-firebase-functions
 scikit-learn
 pandas
 numpy

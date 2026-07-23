@@ -73,13 +73,13 @@ try:
         db = firestore.client()
         firebase_auth_available = True
         print("[OK] Firebase connected successfully (service account file)")
-    elif os.environ.get('K_SERVICE'):
-        # รันอยู่บน Cloud Functions/Cloud Run — ใช้ Application Default Credentials
-        # จาก runtime service account แทน ไม่ต้องมีไฟล์ key
-        firebase_admin.initialize_app()
+    elif os.environ.get('FIREBASE_SERVICE_ACCOUNT_JSON'):
+        # Render/host อื่นที่ไม่มีไฟล์ .json — วางเนื้อหา JSON ทั้งก้อนไว้ใน env var แทน
+        cred = credentials.Certificate(json.loads(os.environ['FIREBASE_SERVICE_ACCOUNT_JSON']))
+        firebase_admin.initialize_app(cred)
         db = firestore.client()
         firebase_auth_available = True
-        print("[OK] Firebase connected successfully (Application Default Credentials)")
+        print("[OK] Firebase connected successfully (env var credentials)")
     else:
         print(f"[WARNING] Firebase credentials not found at {config.FIREBASE_CREDENTIALS_PATH}")
         print("[WARNING] Running without Firebase — auth uses local session, data not persisted")
