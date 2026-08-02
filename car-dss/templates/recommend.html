@@ -36,8 +36,7 @@
     <div>
       <div class="result-banner-title">ระบบแนะนำ: {{ t.thai }}</div>
       <div class="result-banner-sub">
-        ความมั่นใจ {{ (fuel_pred.confidence * 100)|round(1) }}%
-        — {{ fuel_pred.model_used }}
+        {{ fuel_pred.model_used }}
         <span class="mock-tag" style="margin-left:8px;">Mock</span>
       </div>
     </div>

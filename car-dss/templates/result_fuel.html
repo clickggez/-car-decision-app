@@ -95,15 +95,9 @@
 
   </div>
 
-  <!-- Confidence + model stats -->
+  <!-- Model stats -->
   <div class="row g-3 fade-in fade-in-delay-2 mb-4">
-    <div class="col-6 col-md-3">
-      <div class="stat-card">
-        <div class="stat-value text-ev">{{ (result.confidence * 100) | round(1) }}%</div>
-        <div class="stat-label">ความมั่นใจ</div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md-4">
       <div class="stat-card">
         <div class="stat-value" style="font-size:16px;padding-top:6px;">
           {{ result.model_used.split('(')[0].strip() }}
@@ -111,13 +105,13 @@
         <div class="stat-label">โมเดลที่ใช้</div>
       </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md-4">
       <div class="stat-card">
         <div class="stat-value" style="font-size:18px;">Multi-class</div>
         <div class="stat-label">ประเภทโมเดล</div>
       </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md-4">
       <div class="stat-card">
         <div class="stat-value" style="font-size:18px;">3</div>
         <div class="stat-label">จำนวน Class</div>

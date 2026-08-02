@@ -9,3 +9,4 @@ imbalanced-learn
 gunicorn
 requests
 scipy
+xgboost

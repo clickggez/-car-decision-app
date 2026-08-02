@@ -51,34 +51,11 @@
       {% endif %}
     </p>
 
-    <!-- Confidence bar -->
-    <div style="max-width:320px;margin:0 auto 8px;">
-      <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:6px;">
-        <span style="color:var(--text-muted);">ความมั่นใจของโมเดล</span>
-        <span style="color:{{ '#00A550' if result.result == 'ซื้อ' else '#C40818' }};">
-          {{ (result.confidence * 100) | round(1) }}%
-        </span>
-      </div>
-      <div class="confidence-bar-wrap">
-        <div class="confidence-bar-fill {% if result.result != 'ซื้อ' %}{% endif %}"
-             style="width:0%;background:{{ '#00A550' if result.result == 'ซื้อ' else '#C40818' }};"
-             data-width="{{ (result.confidence * 100) | round(1) }}">
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- Stat cards -->
   <div class="row g-3 fade-in fade-in-delay-1 mb-4">
-    <div class="col-6 col-md-3">
-      <div class="stat-card">
-        <div class="stat-value" style="color:{{ '#00A550' if result.result == 'ซื้อ' else '#C40818' }};">
-          {{ (result.confidence * 100) | round(1) }}%
-        </div>
-        <div class="stat-label">ความมั่นใจ</div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md-6">
       <div class="stat-card">
         <div class="stat-value" style="font-size:16px;padding-top:6px;">
           {{ result.model_used.split('(')[0].strip() }}
@@ -86,15 +63,7 @@
         <div class="stat-label">โมเดลที่ใช้</div>
       </div>
     </div>
-    <div class="col-6 col-md-3">
-      <div class="stat-card">
-        <div class="stat-value" style="font-size:18px;">
-          {% if result.confidence >= 0.8 %}สูง{% elif result.confidence >= 0.6 %}ปานกลาง{% else %}ต่ำ{% endif %}
-        </div>
-        <div class="stat-label">ระดับความเชื่อมั่น</div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md-6">
       <div class="stat-card">
         <div class="stat-value" style="font-size:18px;">Binary</div>
         <div class="stat-label">ประเภทโมเดล</div>
@@ -161,15 +130,3 @@
 </div>
 {% endblock %}
 
-{% block extra_scripts %}
-<script>
-// Animate confidence bar on load
-window.addEventListener('load', function () {
-  const bar = document.querySelector('.confidence-bar-fill');
-  if (bar) {
-    const target = bar.dataset.width || '0';
-    setTimeout(() => { bar.style.width = target + '%'; }, 300);
-  }
-});
-</script>
-{% endblock %}
