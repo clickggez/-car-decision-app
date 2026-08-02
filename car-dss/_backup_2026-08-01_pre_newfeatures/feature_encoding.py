@@ -33,44 +33,13 @@ BUY_CAT_COLS = [
     # (ผิดเงื่อนไข Chi-square — ค่า p ที่ได้ไม่น่าเชื่อถือ) จึงตัดออก เก็บเฉพาะตัวที่
     # ผ่านเงื่อนไขสถิติจริง (purpose_housing: 0% cell < 5)
     "purpose_housing",  # purpose x housing_status — วัตถุประสงค์ใช้รถอาจสัมพันธ์กับสถานะที่พัก
-    # ---- ฟีเจอร์จากคำถามใหม่ (2026-08-01) ----
-    # เพิ่มคำถามต่อท้ายแบบสอบถามเดิม (ไม่แก้ของเดิม) ตามที่อาจารย์อนุญาต
-    # กลุ่ม EV-domain 3 ตัวนี้ถามไว้เพื่อ predict_fuel แต่ chi-square พบว่ามีนัยสำคัญ
-    # กับ label ของ predict_buy แทน (ดู agent-docs/01-architecture.md) จึงใส่เป็น
-    # ผู้สมัครของทั้งสองโมเดล ปล่อยให้ feature selection ตัดสินตามข้อมูลจริง
-    "charging_access",       # จุดชาร์จที่บ้าน/ที่ทำงาน
-    "tco_awareness",         # ความรู้เรื่องต้นทุนรวม (ค่าไฟ vs ค่าน้ำมัน)
-    "incentive_awareness",   # ความรู้เรื่องสิทธิประโยชน์ภาครัฐ
 ]
 
 # ฟีเจอร์เชิงประกอบ (composite/interaction) — คำนวณจากฟิลด์ฟอร์มเดิมทั้งหมด
 # ไม่ใช่ข้อมูลใหม่จากแบบสอบถาม (2026-07-29, ดู agent-docs/01-architecture.md)
 BUY_NUM_COLS = [
     "income_budget_gap",   # งบซื้อรถเทียบกับรายได้ (ยิ่งสูง = งบเกินตัวมากกว่ารายได้บ่งชี้)
-    # ---- ฟีเจอร์จากคำถามใหม่ (2026-08-01) — กรอบ Theory of Planned Behavior ----
-    # วัดเจตนา/ทัศนคติตรงๆ แทนการอนุมานจาก demographic (Likert 1-7)
-    "intention",         # เจตนาซื้อภายใน 6 เดือน (TPB: intention)
-    "attitude",          # การมีรถสำคัญกับชีวิตเพียงใด (TPB: attitude)
-    "subjective_norm",   # คนใกล้ชิดคิดว่าควรมีรถหรือไม่ (TPB: subjective norm)
-    "pbc_financial",     # ความพร้อมทางการเงินตอนนี้ (TPB: perceived behavioral control)
-    # เหตุการณ์กระตุ้นเชิงสถานการณ์ (life event) — multi-select แตกเป็น multi-hot
-    # เพราะถ้าเก็บเป็นหมวดหมู่รวม จะได้ 25 combo บน n=500 ทำให้ chi-square ไม่ valid
-    # (70% ของ cell มี expected count < 5)
-    "evt_job",           # เปลี่ยนงาน/ที่ทำงานใหม่
-    "evt_move",          # ย้ายที่อยู่อาศัย
-    "evt_child",         # มีบุตร/สมาชิกครอบครัวเพิ่ม
-    "evt_income",        # รายได้เปลี่ยนแปลงอย่างมีนัยสำคัญ
 ]
-
-# ค่าที่ใช้เมื่อฟอร์มเว็บยังไม่มีคำถามใหม่ (เว็บ deploy อยู่บนฟอร์มเดิม 13 ฟิลด์)
-# 4 = กลางของสเกล 1-7, "" = ให้ไปเข้า mode-fill เหมือนฟิลด์หมวดหมู่ที่ขาดหาย
-NEW_BUY_DEFAULTS = {
-    "intention": 4, "attitude": 4, "subjective_norm": 4, "pbc_financial": 4,
-    "evt_job": 0, "evt_move": 0, "evt_child": 0, "evt_income": 0,
-    "charging_access": "", "tco_awareness": "", "incentive_awareness": "",
-}
-
-LIFE_EVENT_TOKENS = ["job", "move", "child", "income"]
 
 INCOME_ORDER = ["lt15000", "15001-25000", "25001-35000", "35001-50000", "50001-75000", "75000+"]
 BUDGET_ORDER = ["lt500000", "500001-800000", "800001-1200000", "1200001-1500000", "1500000+"]
@@ -116,16 +85,6 @@ def buy_features_from_web(form):
     }
     feat["purpose_housing"] = f"{purpose}|{housing_status}"
     feat["income_budget_gap"] = _rank01(budget, BUDGET_ORDER) - _rank01(income, INCOME_ORDER)
-
-    # คำถามใหม่ (2026-08-01) — ฟอร์มเว็บปัจจุบันยังไม่มีคำถามเหล่านี้ จึงใช้ค่ากลาง
-    # เป็น default เพื่อไม่ให้ inference พัง (train/serve skew guard เดิมยังทำงานปกติ)
-    for key in ("intention", "attitude", "subjective_norm", "pbc_financial"):
-        feat[key] = _num(form.get(key), default=NEW_BUY_DEFAULTS[key])
-    events = _as_list(form.get("life_events"))
-    for tok in LIFE_EVENT_TOKENS:
-        feat["evt_" + tok] = 1 if tok in events else 0
-    for key in ("charging_access", "tco_awareness", "incentive_awareness"):
-        feat[key] = _s(form.get(key))
     return feat
 
 
@@ -145,11 +104,6 @@ FUEL_CAT_COLS = [
     "prev_car",
     # หมายเหตุ: ลอง prev_car x usage_type (2026-07-30) แต่ 48% ของ cell มี expected
     # count < 5 (ผิดเงื่อนไข Chi-square) และ p=0.585 ไม่มีนัยสำคัญอยู่แล้ว — ตัดออก
-    # ---- ฟีเจอร์จากคำถามใหม่ (2026-08-01) — กรอบงานวิจัย EV adoption ----
-    "charging_access",       # จุดชาร์จที่บ้าน/ที่ทำงาน (งานวิจัยระบุเป็นปัจจัยอันดับ 1 ของการเลือก EV)
-    "ev_exposure",           # เคยทดลองขับ/นั่ง EV หรือ Hybrid มาก่อนหรือไม่
-    "tco_awareness",         # ความรู้เรื่องต้นทุนรวม (ค่าไฟเทียบค่าน้ำมัน)
-    "incentive_awareness",   # ความรู้เรื่องสิทธิประโยชน์ภาครัฐ
 ]
 
 FUEL_NUM_COLS = [
@@ -159,17 +113,7 @@ FUEL_NUM_COLS = [
     # ฟีเจอร์เชิงประกอบ (composite/interaction, 2026-07-29) — คำนวณจากฟิลด์เดิมทั้งหมด
     "mileage_intensity",   # frequency x distance (norm 0-1) — ความเข้มของการใช้งานรวม
     "tech_cost_balance",   # tech_env_concern - resale_maintenance_concern — เอียงไปทางสนใจเทคโนโลยี(+) หรือค่าใช้จ่าย(-)
-    # ---- ฟีเจอร์จากคำถามใหม่ (2026-08-01) ----
-    "range_anxiety",       # กังวลแบตหมดระหว่างทาง (Likert 1-7) — วัดทัศนคติตรง แทนการอนุมานจากระยะทาง
-    "nep_score",           # New Ecological Paradigm 5 ข้อ เฉลี่ย (1-5) ข้อสุดท้าย reverse-worded แล้ว
 ]
-
-# ค่า default เมื่อฟอร์มเว็บยังไม่มีคำถามใหม่ (เว็บ deploy อยู่บนฟอร์มเดิม)
-NEW_FUEL_DEFAULTS = {
-    "range_anxiety": 4,   # กลางของสเกล 1-7
-    "nep_score": 3.0,     # กลางของสเกล 1-5
-    "charging_access": "", "ev_exposure": "", "tco_awareness": "", "incentive_awareness": "",
-}
 
 FREQUENCY_ORDER = ["occasional", "1-2days", "3-4days", "5-6days", "everyday"]
 DISTANCE_ORDER = ["lt10", "10-30", "31-50", "51-70", "71-90", "90+"]
@@ -220,16 +164,6 @@ def fuel_features_from_web(form):
     feat["priority_count"] = len(selected)
     feat["mileage_intensity"] = _rank01(frequency, FREQUENCY_ORDER) * _rank01(distance, DISTANCE_ORDER)
     feat["tech_cost_balance"] = tech_env_concern - resale_maintenance_concern
-
-    # คำถามใหม่ (2026-08-01) — ฟอร์มเว็บปัจจุบันยังไม่มี จึงใช้ค่ากลางเป็น default
-    for key in ("charging_access", "ev_exposure", "tco_awareness", "incentive_awareness"):
-        feat[key] = _s(form.get(key))
-    feat["range_anxiety"] = _num(form.get("range_anxiety"), default=NEW_FUEL_DEFAULTS["range_anxiety"])
-    nep = form.get("nep_score")
-    try:
-        feat["nep_score"] = float(nep)
-    except (TypeError, ValueError):
-        feat["nep_score"] = NEW_FUEL_DEFAULTS["nep_score"]
     return feat
 
 

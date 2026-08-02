@@ -188,99 +188,6 @@ COL_LIKERT_MAINTENANCE = 28   # "ค่าใช้จ่ายในการ�
 
 
 # ============================================================
-# คำถามใหม่ที่เพิ่มต่อท้ายแบบสอบถาม (2026-08-01) — คอลัมน์ 44-58
-# แบบสอบถามเดิม (คอลัมน์ 0-43) ไม่ถูกแก้ ตามเงื่อนไขที่อาจารย์ให้ไว้
-# ไฟล์เก่าที่ไม่มีคอลัมน์เหล่านี้ถูกย้ายไป files/user_from_archive/ แล้ว
-# ============================================================
-
-COL_INTENTION = 44        # เจตนาซื้อภายใน 6 เดือน (1-7)
-COL_ATTITUDE = 45         # การมีรถสำคัญเพียงใด (1-7)
-COL_SUBJ_NORM = 46        # คนใกล้ชิดคิดว่าควรมีรถ (1-7)
-COL_PBC = 47              # ความพร้อมทางการเงิน (1-7)
-COL_LIFE_EVENTS = 48      # เหตุการณ์ 6 เดือนที่ผ่านมา (multi-select)
-COL_CHARGING = 49         # จุดชาร์จที่บ้าน/ที่ทำงาน
-COL_EV_EXPOSURE = 50      # เคยลองขับ EV/Hybrid
-COL_RANGE_ANXIETY = 51    # กังวลแบตหมดระหว่างทาง (1-7)
-COL_TCO = 52              # ความรู้เรื่องต้นทุนรวม
-COL_INCENTIVE = 53        # ความรู้เรื่องสิทธิประโยชน์ภาครัฐ
-COL_NEP_START = 54        # NEP 5 ข้อ (54-58) ข้อสุดท้าย (58) เป็น reverse-worded
-COL_NEP_END = 58
-
-CHARGING_ACCESS = {
-    "มีอยู่แล้ว": "has",
-    "ไม่มีแต่สามารถติดตั้งเพิ่มได้": "installable",
-    "ไม่มีและไม่สามารถติดตั้งได้ (เช่น คอนโด/หอพักที่ไม่อนุญาต)": "cannot",
-    "ไม่แน่ใจ": "unsure",
-}
-EV_EXPOSURE = {
-    "เคยทั้ง EV และ Hybrid": "both",
-    "เคยเฉพาะ EV": "ev_only",
-    "เคยเฉพาะ Hybrid": "hybrid_only",
-    "ไม่เคยเลย": "none",
-}
-TCO_AWARENESS = {
-    "ทราบ และคิดว่าถูกกว่ามาก": "much_cheaper",
-    "ทราบ แต่คิดว่าถูกกว่าเล็กน้อย": "slightly_cheaper",
-    "ทราบ แต่คิดว่าไม่ต่างกันมาก": "similar",
-    "ไม่ทราบเลย": "unknown",
-}
-INCENTIVE_AWARENESS = {
-    "ทราบและเคยพิจารณาใช้สิทธิ์": "aware_considered",
-    "ทราบแต่ไม่เคยพิจารณา": "aware_only",
-    "ไม่ทราบเลย": "unknown",
-}
-# life event (multi-select) -> multi-hot token; "ไม่มีเหตุการณ์ข้างต้น" = ไม่ติดธงใดเลย
-LIFE_EVENTS = {
-    "เปลี่ยนงาน/ที่ทำงานใหม่": "job",
-    "ย้ายที่อยู่อาศัย": "move",
-    "มีบุตร/สมาชิกครอบครัวเพิ่ม": "child",
-    "รายได้เปลี่ยนแปลงอย่างมีนัยสำคัญ (เพิ่มขึ้นหรือลดลง)": "income",
-}
-
-NEP_REVERSE_OFFSET = 4    # ข้อที่ 5 (index 58) เป็น reverse-worded -> กลับคะแนน
-
-
-def _likert(cell, default=4):
-    """ดึงตัวเลขนำหน้าจากค่า Likert เช่น '5 (เห็นด้วยอย่างยิ่ง)' -> 5"""
-    if pd.isna(cell):
-        return default
-    s = str(cell).strip()
-    num = ""
-    for ch in s:
-        if ch.isdigit():
-            num += ch
-        else:
-            break
-    try:
-        return int(num)
-    except ValueError:
-        return default
-
-
-def _all_mapped(cell, mapping):
-    """multi-select: คืน web token ทุกตัวที่ map ได้ (ต่างจาก _first_mapped ที่คืนตัวแรก)"""
-    if pd.isna(cell):
-        return []
-    out = []
-    for t in str(cell).split(","):
-        t = t.strip()
-        if t in mapping and mapping[t] not in out:
-            out.append(mapping[t])
-    return out
-
-
-def _nep_score(row):
-    """คะแนนเฉลี่ย New Ecological Paradigm 5 ข้อ (1-5) — ข้อสุดท้าย reverse-worded"""
-    vals = []
-    for i in range(COL_NEP_START, COL_NEP_END + 1):
-        v = _likert(row.iloc[i], default=3)
-        if i == COL_NEP_START + NEP_REVERSE_OFFSET:
-            v = 6 - v          # กลับคะแนน (1<->5) ตามหลัก reverse-worded item
-        vals.append(v)
-    return float(np.mean(vals)) if vals else 3.0
-
-
-# ============================================================
 # ฟีเจอร์เชิงลำดับ (ordinal) — ใช้ OrdinalEncoder ตามลำดับจริงแทน One-Hot
 # (2026-07-29) ต่างจาก housing_type/gender/occupation ฯลฯ ที่เป็นข้อมูลเชิงกลุ่ม
 # (nominal, ไม่มีลำดับ) ตัวแปรเหล่านี้มีลำดับตามธรรมชาติชัดเจน (อายุ/รายได้/งบ
@@ -314,12 +221,6 @@ def handle_missing_and_outliers(X, num_cols):
         col = pd.to_numeric(X[c], errors="coerce")
         mean_val = col.mean()
         col = col.fillna(mean_val)
-        # ข้ามการตรวจ outlier สำหรับตัวแปรทวิภาค (0/1) — IQR ของคอลัมน์ที่ค่าส่วนใหญ่
-        # เป็น 0 จะได้ Q1=Q3=0 ทำให้ค่า 1 ทุกตัวถูกตัดสินเป็น "ค่าผิดปกติ" แล้วแทนด้วย
-        # มัธยฐาน (0) = ลบข้อมูลของฟีเจอร์ทิ้งทั้งคอลัมน์ (2026-08-01, ฟีเจอร์ evt_*)
-        if col.dropna().isin([0, 1]).all():
-            X[c] = col
-            continue
         q1, q3 = col.quantile(0.25), col.quantile(0.75)
         iqr = q3 - q1
         lower, upper = q1 - 1.5 * iqr, q3 + 1.5 * iqr
@@ -786,15 +687,6 @@ def train_buy(df):
             "budget": BUDGET.get(str(r.iloc[18]).strip(), ""),
             "concern": _first_mapped(r.iloc[15], CONCERN),
             "purpose": _first_mapped(r.iloc[19], PURPOSE),
-            # คำถามใหม่ (2026-08-01) — TPB constructs + life event + EV-domain
-            "intention": _likert(r.iloc[COL_INTENTION]),
-            "attitude": _likert(r.iloc[COL_ATTITUDE]),
-            "subjective_norm": _likert(r.iloc[COL_SUBJ_NORM]),
-            "pbc_financial": _likert(r.iloc[COL_PBC]),
-            "life_events": _all_mapped(r.iloc[COL_LIFE_EVENTS], LIFE_EVENTS),
-            "charging_access": CHARGING_ACCESS.get(str(r.iloc[COL_CHARGING]).strip(), ""),
-            "tco_awareness": TCO_AWARENESS.get(str(r.iloc[COL_TCO]).strip(), ""),
-            "incentive_awareness": INCENTIVE_AWARENESS.get(str(r.iloc[COL_INCENTIVE]).strip(), ""),
         }
         rows.append(fe.buy_features_from_web(web))
         labels.append(lab)
@@ -854,13 +746,6 @@ def train_fuel(df):
             # proxy: แบบสอบถามไม่มีคำถามตรงตัว ใช้ 7P Likert ที่ใกล้เคียงที่สุดแทน
             "tech_env_concern": r.iloc[COL_LIKERT_ENERGY_FIT],
             "resale_maintenance_concern": r.iloc[COL_LIKERT_MAINTENANCE],
-            # คำถามใหม่ (2026-08-01) — กรอบงานวิจัย EV adoption
-            "charging_access": CHARGING_ACCESS.get(str(r.iloc[COL_CHARGING]).strip(), ""),
-            "ev_exposure": EV_EXPOSURE.get(str(r.iloc[COL_EV_EXPOSURE]).strip(), ""),
-            "tco_awareness": TCO_AWARENESS.get(str(r.iloc[COL_TCO]).strip(), ""),
-            "incentive_awareness": INCENTIVE_AWARENESS.get(str(r.iloc[COL_INCENTIVE]).strip(), ""),
-            "range_anxiety": _likert(r.iloc[COL_RANGE_ANXIETY]),
-            "nep_score": _nep_score(r),
         }
         rows.append(fe.fuel_features_from_web(web))
         labels.append(lab)

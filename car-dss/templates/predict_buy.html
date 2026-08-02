@@ -35,16 +35,6 @@
     <p>กรอกข้อมูลส่วนบุคคลและปัจจัยการเลือกซื้อเพื่อให้ระบบวิเคราะห์ความเหมาะสม</p>
   </div>
 
-  <!-- Mock / Real model notice -->
-  <div class="alert-cardss info fade-in" style="margin-bottom:28px;">
-    <i class="bi bi-info-circle"></i>
-    {% if use_mock %}
-    <span>ขณะนี้ระบบอยู่ในโหมด <span class="mock-tag">Mock</span> — ผลลัพธ์เป็นข้อมูลจำลอง (โมเดล ML จะพร้อมใช้เมื่อเก็บข้อมูลครบ)</span>
-    {% else %}
-    <span>ขณะนี้ระบบใช้ <span class="mock-tag">โมเดล ML จริง</span> — ผลลัพธ์มาจากการพยากรณ์ด้วยข้อมูลที่เทรนไว้ (ยังเป็นชุดข้อมูลทดสอบ ไม่ใช่ผลสำรวจจริง)</span>
-    {% endif %}
-  </div>
-
   <form method="POST" action="{{ url_for('api_predict_buy') }}" id="predictBuyForm" novalidate>
 
     <!-- ========================================================
