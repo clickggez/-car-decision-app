@@ -38,7 +38,10 @@ from sklearn.preprocessing import OneHotEncoder, MinMaxScaler, OrdinalEncoder
 from sklearn.pipeline import Pipeline as SkPipeline
 from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
-from sklearn.ensemble import RandomForestClassifier, HistGradientBoostingClassifier, VotingClassifier, StackingClassifier
+from sklearn.ensemble import (
+    RandomForestClassifier, HistGradientBoostingClassifier, VotingClassifier,
+    StackingClassifier, ExtraTreesClassifier
+)
 from sklearn.linear_model import LogisticRegression
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.preprocessing import LabelEncoder
@@ -49,7 +52,7 @@ from sklearn.metrics import accuracy_score, classification_report
 from sklearn.feature_selection import f_classif, mutual_info_classif
 
 from imblearn.pipeline import Pipeline
-from imblearn.over_sampling import SMOTE
+from imblearn.over_sampling import SMOTE, BorderlineSMOTE
 
 from models import feature_encoding as fe
 
@@ -463,12 +466,15 @@ def make_smote(y, random_state=RANDOM_STATE):
               f" (ต้องการอย่างน้อย 2) ใช้ class_weight='balanced' แทน")
         return None
     k = min(5, int(min_count) - 1)
-    print(f"      [SMOTE] เปิดใช้งาน k_neighbors={k} (class น้อยสุด={min_count} ตัวอย่าง)")
-    return SMOTE(k_neighbors=k, random_state=random_state)
+    print(f"      [SMOTE] เปิดใช้งาน BorderlineSMOTE k_neighbors={k} (class น้อยสุด={min_count} ตัวอย่าง)")
+    try:
+        return BorderlineSMOTE(k_neighbors=k, random_state=random_state)
+    except Exception:
+        return SMOTE(k_neighbors=k, random_state=random_state)
 
 
 # ============================================================
-# เทรนและเลือกโมเดลที่ดีที่สุด (SVM vs ANN)
+# เทรนและเลือกโมเดลที่ดีที่สุด (SVM vs ANN vs ET vs RF vs GB vs XGB)
 # ============================================================
 
 
@@ -476,7 +482,7 @@ def make_smote(y, random_state=RANDOM_STATE):
 # hidden layer, learning rate สำหรับ ANN) — จูนแยกกันต่อโมเดล (buy vs fuel)
 # เพราะความซับซ้อนของ target ไม่เท่ากัน (2 class vs 3 class)
 #
-# ขยายเพิ่ม (2026-07-29): เพิ่ม Random Forest + HistGradientBoosting เป็น
+# ขยายเพิ่ม (2026-07-29/2026-08-02): เพิ่ม ExtraTrees + Random Forest + HistGradientBoosting เป็น
 # candidate นอกเหนือจาก SVM/ANN ที่เล่มระบุ (ผู้ใช้อนุมัติให้เปลี่ยนวิธีการในบทที่ 3
 # ได้ทุกอย่าง ยกเว้นแบบสอบถาม) — โมเดลแบบ tree-ensemble ทนทานต่อฟีเจอร์ที่มี
 # ความสัมพันธ์แบบ non-linear/interaction กับ target ได้ดีกว่า SVM/ANN บนข้อมูลที่
@@ -522,6 +528,15 @@ def _model_specs():
             {
                 "clf__C": [0.5, 1, 3, 5, 10],
                 "clf__gamma": ["scale", "auto", 0.01, 0.1, 0.5, 1],
+            },
+        ),
+        "ET": (
+            ExtraTreesClassifier(class_weight="balanced", random_state=RANDOM_STATE),
+            {
+                "clf__n_estimators": [100, 200, 300],
+                "clf__max_depth": [None, 5, 10],
+                "clf__min_samples_leaf": [1, 2, 4],
+                "clf__max_features": ["sqrt", "log2"],
             },
         ),
         "ANN": (

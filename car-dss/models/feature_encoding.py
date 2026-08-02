@@ -47,6 +47,7 @@ BUY_CAT_COLS = [
 # ไม่ใช่ข้อมูลใหม่จากแบบสอบถาม (2026-07-29, ดู agent-docs/01-architecture.md)
 BUY_NUM_COLS = [
     "income_budget_gap",   # งบซื้อรถเทียบกับรายได้ (ยิ่งสูง = งบเกินตัวมากกว่ารายได้บ่งชี้)
+    "financial_readiness_gap", # ช่องว่างความพร้อมทางการเงินจริงเทียบงบซื้อ
     # ---- ฟีเจอร์จากคำถามใหม่ (2026-08-01) — กรอบ Theory of Planned Behavior ----
     # วัดเจตนา/ทัศนคติตรงๆ แทนการอนุมานจาก demographic (Likert 1-7)
     "intention",         # เจตนาซื้อภายใน 6 เดือน (TPB: intention)
@@ -121,6 +122,7 @@ def buy_features_from_web(form):
     # เป็น default เพื่อไม่ให้ inference พัง (train/serve skew guard เดิมยังทำงานปกติ)
     for key in ("intention", "attitude", "subjective_norm", "pbc_financial"):
         feat[key] = _num(form.get(key), default=NEW_BUY_DEFAULTS[key])
+    feat["financial_readiness_gap"] = feat["income_budget_gap"] + (4.0 - feat["pbc_financial"]) / 3.0
     events = _as_list(form.get("life_events"))
     for tok in LIFE_EVENT_TOKENS:
         feat["evt_" + tok] = 1 if tok in events else 0
@@ -162,6 +164,7 @@ FUEL_NUM_COLS = [
     # ---- ฟีเจอร์จากคำถามใหม่ (2026-08-01) ----
     "range_anxiety",       # กังวลแบตหมดระหว่างทาง (Likert 1-7) — วัดทัศนคติตรง แทนการอนุมานจากระยะทาง
     "nep_score",           # New Ecological Paradigm 5 ข้อ เฉลี่ย (1-5) ข้อสุดท้าย reverse-worded แล้ว
+    "ev_readiness_index",  # ดัชนีความพร้อมในการเปลี่ยนเป็น EV (ประมวลผลจากจุดชาร์จ, ประสบการณ์, ทัศนคติ)
 ]
 
 # ค่า default เมื่อฟอร์มเว็บยังไม่มีคำถามใหม่ (เว็บ deploy อยู่บนฟอร์มเดิม)
@@ -230,6 +233,11 @@ def fuel_features_from_web(form):
         feat["nep_score"] = float(nep)
     except (TypeError, ValueError):
         feat["nep_score"] = NEW_FUEL_DEFAULTS["nep_score"]
+
+    ch_score = 1.0 if feat["charging_access"] == "has" else (0.5 if feat["charging_access"] == "installable" else 0.0)
+    exp_score = 1.0 if feat["ev_exposure"] in ("both", "ev_only") else (0.5 if feat["ev_exposure"] == "hybrid_only" else 0.0)
+    tco_score = 1.0 if feat["tco_awareness"] == "much_cheaper" else (0.5 if feat["tco_awareness"] == "slightly_cheaper" else 0.0)
+    feat["ev_readiness_index"] = ch_score + exp_score + tco_score + (feat["nep_score"] / 5.0) - (feat["range_anxiety"] / 7.0)
     return feat
 
 

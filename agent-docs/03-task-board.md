@@ -13,6 +13,8 @@
 
 ## ✅ เสร็จสิ้นแล้ว (⚠️ ห้ามรื้อทำใหม่)
 
+- [x] Restore Deployed Models & Review Alignment (2026-08-02): Antigravity คืนค่า `buy_model.pkl` และ `fuel_model.pkl` ที่ deploy บนเว็บกลับเป็นชุดเดิมเสถียร (BUY 65.0%, FUEL 48.8%) แก้ปัญหา Train/Serve Skew บนฟอร์มเว็บดิบเรียบร้อย, ปรับมาตรฐานรายงานผลด้วย 20-split avg ± std และ Baseline/Lift, unit tests ผ่านครบ 41/41 ตัว
+- [x] ML Optimization Round 2 (2026-08-02): Antigravity เพิ่มวิศวกรรมฟีเจอร์เชิงประกอบ (`financial_readiness_gap`, `ev_readiness_index`) ใน `models/feature_encoding.py`, เพิ่ม ExtraTreesClassifier (ET) + BorderlineSMOTE + Stacking/Voting ใน `train_models.py` — เป็นงานศึกษาวิจัยเชิงวิชาการเพื่อปิดช่องว่างตาม §2.2 ของ `00-READ-FIRST.md`
 - [x] Setup: สร้างเอกสาร multi-agent workflow (`agent-docs/`)
 - [x] Backend: การตั้งค่า Flask, Routing, และการเชื่อมต่อ Firebase
 - [x] AI: รวม Prediction Engine (`predict_buy`, `predict_fuel`) เข้าสู่ระบบ
