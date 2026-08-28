@@ -18,7 +18,7 @@
   <!-- รายการผลพยากรณ์ -->
   <div class="col-lg-4">
     <div class="card">
-      <div class="card-header bg-white fw-semibold">
+      <div class="card-header fw-semibold">
         ผลพยากรณ์ล่าสุด
         {% if source == 'firestore' %}
           <span class="badge bg-secondary ms-1">{{ records|length }} รายการ</span>
@@ -76,11 +76,11 @@
       </div>
 
       <div class="card mb-4">
-        <div class="card-header bg-white fw-semibold">เหตุผลหลัก (ปัจจัยที่ฉุดผลมากที่สุด)</div>
+        <div class="card-header fw-semibold">เหตุผลหลัก (ปัจจัยที่ฉุดผลมากที่สุด)</div>
         {% if exp.reasons %}
           <div class="table-responsive">
             <table class="table mb-0 align-middle">
-              <thead class="table-light">
+              <thead>
                 <tr>
                   <th>ปัจจัย</th>
                   <th>ค่าปัจจุบัน</th>
@@ -110,7 +110,7 @@
             ไม่มีช่องใดที่เปลี่ยนแล้วขยับผลเกิน 0.5 จุด &mdash; ผลค่อนข้างมั่นคง
           </div>
         {% endif %}
-        <div class="card-footer bg-white text-muted" style="font-size:14px;">
+        <div class="card-footer text-muted" style="font-size:14px;">
           พลิกผลด้วยการเปลี่ยนช่องเดียว:
           <strong>{% if exp.can_flip %}ได้{% else %}ไม่ได้{% endif %}</strong>
         </div>
@@ -118,7 +118,7 @@
 
       {% if exp.suggestions %}
         <div class="card mb-4">
-          <div class="card-header bg-white fw-semibold">เฉพาะช่องที่ผู้ใช้เปลี่ยนได้จริง</div>
+          <div class="card-header fw-semibold">เฉพาะช่องที่ผู้ใช้เปลี่ยนได้จริง</div>
           <ul class="list-group list-group-flush">
             {% for r in exp.suggestions %}
               <li class="list-group-item">

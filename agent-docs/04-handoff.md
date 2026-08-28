@@ -22,6 +22,99 @@
 **จาก:** Claude Code (Opus 5)
 **ถึง:** ผู้ใช้ / Agent ถัดไป
 
+# 🌙 ใส่โหมดมืดให้หน้า admin + แก้บั๊กหน้ารายชื่อผู้ใช้
+
+ผู้ใช้บอกว่าหน้า admin "แสบตา" — เว็บหลักมีโหมดมืดอยู่แล้วแต่ **หน้า admin เป็นคนละ layout**
+(`admin/base.html` ตั้ง `background:#f5f6f8` + Bootstrap ค่าเริ่มต้น = ขาวจ้า)
+
+## วิธีทำ
+
+ใช้ **`data-bs-theme="dark"` ของ Bootstrap 5.3** คู่กับ `data-theme` ของโปรเจกต์
+→ card / table / form / list-group เปลี่ยนสีให้เองโดยไม่ต้องเขียน CSS ทีละตัว
+
+| ไฟล์ | ทำอะไร |
+|---|---|
+| `templates/admin/base.html` | สคริปต์กันจอกระพริบใน `<head>` (อ่าน `localStorage['theme']` คีย์เดียวกับเว็บหลัก) · CSS โหมดมืด · ปุ่มสลับธีมใน nav |
+| `templates/admin/explain.html` | ถอด `bg-white` / `table-light` ที่บังคับสีขาวทับ dark mode |
+
+**ธีมใช้ `localStorage['theme']` ร่วมกับเว็บหลัก** → สลับที่ไหนก็จำข้ามหน้ากันได้
+
+⚠️ คลาส Bootstrap ที่ **บังคับสีตายตัว** (`bg-white`, `table-light`, `bg-light`) จะไม่ตามธีม
+ถ้า agent ถัดไปเพิ่มหน้า admin ใหม่ **อย่าใช้คลาสพวกนี้**
+
+## 🐛 แถม: แก้บั๊กหน้า `/admin/users` ที่พังมาก่อนหน้านี้
+
+`templates/admin/users.html` เรียก `url_for('admin_users_delete', username=u.username)`
+แต่ route คือ `/admin/users/delete/<uid>` → **`BuildError` ทำให้ทั้งหน้าเปิดไม่ได้เลย**
+(ยืนยันว่าเป็นบั๊กเดิม ไม่ได้เกิดจากงานรอบนี้ — `git diff` ของไฟล์นี้ว่างก่อนแก้)
+แก้เป็น `uid=u.uid` ซึ่งเป็นคีย์ที่ `admin_users()` ส่งมาให้อยู่แล้ว
+
+## ผลทดสอบ
+
+| หน้า | ก่อน | หลัง |
+|---|---|---|
+| `/admin` | 200 | 200 ✅ |
+| `/admin/users` | **500 BuildError** | **200** ✅ |
+| `/admin/cars` | 200 | 200 ✅ |
+| `/admin/explain` | 200 | 200 ✅ |
+
+`unittest` **41/41 ผ่าน**
+
+---
+
+**วันที่:** 2026-08-28 (deploy รอบแรกสำเร็จ)
+**จาก:** Claude Code (Opus 5)
+**ถึง:** ผู้ใช้ / Agent ถัดไป
+
+# ✅ DEPLOY ขึ้นเว็บจริงสำเร็จ — งานตั้งแต่ 8/9 ขึ้นครบแล้ว
+
+`https://r4tt4.pythonanywhere.com` รันโค้ดชุดใหม่แล้ว (commit `63c2830`)
+
+## 🔑 โมเดล BAGGING ทำงานได้บน PythonAnywhere บัญชีฟรี
+
+**ความเสี่ยงเรื่อง RAM ที่กังวลไว้ไม่เกิดขึ้น** — หน้าเว็บ render ปกติ ไม่มี 500
+แปลว่า `predictor.py` โหลด `.pkl` (26.9 MB + 4.8 MB บีบอัด, ~10,000 ต้นไม้) สำเร็จตอนสตาร์ต
+
+## ยืนยันจากการเปิดเว็บจริง
+
+| จุดตรวจ | ก่อน | หลัง |
+|---|---|---|
+| `/admin/login` โชว์ `admin / admin123` | 🔴 โชว์ | ✅ **หายแล้ว** |
+| ข้อความแทนที่ | — | "ยังไม่ได้ตั้งรหัสผ่านผู้ดูแลระบบ..." (ตามที่ออกแบบ) |
+| Error 500 | — | ✅ ไม่มี |
+
+## 🔴 ปัญหาที่เจอตอน deploy — จดไว้กันเจอซ้ำ
+
+**1. `git pull` ไม่ผ่าน: "Your local changes would be overwritten"**
+`git status --short` บนเซิร์ฟเวอร์แสดงไฟล์ทุกไฟล์เป็น `D` (staged deletion) **พร้อมกับ** `??` (untracked)
+= มีคนเคยสั่ง `git rm -r --cached .` ไว้ ไฟล์ยังอยู่ครบแค่ index เพี้ยน
+**แก้ด้วย `git reset` เฉย ๆ** (ไม่ใช่ `--hard` ซึ่งจะลบงานจริง) แล้ว `git pull` ผ่านทันที
+
+**2. `cd car-decision-app` ไม่เจอโฟลเดอร์**
+repo ชื่อ `-car-decision-app` **มีขีดนำหน้า** shell มองเป็น option → ต้องใช้ `cd ./-car-decision-app`
+
+**3. ไฟล์ CSV ชื่อไทยยาวเกิน — "File name too long"**
+Linux จำกัดชื่อไฟล์ 255 ไบต์ อักษรไทยกิน 3 ไบต์/ตัว → 3 ไฟล์ใน `files/` สร้างบนเซิร์ฟเวอร์ไม่ได้
+**ไม่กระทบเว็บ** (เว็บใช้แค่ `.pkl`) แต่ agent ถัดไปอย่าตกใจถ้าเห็น error นี้
+
+**4. หาปุ่ม Reload ไม่เจอ**
+ทางลัดที่ใช้ได้ผล — สั่งจาก Bash console ตรง ๆ ไม่ต้องหาปุ่ม:
+```
+touch /var/www/r4tt4_pythonanywhere_com_wsgi.py
+```
+
+## ➡️ ยังเหลือทำบนเซิร์ฟเวอร์ (ไม่ด่วน)
+
+`/admin/login` แบบรหัสผ่านยัง**ปิดอยู่**บนเซิร์ฟเวอร์ เพราะ `admin_credentials.json` ไม่ขึ้น git
+**ไม่ใช่ปัญหา** เพราะเข้า admin ผ่านบัญชี `click` (role ใน Firebase) ได้อยู่แล้ว
+ถ้าอยากเปิดทางสำรองด้วย ให้รันบน Bash console: `cd car-dss && python set_admin_password.py`
+
+---
+
+**วันที่:** 2026-08-28
+**จาก:** Claude Code (Opus 5)
+**ถึง:** ผู้ใช้ / Agent ถัดไป
+
 # 👤 เปลี่ยน admin เป็นแบบ "role บนบัญชีผู้ใช้ปกติ" (ผู้ใช้เสนอเอง)
 
 ผู้ใช้ทักว่าต้องจำรหัสสองชุดและเข้า `/admin/login` แยก **ยุ่งยากเกินจำเป็น**
