@@ -1,0 +1,235 @@
+@relation cardss_fuel_balanced
+
+@attribute usage_type {both,city,highway}
+@attribute frequency {1-2days,3-4days,5-6days,everyday,occasional}
+@attribute distance {10-30,31-50,51-70,71-90,'90+',lt10}
+@attribute prev_car {ev,hybrid,ice}
+@attribute charging_access {cannot,has,installable,unsure}
+@attribute ev_exposure {both,ev_only,hybrid_only,none}
+@attribute tco_awareness {much_cheaper,similar,slightly_cheaper,unknown}
+@attribute incentive_awareness {aware_considered,aware_only,unknown}
+@attribute tech_env_concern numeric
+@attribute resale_maintenance_concern numeric
+@attribute priority_count numeric
+@attribute mileage_intensity numeric
+@attribute tech_cost_balance numeric
+@attribute range_anxiety numeric
+@attribute nep_score numeric
+@attribute ev_readiness_index numeric
+@attribute prio_price numeric
+@attribute prio_installment numeric
+@attribute prio_fuel_cost numeric
+@attribute prio_electricity_cost numeric
+@attribute prio_maintenance_cost numeric
+@attribute prio_performance numeric
+@attribute prio_design numeric
+@attribute prio_technology numeric
+@attribute prio_value numeric
+@attribute prio_warranty numeric
+@attribute class {EV,Hybrid,ICE}
+
+@data
+city,1-2days,31-50,hybrid,installable,hybrid_only,much_cheaper,unknown,3,4,1,0.1,-1,6,3.8,1.90286,1,0,0,0,0,0,0,0,0,0,EV
+city,5-6days,'90+',ice,unsure,both,unknown,aware_only,5,4,1,0.75,1,6,3.8,0.902857,0,1,0,0,0,0,0,0,0,0,Hybrid
+both,everyday,lt10,ice,installable,hybrid_only,similar,unknown,4,5,1,0,-1,5,3.8,1.04571,0,0,1,0,0,0,0,0,0,0,EV
+both,everyday,51-70,ice,unsure,both,slightly_cheaper,aware_considered,3,4,1,0.6,-1,5,4.2,1.62571,0,0,1,0,0,0,0,0,0,0,EV
+both,1-2days,31-50,ice,unsure,none,similar,unknown,3,5,2,0.1,1,5,3.8,0.0457143,0,0,0,1,0,0,1,0,0,0,EV
+both,5-6days,10-30,ice,installable,none,unknown,unknown,5,5,2,0.15,0,4,4,0.728571,0,0,1,1,0,0,0,0,0,0,Hybrid
+highway,5-6days,10-30,ice,installable,hybrid_only,similar,unknown,5,5,1,0.15,0,5,3.2,0.925714,0,0,0,0,1,0,0,0,0,0,ICE
+city,5-6days,10-30,ice,installable,both,much_cheaper,unknown,3,5,1,0.15,-2,5,4.2,2.62571,0,0,0,0,0,0,1,0,0,0,ICE
+city,1-2days,lt10,ice,unsure,hybrid_only,much_cheaper,unknown,5,3,1,0,2,6,4.2,1.48286,0,1,0,0,0,0,0,0,0,0,EV
+both,everyday,10-30,ice,cannot,both,similar,unknown,4,4,1,0.2,0,5,3.8,1.04571,0,0,0,0,0,0,0,0,0,1,ICE
+city,3-4days,31-50,ice,cannot,hybrid_only,much_cheaper,aware_only,4,5,1,0.2,-1,5,3.6,1.50571,0,1,0,0,0,0,0,0,0,0,Hybrid
+city,everyday,51-70,ice,installable,none,similar,unknown,5,4,1,0.6,1,4,3.8,0.688571,0,1,0,0,0,0,0,0,0,0,Hybrid
+both,1-2days,31-50,ice,installable,none,much_cheaper,unknown,5,5,1,0.1,0,6,4.2,1.48286,0,1,0,0,0,0,0,0,0,0,EV
+city,everyday,51-70,ice,installable,hybrid_only,similar,unknown,5,4,1,0.6,1,3,4,1.37143,0,0,0,0,1,0,0,0,0,0,ICE
+highway,5-6days,31-50,ice,installable,hybrid_only,similar,unknown,5,5,1,0.3,0,4,3.6,1.14857,0,1,0,0,0,0,0,0,0,0,Hybrid
+highway,occasional,10-30,ice,installable,hybrid_only,much_cheaper,unknown,5,4,1,0,1,4,4,2.22857,0,0,1,0,0,0,0,0,0,0,ICE
+city,everyday,lt10,ice,cannot,hybrid_only,much_cheaper,unknown,5,5,3,0,0,4,4,1.72857,0,1,1,0,0,0,1,0,0,0,ICE
+both,5-6days,31-50,ev,installable,both,similar,unknown,5,5,1,0.3,0,4,3.6,1.64857,0,1,0,0,0,0,0,0,0,0,Hybrid
+city,everyday,'90+',ice,installable,none,similar,unknown,5,5,1,0.1,0,4,3.6,0.648571,0,1,0,0,0,0,0,0,0,0,EV
+highway,everyday,10-30,ice,installable,ev_only,similar,unknown,4,4,1,0.2,0,4,4,1.72857,0,1,0,0,0,0,0,0,0,0,Hybrid
+city,1-2days,10-30,hybrid,unsure,hybrid_only,similar,unknown,4,5,1,0.05,-1,4,3.8,0.688571,0,0,0,0,0,0,1,0,0,0,Hybrid
+city,3-4days,lt10,ice,cannot,none,similar,unknown,3,5,1,0,-2,4,3.8,0.617143,0,1,0,0,0,0,0,0,0,0,Hybrid
+city,1-2days,10-30,hybrid,installable,none,similar,unknown,3,5,1,0.05,-2,5,4.2,0.625714,1,0,0,0,0,0,0,0,0,0,ICE
+both,everyday,71-90,ice,installable,none,similar,unknown,5,5,1,0.1,0,3,4,0.871429,0,1,0,0,0,0,0,0,0,0,ICE
+city,5-6days,lt10,ice,unsure,hybrid_only,much_cheaper,aware_considered,5,5,2,0,0,6,3.6,1.36286,0,1,0,0,1,0,0,0,0,0,Hybrid
+highway,1-2days,31-50,ice,unsure,both,slightly_cheaper,unknown,5,3,1,0.1,2,6,3.8,1.40286,0,0,0,0,0,0,1,0,0,0,Hybrid
+city,5-6days,'90+',ice,installable,ev_only,similar,unknown,4,5,1,0.75,-1,5,4,1.58571,0,0,1,0,0,0,0,0,0,0,Hybrid
+city,everyday,lt10,ice,unsure,none,similar,unknown,4,5,1,0,-1,4,4.2,0.268571,0,1,0,0,0,0,0,0,0,0,ICE
+highway,occasional,51-70,hybrid,installable,ev_only,unknown,unknown,5,4,1,0,1,3,3.8,1.83143,0,1,0,0,0,0,0,0,0,0,ICE
+city,occasional,'90+',ice,installable,hybrid_only,similar,unknown,5,3,1,0,2,4,4.2,0.84,0,1,0,0,0,0,0,0,0,0,ICE
+both,5-6days,lt10,ice,installable,none,similar,aware_only,4,5,1,0,-1,5,4.2,0.625714,0,1,0,0,0,0,0,0,0,0,ICE
+both,everyday,51-70,ev,cannot,none,similar,unknown,4,5,1,0.6,-1,4,3.8,0.188571,0,1,0,0,0,0,0,0,0,0,ICE
+city,5-6days,10-30,hybrid,installable,hybrid_only,similar,aware_only,5,3,1,0.15,2,4,4,1.22857,0,0,0,0,0,0,0,0,1,0,Hybrid
+city,everyday,10-30,ice,installable,none,similar,unknown,4,5,1,0.2,-1,5,3.8,0.545714,0,1,0,0,0,0,0,0,0,0,EV
+city,everyday,lt10,hybrid,cannot,none,similar,unknown,5,5,1,0,0,5,3.4,-0.0342857,0,0,1,0,0,0,0,0,0,0,EV
+city,everyday,31-50,ice,installable,hybrid_only,much_cheaper,unknown,5,5,1,0.4,0,4,3.8,1.76,0,0,1,0,0,0,0,0,0,0,EV
+city,everyday,'90+',ice,installable,both,similar,unknown,5,5,2,0.1,0,4,3.6,1.64857,1,1,0,0,0,0,0,0,0,0,ICE
+both,1-2days,10-30,ice,unsure,hybrid_only,similar,unknown,4,5,1,0.05,-1,6,4.4,0.522857,0,1,0,0,0,0,0,0,0,0,ICE
+highway,1-2days,lt10,ice,unsure,hybrid_only,much_cheaper,unknown,4,3,3,0,1,3,3.4,1.75143,0,0,1,0,1,0,0,0,0,1,EV
+both,everyday,10-30,ice,installable,hybrid_only,unknown,unknown,4,4,1,0.2,0,4,3.8,1.18857,0,0,0,0,1,0,0,0,0,0,ICE
+city,5-6days,10-30,ice,installable,hybrid_only,much_cheaper,unknown,4,5,1,0.15,-1,4,3.8,2.47429,0,1,0,0,0,0,0,0,0,0,Hybrid
+both,5-6days,lt10,ice,cannot,both,unknown,unknown,4,4,1,0,0,3,3.6,1.29143,0,0,0,0,0,0,1,0,0,0,Hybrid
+both,5-6days,31-50,ice,installable,both,unknown,aware_considered,5,5,1,0.3,0,4,4,1.72857,0,1,0,0,0,0,0,0,0,0,ICE
+city,1-2days,31-50,ev,unsure,both,similar,unknown,5,3,1,0.1,2,4,4.2,1.55429,0,0,0,0,0,0,0,0,1,0,EV
+highway,1-2days,lt10,ice,unsure,none,unknown,unknown,4,4,2,0,0,4,4.2,0.268571,1,1,0,0,0,0,0,0,0,0,ICE
+both,5-6days,10-30,ice,unsure,hybrid_only,unknown,aware_only,4,5,1,0.15,-1,4,4.2,0.768571,1,0,0,0,0,0,0,0,0,0,Hybrid
+city,1-2days,lt10,hybrid,installable,none,similar,unknown,5,4,1,0,1,5,3.6,0.505714,0,1,0,0,0,0,0,0,0,0,Hybrid
+city,5-6days,10-30,hybrid,cannot,both,similar,unknown,5,5,1,0.15,0,5,3.6,1.00571,0,1,0,0,0,0,0,0,0,0,Hybrid
+city,1-2days,10-30,ice,installable,both,unknown,aware_only,4,5,1,0.05,-1,5,4,1.58571,1,0,0,0,0,0,0,0,0,0,Hybrid
+both,1-2days,31-50,hybrid,unsure,both,similar,aware_only,4,4,1,0.1,0,5,3.6,1.00571,0,0,1,0,0,0,0,0,0,0,ICE
+both,everyday,51-70,ice,cannot,ev_only,similar,aware_only,3,5,1,0.6,-2,5,3.8,1.04571,0,0,0,0,0,0,0,1,0,0,EV
+city,everyday,lt10,ice,cannot,both,similar,unknown,3,4,1,0,-1,6,4.4,1.02286,1,0,0,0,0,0,0,0,0,0,ICE
+both,everyday,lt10,hybrid,installable,ev_only,slightly_cheaper,aware_considered,4,5,3,0,-1,4,4.2,2.26857,0,1,1,0,0,0,0,0,0,1,Hybrid
+both,everyday,10-30,hybrid,installable,ev_only,similar,aware_only,5,3,3,0.2,2,5,3.6,1.50571,1,0,0,0,0,0,0,1,1,0,EV
+both,5-6days,31-50,ice,cannot,none,similar,aware_only,5,5,1,0.3,0,6,3.4,-0.177143,0,0,1,0,0,0,0,0,0,0,Hybrid
+both,everyday,31-50,ice,installable,hybrid_only,slightly_cheaper,unknown,3,4,1,0.4,-1,5,3.6,1.50571,0,0,0,0,0,0,0,1,0,0,EV
+city,5-6days,lt10,ice,installable,both,unknown,aware_only,5,3,2,0,2,5,3.8,1.54571,1,0,0,0,0,0,0,1,0,0,ICE
+city,1-2days,lt10,ice,installable,hybrid_only,similar,aware_only,4,3,2,0,1,3,3.8,1.33143,1,1,0,0,0,0,0,0,0,0,ICE
+highway,everyday,lt10,hybrid,cannot,ev_only,similar,aware_considered,5,5,1,0,0,5,4.2,1.12571,0,0,1,0,0,0,0,0,0,0,Hybrid
+both,5-6days,31-50,ice,cannot,ev_only,slightly_cheaper,aware_only,5,5,2,0.3,0,4,4.2,1.76857,0,0,0,0,0,1,0,0,0,1,Hybrid
+both,everyday,10-30,ice,cannot,ev_only,slightly_cheaper,aware_only,4,5,1,0.2,-1,4,4,1.72857,0,0,0,0,0,0,0,1,0,0,EV
+both,occasional,71-90,ice,unsure,ev_only,slightly_cheaper,aware_considered,4,4,1,0,0,5,3.8,1.54571,0,0,0,0,0,0,0,1,0,0,Hybrid
+city,1-2days,lt10,ice,cannot,hybrid_only,similar,aware_only,3,5,1,0,-2,4,4,0.728571,0,0,0,0,0,0,0,0,0,1,Hybrid
+city,everyday,31-50,ice,installable,ev_only,much_cheaper,aware_considered,5,3,1,0.4,2,6,3.4,2.32286,0,0,0,0,0,0,0,1,0,0,EV
+city,everyday,lt10,ice,cannot,hybrid_only,much_cheaper,unknown,3,5,2,0,-2,5,3.6,1.50571,1,0,0,0,0,0,0,1,0,0,EV
+highway,1-2days,10-30,ev,installable,none,much_cheaper,unknown,5,4,2,0.05,1,5,4.6,1.70571,0,0,1,0,0,0,0,0,1,0,Hybrid
+both,5-6days,lt10,ice,cannot,both,unknown,aware_only,4,3,1,0,1,6,3.6,0.862857,0,0,0,0,0,1,0,0,0,0,Hybrid
+both,5-6days,lt10,ice,cannot,both,similar,aware_only,4,3,1,0,1,4,3.8,1.18857,0,0,0,0,0,0,0,1,0,0,EV
+city,everyday,31-50,ice,cannot,ev_only,similar,unknown,5,5,1,0.4,0,4,3.8,1.18857,0,0,0,0,0,0,0,0,0,1,Hybrid
+city,5-6days,71-90,ice,installable,ev_only,similar,aware_only,4,4,1,0.6,0,4,3.8,1.68857,0,0,0,0,0,0,0,1,0,0,EV
+highway,occasional,lt10,ice,cannot,ev_only,unknown,aware_considered,5,5,1,0,0,6,3.8,0.902857,0,0,0,0,0,0,0,1,0,0,EV
+both,5-6days,10-30,ice,cannot,both,similar,aware_only,4,5,2,0.15,-1,5,3.8,1.04571,0,0,1,0,0,0,1,0,0,0,ICE
+highway,everyday,lt10,ice,installable,both,similar,unknown,4,4,1,0,0,4,4,1.3,0,0,0,0,0,0,0,1,0,0,Hybrid
+both,occasional,31-50,ice,installable,both,slightly_cheaper,aware_only,4,4,1,0,0,5,4.2,2.12571,0,0,0,0,0,0,0,1,0,0,EV
+highway,1-2days,51-70,ice,installable,none,similar,aware_only,4,5,2,0.15,-1,4,3.4,0.894286,0,0,0,0,1,0,1,0,0,0,EV
+highway,everyday,10-30,ice,cannot,none,much_cheaper,aware_only,5,5,2,0.2,0,3,3.4,1.25143,0,0,0,0,1,0,0,1,0,0,ICE
+city,everyday,lt10,ice,installable,both,similar,aware_considered,5,3,1,0,2,5,3.8,1.54571,0,0,0,0,0,0,1,0,0,0,EV
+city,5-6days,31-50,hybrid,cannot,ev_only,similar,aware_considered,4,4,1,0.3,0,5,4.4,1.16571,0,0,0,0,0,0,0,1,0,0,EV
+both,5-6days,lt10,hybrid,installable,ev_only,similar,aware_only,5,4,1,0,1,4,4.2,1.76857,0,0,0,0,0,0,0,0,1,0,ICE
+highway,1-2days,lt10,ice,unsure,both,similar,aware_considered,4,5,0,0,-1,4,3.8,1.47429,0,0,0,0,0,0,0,0,0,0,Hybrid
+city,everyday,10-30,ice,has,hybrid_only,similar,aware_considered,5,4,1,0.2,1,5,4,1.58571,1,0,0,0,0,0,0,0,0,0,ICE
+both,1-2days,lt10,ice,installable,both,slightly_cheaper,aware_considered,4,3,3,0,1,4,3.6,2.43429,1,0,0,0,0,0,0,0,1,1,ICE
+both,1-2days,lt10,ice,cannot,ev_only,much_cheaper,unknown,4,5,1,0,-1,6,4.2,1.98286,0,0,0,0,0,0,0,1,0,0,ICE
+city,1-2days,lt10,ice,unsure,hybrid_only,similar,aware_only,3,4,1,0,-1,4,3.4,0.608571,0,0,0,0,0,0,0,1,0,0,EV
+highway,1-2days,10-30,ice,cannot,ev_only,similar,aware_considered,4,5,1,0.05,-1,5,4.2,1.12571,0,0,0,0,0,0,0,1,0,0,EV
+city,everyday,10-30,ice,has,both,similar,aware_considered,4,5,1,0.2,-1,6,3.2,1.78286,0,0,0,0,0,0,0,0,0,1,Hybrid
+highway,everyday,lt10,ice,installable,hybrid_only,much_cheaper,aware_considered,3,4,2,0,-1,4,3.6,2.14857,1,0,0,0,0,0,0,1,0,0,Hybrid
+both,1-2days,lt10,ice,unsure,hybrid_only,slightly_cheaper,aware_only,3,4,1,0,-1,6,3,0.742857,0,0,0,0,0,0,0,1,0,0,EV
+city,1-2days,71-90,ice,installable,both,much_cheaper,aware_considered,5,3,2,0.2,2,5,3.8,2.54571,1,0,0,0,0,0,0,0,0,1,Hybrid
+both,1-2days,lt10,hybrid,cannot,ev_only,similar,aware_only,3,4,1,0,-1,5,3.6,1.00571,0,0,0,0,0,0,1,0,0,0,Hybrid
+both,everyday,10-30,ice,installable,none,similar,aware_considered,5,5,1,0.2,0,4,3.2,0.568571,0,0,0,0,0,0,1,0,0,0,ICE
+both,everyday,71-90,ice,cannot,ev_only,slightly_cheaper,aware_only,4,4,1,0.1,0,3,3.6,1.79143,0,0,1,0,0,0,0,0,0,0,Hybrid
+highway,5-6days,51-70,ice,has,ev_only,similar,aware_only,5,4,1,0.45,1,3,3.8,2.33143,0,0,1,0,0,0,1,1,1,0,EV
+highway,5-6days,'90+',ice,unsure,ev_only,much_cheaper,aware_only,5,5,1,0.75,0,5,4.2,2.12571,0,0,0,0,0,0,0,1,0,0,ICE
+both,5-6days,71-90,ice,cannot,both,similar,aware_only,5,5,1,0.6,0,4,4.4,1.30857,0,0,0,0,0,0,0,1,0,0,EV
+city,everyday,lt10,ice,cannot,ev_only,much_cheaper,aware_considered,5,4,1,0,1,4,3.8,2.18857,0,0,0,0,0,0,0,0,0,1,EV
+both,1-2days,lt10,ice,unsure,both,similar,aware_considered,5,4,1,0,1,5,3.6,1.00571,0,0,1,0,0,0,0,0,0,0,EV
+city,everyday,lt10,ice,cannot,both,much_cheaper,unknown,3,4,3,0,-1,4,4.2,1.84,0,0,0,0,0,0,0,1,1,1,ICE
+city,5-6days,lt10,ev,installable,ev_only,slightly_cheaper,aware_considered,5,3,1,0,2,5,4.2,2.12571,0,1,0,0,0,0,0,0,0,0,Hybrid
+highway,everyday,51-70,hybrid,installable,none,slightly_cheaper,aware_only,4,5,2,0.6,-1,6,3.4,0.822857,0,0,0,0,0,0,0,1,1,0,Hybrid
+both,everyday,10-30,ice,unsure,ev_only,slightly_cheaper,aware_considered,5,5,2,0.2,0,3,3.4,1.75143,1,0,0,0,1,0,0,0,0,0,ICE
+highway,5-6days,71-90,hybrid,installable,both,much_cheaper,aware_considered,4,4,3,0.6,0,5,4,2.58571,1,0,0,0,0,1,0,1,0,0,Hybrid
+highway,everyday,10-30,ice,cannot,none,similar,aware_considered,3,5,1,0.2,-2,5,3.6,0.00571429,0,1,0,0,0,0,0,0,0,0,EV
+city,1-2days,lt10,ice,installable,hybrid_only,similar,aware_considered,4,4,2,0,0,6,3.4,0.822857,0,0,0,0,0,1,0,1,0,0,ICE
+city,1-2days,lt10,ice,installable,none,similar,aware_only,5,5,1,0,0,3,4,0.871429,0,0,0,0,0,0,0,0,0,1,Hybrid
+highway,everyday,31-50,ice,unsure,hybrid_only,similar,aware_considered,5,5,3,0.4,0,3,3.4,0.751429,0,0,0,0,1,0,1,0,1,0,Hybrid
+city,everyday,71-90,ice,installable,ev_only,similar,aware_considered,4,4,2,0.1,0,3,3.8,1.83143,0,0,1,0,0,1,0,0,0,0,ICE
+both,everyday,lt10,ice,cannot,both,similar,aware_only,5,5,2,0,0,6,3.8,0.902857,0,1,0,0,0,0,0,1,0,0,Hybrid
+city,everyday,lt10,hybrid,installable,both,similar,aware_only,5,5,1,0,0,4,4,1.3,0,0,0,0,0,0,0,1,0,0,ICE
+both,everyday,51-70,ice,cannot,ev_only,similar,aware_only,4,4,1,0.6,0,4,3.8,1.47429,0,0,0,0,0,0,0,0,0,1,ICE
+both,5-6days,lt10,ice,installable,ev_only,much_cheaper,unknown,5,5,1,0,0,5,3.6,2.50571,1,0,0,0,0,0,0,0,0,0,EV
+both,occasional,lt10,ice,cannot,ev_only,slightly_cheaper,aware_only,4,5,1,0,-1,6,3.6,1.36286,0,0,0,0,0,0,0,1,0,0,ICE
+city,5-6days,lt10,ice,has,ev_only,similar,aware_only,4,5,2,0,-1,4,3.6,2.14857,1,0,0,0,0,0,1,0,0,0,ICE
+both,everyday,10-30,ice,installable,hybrid_only,slightly_cheaper,aware_only,4,4,1,0.2,0,4,4.2,1.76857,1,0,0,0,0,0,0,0,0,0,EV
+highway,occasional,51-70,ice,installable,both,similar,aware_only,5,3,3,0,2,3,3.2,1.71143,1,0,0,0,1,0,0,1,0,0,EV
+both,1-2days,31-50,ice,installable,none,similar,aware_only,3,5,1,0.1,-2,5,3.8,0.545714,0,0,0,0,0,0,0,1,0,0,EV
+city,1-2days,lt10,ice,installable,ev_only,slightly_cheaper,aware_only,5,4,1,0,1,6,4.6,2.06286,1,0,0,0,0,0,0,0,0,0,ICE
+both,3-4days,31-50,ice,cannot,both,slightly_cheaper,aware_considered,5,3,1,0.2,2,5,3.2,1.42571,0,0,0,0,0,0,0,0,1,0,ICE
+both,everyday,10-30,ice,installable,none,similar,aware_considered,5,5,1,0.2,0,6,3.6,0.362857,0,0,0,0,0,0,0,1,0,0,EV
+highway,1-2days,lt10,ice,unsure,none,similar,aware_considered,5,4,1,0,1,6,3.4,-0.177143,0,0,0,0,0,0,0,1,0,0,Hybrid
+city,everyday,71-90,ice,unsure,both,similar,aware_only,5,5,1,0.1,0,4,3.6,0.72,0,0,0,0,0,0,0,1,0,0,EV
+both,1-2days,lt10,ice,installable,both,similar,aware_only,3,4,2,0,-1,6,3.2,1.28286,1,0,0,0,0,0,0,0,0,1,EV
+both,everyday,lt10,hybrid,unsure,hybrid_only,much_cheaper,aware_considered,4,4,2,0,0,6,3.8,1.40286,0,0,0,0,0,0,0,0,1,1,ICE
+both,everyday,31-50,hybrid,unsure,ev_only,slightly_cheaper,aware_only,4,3,1,0.4,1,4,3.6,1.93429,0,0,0,0,0,0,0,1,0,0,ICE
+highway,occasional,71-90,ice,unsure,ev_only,slightly_cheaper,aware_considered,4,4,1,0,0,4,3.8,1.97429,0,0,0,0,0,0,0,1,0,0,EV
+city,everyday,31-50,ice,installable,ev_only,slightly_cheaper,unknown,4,5,1,0.4,-1,4,3.8,2.18857,0,0,0,0,0,0,0,1,0,0,ICE
+highway,1-2days,31-50,ice,unsure,ev_only,much_cheaper,aware_only,5,5,2,0.1,0,5,3.8,2.04571,0,0,0,0,0,0,0,1,1,0,ICE
+both,5-6days,10-30,ice,installable,hybrid_only,slightly_cheaper,aware_considered,5,3,2,0.15,2,3,4.2,1.91143,0,0,1,0,0,0,0,0,0,1,Hybrid
+city,everyday,31-50,ice,installable,ev_only,similar,aware_considered,3,3,2,0.4,0,3,3.4,1.75143,1,0,0,0,0,0,0,1,0,0,EV
+both,1-2days,71-90,ev,installable,none,much_cheaper,aware_considered,5,5,2,0.2,0,4,3.8,1.68857,0,0,0,0,0,0,1,1,0,0,EV
+both,everyday,lt10,ice,installable,ev_only,much_cheaper,unknown,4,5,2,0,-1,5,4,2.58571,0,0,0,0,0,1,0,0,1,0,EV
+highway,5-6days,lt10,ice,cannot,ev_only,similar,aware_considered,5,5,1,0,3,5,4.2,1.12571,0,0,0,0,0,0,0,1,0,0,Hybrid
+highway,5-6days,lt10,ice,installable,ev_only,similar,aware_considered,4,5,1,0,-1,3,3.6,1.79143,0,0,0,0,0,0,0,0,0,1,EV
+city,5-6days,lt10,ice,installable,hybrid_only,similar,aware_only,4,5,1,0,-1,5,4.4,1.16571,0,0,0,0,1,0,0,0,0,0,ICE
+both,everyday,lt10,ice,installable,ev_only,slightly_cheaper,unknown,5,5,1,0,0,4,3.8,2.18857,0,0,0,0,0,0,0,0,1,0,ICE
+both,occasional,31-50,ice,installable,both,similar,aware_considered,5,5,2,0,0,4,4.4,2.09429,1,0,0,0,0,0,1,0,0,0,ICE
+both,1-2days,71-90,ice,installable,ev_only,slightly_cheaper,aware_considered,5,3,3,0.2,2,4,3.6,2.57714,1,0,0,0,0,0,0,1,1,0,EV
+highway,1-2days,lt10,ice,cannot,hybrid_only,much_cheaper,aware_only,5,5,3,0,0,6,3.6,1.36286,0,0,0,0,1,0,0,1,0,1,Hybrid
+both,everyday,lt10,ice,cannot,ev_only,slightly_cheaper,aware_considered,5,4,2,0,1,3,4,1.87143,0,1,0,0,0,1,0,0,0,0,EV
+both,everyday,lt10,ice,installable,both,similar,aware_considered,4,5,1,0,-1,6,4.2,1.48286,0,0,0,0,1,0,0,0,0,0,EV
+city,5-6days,10-30,ice,installable,none,slightly_cheaper,aware_considered,5,5,1,0.15,0,5,4.2,1.12571,0,0,0,0,0,1,0,0,0,0,ICE
+city,5-6days,10-30,hybrid,cannot,both,much_cheaper,aware_considered,5,4,1,0.15,1,3,4.2,2.41143,0,0,0,0,0,0,0,1,0,0,ICE
+both,everyday,31-50,ice,unsure,ev_only,similar,aware_considered,3,5,2,0.4,-2,3,3.6,1.29143,0,0,0,0,0,0,0,1,0,1,ICE
+city,everyday,lt10,ice,cannot,ev_only,similar,aware_considered,5,4,1,0,1,4,3.8,1.18857,0,0,0,0,0,0,0,1,0,0,ICE
+both,5-6days,lt10,ice,installable,none,slightly_cheaper,aware_considered,5,4,2,0,1,4,4.2,1.26857,0,0,0,0,0,0,1,1,0,0,Hybrid
+city,everyday,31-50,ice,cannot,both,much_cheaper,aware_only,5,5,2,0.4,0,4,4.2,2.26857,1,0,0,0,0,0,1,0,0,0,Hybrid
+both,5-6days,71-90,ice,cannot,none,similar,aware_only,5,5,2,0.6,0,6,3.8,-0.0971429,0,0,1,0,0,0,0,0,0,1,EV
+both,everyday,10-30,hybrid,unsure,hybrid_only,much_cheaper,unknown,4,5,2,0.2,-1,4,3.8,1.26,0,0,1,0,0,0,1,0,0,0,Hybrid
+city,1-2days,10-30,ice,cannot,hybrid_only,similar,aware_only,5,5,3,0.05,0,5,4,0.585714,0,0,1,0,0,0,0,1,1,0,ICE
+both,5-6days,71-90,ice,installable,hybrid_only,similar,aware_considered,5,5,2,0.6,-3,4,3.8,1.18857,1,0,0,0,0,0,0,1,0,0,ICE
+both,5-6days,10-30,ice,installable,hybrid_only,similar,aware_considered,5,5,1,0.15,-3,4,3.8,1.18857,0,0,0,0,0,0,1,0,0,0,EV
+highway,1-2days,lt10,hybrid,cannot,both,similar,aware_only,5,5,1,0,0,4,4.2,0.84,0,0,0,0,0,0,0,1,0,0,EV
+both,occasional,10-30,hybrid,cannot,both,similar,aware_considered,4,5,1,0,-1,4,4,1.22857,1,0,1,0,0,0,0,1,0,1,Hybrid
+city,5-6days,10-30,ice,cannot,both,much_cheaper,aware_only,5,5,3,0.15,0,4,3.6,2.14857,0,0,0,0,0,1,0,1,1,0,ICE
+both,occasional,lt10,ice,installable,ev_only,similar,aware_considered,4,5,3,0,-1,3,4,1.87143,1,0,0,0,0,0,1,1,0,0,EV
+both,5-6days,71-90,ice,installable,ev_only,similar,aware_only,5,4,2,0.6,1,4,4,1.3,0,0,0,0,0,0,1,1,0,0,Hybrid
+both,5-6days,31-50,ice,installable,ev_only,similar,aware_only,3,5,1,0.3,1,5,3.8,1.54571,0,0,0,0,0,0,0,1,0,0,Hybrid
+highway,5-6days,31-50,ice,installable,hybrid_only,slightly_cheaper,aware_only,5,4,1,0.3,1,5,4,1.58571,0,0,0,0,0,0,0,1,0,0,EV
+both,1-2days,10-30,ice,cannot,both,similar,aware_only,5,5,1,0.05,0,4,3.8,1.18857,0,0,0,0,0,0,0,0,1,0,EV
+highway,everyday,10-30,ice,installable,none,similar,aware_only,4,5,1,0.2,-1,6,3.4,0.322857,0,0,1,0,0,0,0,0,0,0,Hybrid
+city,everyday,10-30,ice,installable,ev_only,similar,aware_only,5,4,1,0.2,1,4,3.4,1.60857,0,0,0,0,0,0,0,1,0,0,EV
+city,5-6days,10-30,hybrid,unsure,both,similar,aware_only,4,5,1,0.15,-1,3,4,1.37143,0,0,1,0,0,0,0,0,0,0,EV
+city,everyday,31-50,ice,cannot,ev_only,similar,unknown,5,5,1,0.4,0,5,4,1.08571,0,0,0,0,0,0,0,1,0,0,EV
+highway,1-2days,31-50,ice,installable,ev_only,unknown,aware_considered,5,5,2,0.1,0,5,4,1.58571,1,0,0,0,0,0,0,0,1,0,Hybrid
+city,5-6days,31-50,ice,installable,both,similar,aware_only,5,5,2,0.3,0,5,4,1.58571,0,0,0,0,0,0,0,1,1,0,ICE
+both,5-6days,lt10,ice,unsure,ev_only,slightly_cheaper,aware_considered,5,4,1,0,1,6,4.2,1.48286,0,0,0,0,0,0,0,0,1,0,EV
+both,everyday,lt10,ice,cannot,ev_only,slightly_cheaper,aware_considered,4,4,1,0,0,4,4.2,1.76857,1,0,0,0,0,0,0,0,0,0,ICE
+city,everyday,10-30,ice,installable,ev_only,similar,aware_only,4,5,1,0.2,-1,6,3.8,1.40286,0,0,0,0,0,0,0,1,0,0,EV
+both,1-2days,lt10,hybrid,cannot,ev_only,similar,aware_considered,5,5,1,0,0,4,3.4,0.68,0,0,1,0,0,0,0,0,0,0,ICE
+city,5-6days,10-30,ice,installable,none,much_cheaper,unknown,5,3,1,0.15,2,5,3.6,1.50571,0,0,0,0,0,0,0,1,0,0,EV
+both,everyday,31-50,ice,cannot,ev_only,slightly_cheaper,aware_considered,5,4,1,0.4,1,4,4,2.01429,0,0,0,0,0,0,0,0,1,0,EV
+both,5-6days,lt10,ice,cannot,both,much_cheaper,aware_only,4,4,1,0,0,4,3.6,2.14857,0,0,0,0,1,0,0,0,0,0,ICE
+highway,everyday,31-50,ice,installable,ev_only,unknown,aware_considered,4,5,1,0.4,-1,4,4,2.01429,0,0,0,0,0,0,0,1,0,0,Hybrid
+city,5-6days,31-50,ice,installable,hybrid_only,slightly_cheaper,aware_considered,3,5,2,0.3,-2,5,4,1.58571,0,0,1,0,0,0,0,1,0,0,Hybrid
+both,1-2days,51-70,ice,unsure,both,unknown,aware_only,4,4,2,0.15,0,6,3.8,0.902857,0,0,0,0,0,1,0,0,0,1,EV
+both,everyday,51-70,ice,installable,hybrid_only,similar,aware_only,5,5,1,0.6,0,3,4.2,1.41143,0,0,0,0,0,0,0,1,0,0,EV
+both,1-2days,10-30,ice,installable,ev_only,similar,aware_only,4,3,1,0.05,1,5,4.2,1.62571,0,0,0,0,0,0,0,1,0,0,Hybrid
+highway,1-2days,31-50,hybrid,installable,ev_only,similar,unknown,5,3,1,0.1,2,4,4.4,1.80857,0,1,0,0,0,0,0,0,0,0,Hybrid
+both,5-6days,51-70,ice,cannot,hybrid_only,slightly_cheaper,aware_only,5,5,2,0.45,0,4,3.8,1.18857,1,0,0,0,1,0,0,0,0,0,EV
+highway,everyday,10-30,hybrid,installable,ev_only,much_cheaper,aware_only,5,5,1,0.2,0,4,3.8,2.68857,0,0,0,0,0,0,0,1,0,0,EV
+both,everyday,71-90,ice,cannot,hybrid_only,unknown,aware_only,4,5,1,0.1,-1,3,4.2,0.911429,1,0,0,0,0,0,0,0,0,0,ICE
+both,5-6days,lt10,ice,cannot,ev_only,similar,aware_only,5,4,0,0,1,4,3.8,0.76,0,0,0,0,0,0,0,0,0,0,Hybrid
+city,everyday,51-70,ice,unsure,ev_only,much_cheaper,aware_only,5,4,1,0.6,1,4,4,2.51429,0,0,0,0,0,0,0,1,0,0,Hybrid
+highway,everyday,lt10,ice,installable,ev_only,much_cheaper,aware_considered,5,5,2,0,0,3,3.4,2.75143,1,0,0,0,0,0,0,0,1,0,ICE
+city,everyday,lt10,ice,cannot,both,slightly_cheaper,aware_considered,5,5,1,0,0,5,4.2,1.62571,1,0,0,0,0,0,0,0,0,0,Hybrid
+both,1-2days,10-30,ice,installable,ev_only,similar,aware_considered,5,5,2,0.05,0,4,3.8,1.68857,0,0,0,0,0,0,0,0,1,1,Hybrid
+both,everyday,31-50,ice,installable,ev_only,similar,aware_only,4,5,1,0.4,-1,3,4,1.87143,0,0,1,0,0,0,0,0,0,0,ICE
+city,everyday,lt10,hybrid,installable,ev_only,slightly_cheaper,aware_considered,4,3,1,0,1,4,4,2.22857,0,1,0,0,0,0,0,0,0,0,Hybrid
+city,1-2days,10-30,hybrid,cannot,none,much_cheaper,aware_only,5,5,2,0.05,0,4,4.4,1.30857,0,0,0,0,0,0,0,1,1,0,Hybrid
+highway,occasional,lt10,ice,installable,none,similar,aware_considered,5,5,1,0,0,6,3.8,0.402857,0,0,0,0,0,0,0,0,1,0,ICE
+city,everyday,lt10,ice,cannot,ev_only,similar,aware_only,4,3,1,0,1,4,3.6,1.14857,1,0,0,0,0,0,0,0,0,0,ICE
+highway,5-6days,lt10,ice,unsure,ev_only,similar,aware_only,4,3,1,0,1,3,4,1.37143,0,0,1,0,0,0,0,0,0,0,EV
+highway,5-6days,10-30,ice,has,ev_only,similar,aware_only,5,5,1,0.15,0,3,4.2,2.41143,0,0,0,0,0,0,0,0,0,1,EV
+city,everyday,lt10,ice,unsure,ev_only,slightly_cheaper,aware_only,4,5,1,0,-1,3,4,1.87143,1,0,0,0,0,0,0,0,0,0,ICE
+both,everyday,71-90,ice,cannot,both,similar,aware_considered,3,4,1,0.1,-1,6,3.8,0.902857,0,0,0,0,0,0,0,1,0,0,EV
+both,5-6days,lt10,ice,cannot,both,similar,aware_only,5,4,1,0,1,4,3.6,1.14857,0,0,0,0,0,0,0,1,0,0,Hybrid
+highway,3-4days,31-50,ice,installable,ev_only,unknown,aware_considered,5,5,3,0.2,0,6,3.6,1.36286,0,0,0,0,0,0,1,0,1,1,Hybrid
+both,5-6days,51-70,ice,cannot,both,similar,aware_only,4,5,2,0.45,-1,5,3.8,1.04571,1,0,0,0,0,0,0,1,0,0,Hybrid
+both,occasional,'90+',ice,installable,both,much_cheaper,aware_only,5,5,3,0,0,4,4,2.3,0,0,1,0,1,1,0,0,0,0,Hybrid
+highway,everyday,lt10,ice,cannot,hybrid_only,similar,aware_considered,5,4,2,0,1,4,4,0.728571,0,0,0,0,1,0,0,0,0,1,ICE
+both,1-2days,31-50,ice,installable,ev_only,similar,aware_only,3,4,1,0.1,-1,4,3.8,1.26,0,0,0,0,0,0,0,1,0,0,ICE
+both,everyday,lt10,ice,installable,ev_only,much_cheaper,unknown,4,5,1,0,-1,4,3.8,2.68857,0,0,0,0,0,0,0,0,1,0,ICE
+highway,1-2days,lt10,ice,cannot,both,slightly_cheaper,aware_considered,5,5,3,0,0,5,3.4,1.46571,0,0,1,0,1,0,0,0,0,1,Hybrid
+both,5-6days,lt10,ice,installable,both,slightly_cheaper,aware_only,5,4,2,0,1,4,3.8,2.18857,0,0,0,0,0,0,1,0,0,1,ICE

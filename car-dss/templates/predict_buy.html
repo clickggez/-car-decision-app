@@ -260,6 +260,155 @@
       </div><!-- /row -->
     </div>
 
+    <!-- ========================================================
+         SECTION 3: เจตนาและความพร้อม (คำถามใหม่ 2026-08-01)
+         กรอบ Theory of Planned Behavior + กลุ่มความพร้อมด้าน EV
+         3 ข้อสุดท้าย (จุดชาร์จ/ต้นทุนรวม/สิทธิประโยชน์) หน้า fuel ใช้ต่อ
+         จึงถามที่นี่ครั้งเดียว แล้วส่งผ่าน session ไม่ถามซ้ำ
+         ======================================================== -->
+    <div class="card-cardss mb-4 fade-in fade-in-delay-3">
+      <div class="section-header-cardss">
+        <i class="bi bi-lightbulb-fill me-2"></i>ส่วนที่ 3 — เจตนาและความพร้อม
+      </div>
+
+      <div class="row g-3">
+
+        <!-- TPB: intention -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="intention">ท่านตั้งใจจะซื้อรถยนต์ภายใน 6 เดือนข้างหน้าเพียงใด <span style="color:var(--color-danger);">*</span></label>
+            <select id="intention" name="intention" class="form-select-cardss" required>
+              <option value="" disabled selected>— 1 (ไม่ตั้งใจเลย) ถึง 7 (ตั้งใจมากที่สุด) —</option>
+              <option value="1">1 — ไม่ตั้งใจเลย</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4 — ปานกลาง</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7 — ตั้งใจมากที่สุด</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- TPB: attitude -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="attitude">การมีรถยนต์เป็นของตัวเองสำคัญกับการใช้ชีวิตของท่านเพียงใด <span style="color:var(--color-danger);">*</span></label>
+            <select id="attitude" name="attitude" class="form-select-cardss" required>
+              <option value="" disabled selected>— 1 (ไม่สำคัญเลย) ถึง 7 (สำคัญมากที่สุด) —</option>
+              <option value="1">1 — ไม่สำคัญเลย</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4 — ปานกลาง</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7 — สำคัญมากที่สุด</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- TPB: subjective norm -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="subjective_norm">คนใกล้ชิดของท่านคิดว่าท่านควรมีรถยนต์เพียงใด <span style="color:var(--color-danger);">*</span></label>
+            <select id="subjective_norm" name="subjective_norm" class="form-select-cardss" required>
+              <option value="" disabled selected>— 1 (ไม่เห็นด้วยเลย) ถึง 7 (เห็นด้วยมากที่สุด) —</option>
+              <option value="1">1 — ไม่เห็นด้วยเลย</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4 — ปานกลาง</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7 — เห็นด้วยมากที่สุด</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- TPB: perceived behavioral control -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="pbc_financial">ขณะนี้ท่านมีความพร้อมทางการเงินที่จะซื้อรถยนต์เพียงใด <span style="color:var(--color-danger);">*</span></label>
+            <select id="pbc_financial" name="pbc_financial" class="form-select-cardss" required>
+              <option value="" disabled selected>— 1 (ไม่พร้อมเลย) ถึง 7 (พร้อมมากที่สุด) —</option>
+              <option value="1">1 — ไม่พร้อมเลย</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4 — ปานกลาง</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7 — พร้อมมากที่สุด</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- จุดชาร์จ (หน้า fuel ใช้ต่อ) -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="charging_access">ที่พักอาศัยหรือที่ทำงานมีจุดชาร์จไฟฟ้าสำหรับรถยนต์หรือไม่ <span style="color:var(--color-danger);">*</span></label>
+            <select id="charging_access" name="charging_access" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกคำตอบ —</option>
+              <option value="has">มีอยู่แล้ว</option>
+              <option value="installable">ไม่มีแต่สามารถติดตั้งเพิ่มได้</option>
+              <option value="cannot">ไม่มีและไม่สามารถติดตั้งได้ (เช่น คอนโด/หอพักที่ไม่อนุญาต)</option>
+              <option value="unsure">ไม่แน่ใจ</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ความรู้เรื่องต้นทุนรวม (หน้า fuel ใช้ต่อ) -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="tco_awareness">ท่านทราบหรือไม่ว่าค่าไฟชาร์จรถ EV เทียบกับค่าน้ำมันเป็นอย่างไร <span style="color:var(--color-danger);">*</span></label>
+            <select id="tco_awareness" name="tco_awareness" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกคำตอบ —</option>
+              <option value="much_cheaper">ทราบ และคิดว่าถูกกว่ามาก</option>
+              <option value="slightly_cheaper">ทราบ แต่คิดว่าถูกกว่าเล็กน้อย</option>
+              <option value="similar">ทราบ แต่คิดว่าไม่ต่างกันมาก</option>
+              <option value="unknown">ไม่ทราบเลย</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- สิทธิประโยชน์ภาครัฐ (หน้า fuel ใช้ต่อ) -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="incentive_awareness">ท่านทราบเรื่องสิทธิประโยชน์ทางภาษี/เงินอุดหนุนสำหรับรถ EV หรือไม่ <span style="color:var(--color-danger);">*</span></label>
+            <select id="incentive_awareness" name="incentive_awareness" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกคำตอบ —</option>
+              <option value="aware_considered">ทราบและเคยพิจารณาใช้สิทธิ์</option>
+              <option value="aware_only">ทราบแต่ไม่เคยพิจารณา</option>
+              <option value="unknown">ไม่ทราบเลย</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- เหตุการณ์ชีวิต (ไม่บังคับ) -->
+        <div class="col-12">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss">
+              ในช่วง 6 เดือนที่ผ่านมา ท่านมีเหตุการณ์ใดเกิดขึ้นบ้าง
+              <span style="font-size:12px;font-weight:400;color:var(--text-muted);margin-left:4px;">(เลือกได้หลายข้อ — ถ้าไม่มีให้ข้ามได้)</span>
+            </label>
+            <div class="checkbox-grid" id="lifeEventGrid">
+              <label class="checkbox-item">
+                <input type="checkbox" name="life_events" value="job"> เปลี่ยนงาน/ที่ทำงานใหม่
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" name="life_events" value="move"> ย้ายที่อยู่อาศัย
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" name="life_events" value="child"> มีบุตร/สมาชิกครอบครัวเพิ่ม
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" name="life_events" value="income"> รายได้เปลี่ยนแปลงอย่างมีนัยสำคัญ
+              </label>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /row -->
+    </div>
+
     <!-- Submit -->
     <div class="text-center fade-in fade-in-delay-3" style="margin-top:8px;">
       <button type="submit" class="btn-cardss-primary" style="padding:16px 48px;font-size:16px;">

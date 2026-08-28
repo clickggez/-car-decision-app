@@ -40,7 +40,7 @@ from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import (
     RandomForestClassifier, HistGradientBoostingClassifier, VotingClassifier,
-    StackingClassifier, ExtraTreesClassifier
+    StackingClassifier, ExtraTreesClassifier, BaggingClassifier
 )
 from sklearn.linear_model import LogisticRegression
 from sklearn.base import BaseEstimator, ClassifierMixin
@@ -59,8 +59,20 @@ from models import feature_encoding as fe
 warnings.filterwarnings("ignore")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-MODEL_DIR = os.path.join(HERE, "models")
+# ค่าเริ่มต้นคือ models/ ซึ่งเป็นโฟลเดอร์ที่เว็บโหลดใช้จริง
+# ตั้ง env var CARDSS_MODEL_DIR เพื่อเทรนลงโฟลเดอร์อื่นได้ โดยไม่ทับ .pkl ที่ deploy อยู่
+# (จำเป็นเพราะ 00-READ-FIRST.md §3.3 ห้าม deploy โมเดลใหม่ก่อนแก้ฟอร์มเว็บ)
+MODEL_DIR = os.environ.get("CARDSS_MODEL_DIR") or os.path.join(HERE, "models")
 RANDOM_STATE = 42
+
+# จำนวน bootstrap ของ BaggingClassifier — ตรงกับที่ใช้วัดใน
+# analysis/meta_voting_bagging.py (N_BAGS=25) เพื่อให้ตัวเลขเทียบกันได้
+BAGGING_N_ESTIMATORS = 25
+
+# อาจารย์ที่ปรึกษากำหนดให้ใช้ meta-classifier (2026-08-09)
+# ตั้งเป็น False เพื่อกลับไปเลือกโมเดลที่คะแนน CV สูงสุดโดยไม่สนชนิด
+PREFER_META_CLASSIFIER = True
+META_MODEL_NAMES = ("BAGGING", "ENSEMBLE", "STACK")
 
 
 # ============================================================
@@ -704,12 +716,77 @@ def build_and_select(X, y, cat_cols, num_cols, alpha=0.10, force_keep=None):
                     tuned_params_all[key] = {"estimators": [n for n, _ in ens_estimators]}
                 except ValueError as e:
                     print(f"    ENSEMBLE(stacking) ข้าม — {e}")
+
+                # เพิ่ม bagging — อาจารย์ที่ปรึกษาสั่งให้ใช้ meta-classifier โดยเลือก
+                # voting หรือ bagging ก็ได้ (2026-08-09) เลือก bagging เพราะวัดแล้ว
+                # ชนะทุกตัวชี้วัดบน BUY และ voting ทำให้ kappa ของ FUEL ติดลบ
+                # (ตัวเลขเต็มใน analysis/meta_voting_bagging_results_2026-08-09.txt)
+                # ⚠️ ส่วนต่างเล็กกว่า std — ไม่มีนัยสำคัญทางสถิติ ต้องระบุข้อนี้ในเล่ม
+                # ⚠️ ตัด ANN ออกจากตัวเลือกฐานของ bagging (พบ 2026-08-09)
+                # sklearn 1.8 ให้ BaggingClassifier ส่ง sample_weight เข้า MLPClassifier
+                # แทนการสุ่ม index เมื่อฐานรองรับ sample_weight — พอ bootstrap ทำให้
+                # ทั้ง mini-batch มีน้ำหนักเป็น 0 จะได้ ZeroDivisionError
+                # ("Weights sum to zero, can't be normalized") ใน log_loss
+                # จึงห่อโมเดลฐานที่ดีที่สุด "ที่ไม่ใช่ ANN" แทน
+                base_keys = [k for k in candidates
+                             if k[0] == top_fmode and k[1] not in ("ENSEMBLE", "STACK", "BAGGING", "ANN")]
+                if base_keys:
+                    best_base_key = max(base_keys, key=lambda k: results[k])
+                    bagging = BaggingClassifier(
+                        estimator=clone(candidates[best_base_key]),
+                        n_estimators=BAGGING_N_ESTIMATORS,
+                        random_state=RANDOM_STATE,
+                        n_jobs=-1,
+                    )
+                    bag_steps = [("pre", pre)]
+                    if smote is not None:
+                        bag_steps.append(("smote", smote))
+                    bag_steps.append(("clf", bagging))
+                    bag_pipe = Pipeline(bag_steps)
+                    try:
+                        scores = cross_val_score(bag_pipe, X, y, cv=cv,
+                                                 scoring="balanced_accuracy", n_jobs=-1)
+                        bag_score = float(scores.mean())
+                        print(f"    ENSEMBLE(bagging x{BAGGING_N_ESTIMATORS} ของ {best_base_key[1]}) "
+                              f"CV balanced_accuracy = {bag_score:.3f} (ชุดฟีเจอร์ '{top_fmode}')")
+                        key = (top_fmode, "BAGGING")
+                        candidates[key] = bagging
+                        results[key] = bag_score
+                        tuned_params_all[key] = {"base": best_base_key[1],
+                                                 "n_estimators": BAGGING_N_ESTIMATORS}
+                    except Exception as e:
+                        # จับกว้างเพราะ base ต่างชนิดโยน exception ต่างกัน — แต่ต้อง
+                        # พิมพ์ชนิดกับข้อความบรรทัดเดียว ไม่ให้ traceback กลบ log
+                        print(f"    ENSEMBLE(bagging) ข้าม — {type(e).__name__}: "
+                              f"{str(e).splitlines()[-1][:160]}")
     else:
         print(f"    ข้าม CV ทั้งหมด — class น้อยที่สุดมีแค่ {min_class_count} ตัวอย่าง"
               f" (ต้องการอย่างน้อย 2 เพื่อ stratify)")
 
     if results:
         best_key = max(results, key=results.get)
+        # อาจารย์ที่ปรึกษากำหนดให้ใช้ meta-classifier (2026-08-09) จึงจำกัดผู้ชนะ
+        # ให้อยู่ในกลุ่ม meta เท่านั้นเมื่อ PREFER_META_CLASSIFIER = True
+        #
+        # ⚠️ นี่ไม่ใช่การเลือกตามผล (§3.5) เพราะข้อจำกัด "ต้องเป็น meta" ถูกกำหนด
+        #    จากภายนอก *ก่อน* เห็นตัวเลข — ในกลุ่ม meta ทั้ง 3 ตัว bagging ชนะทั้ง
+        #    BUY (0.695 > 0.682 > 0.675) และ FUEL (0.437 > 0.417 > 0.388)
+        #
+        # ⚠️ ต้องรายงานในเล่มว่าโมเดลเดี่ยวที่ดีที่สุดได้คะแนนสูงกว่าเล็กน้อย
+        #    (BUY: RF 0.701 vs 0.695 = 0.006 | FUEL: ANN 0.440 vs 0.437 = 0.003)
+        #    ซึ่งเล็กกว่าค่าความผันผวนหลายเท่า = ไม่มีนัยสำคัญทางสถิติ
+        if PREFER_META_CLASSIFIER:
+            meta_keys = [k for k in results if k[1] in META_MODEL_NAMES]
+            if meta_keys:
+                meta_key = max(meta_keys, key=results.get)
+                if meta_key != best_key:
+                    print(f"    [meta] โมเดลที่คะแนนสูงสุดคือ {best_key[1]} ({results[best_key]:.3f})"
+                          f" แต่ไม่ใช่ meta-classifier")
+                    print(f"    [meta] เลือก {meta_key[1]} ({results[meta_key]:.3f}) ตามข้อกำหนดของอาจารย์"
+                          f" — ส่วนต่าง {results[best_key]-results[meta_key]:+.3f}")
+                best_key = meta_key
+            else:
+                print("    [meta] ไม่มี meta-classifier ที่ใช้ได้เลย — ใช้โมเดลที่คะแนนสูงสุดแทน")
         best_fmode, best_name = best_key
         best_clf = candidates[best_key]
         cat_cols, num_cols = feature_sets[best_fmode]
@@ -838,7 +915,11 @@ def train_buy(df):
     }
     os.makedirs(MODEL_DIR, exist_ok=True)
     out = os.path.join(MODEL_DIR, "buy_model.pkl")
-    joblib.dump(bundle, out)
+    # compress=3 บังคับไว้ตั้งแต่ 2026-08-28 — ห้ามเอาออก
+    # โมเดล BAGGING x25 ไม่บีบอัดจะได้ 137 MB เกินลิมิต 100 MB ของ GitHub
+    # ซึ่งทำให้ git push ไม่ผ่าน และเว็บบน PythonAnywhere (deploy ด้วย git pull)
+    # จะไม่ได้โมเดลใหม่เลย · บีบแล้วเหลือ 25.7 MB ผลทำนายเท่ากันทุกทศนิยม (ตรวจแล้ว)
+    joblib.dump(bundle, out, compress=3)
     print(f"    บันทึก {out}")
 
 
@@ -909,7 +990,11 @@ def train_fuel(df):
     }
     os.makedirs(MODEL_DIR, exist_ok=True)
     out = os.path.join(MODEL_DIR, "fuel_model.pkl")
-    joblib.dump(bundle, out)
+    # compress=3 บังคับไว้ตั้งแต่ 2026-08-28 — ห้ามเอาออก
+    # โมเดล BAGGING x25 ไม่บีบอัดจะได้ 137 MB เกินลิมิต 100 MB ของ GitHub
+    # ซึ่งทำให้ git push ไม่ผ่าน และเว็บบน PythonAnywhere (deploy ด้วย git pull)
+    # จะไม่ได้โมเดลใหม่เลย · บีบแล้วเหลือ 25.7 MB ผลทำนายเท่ากันทุกทศนิยม (ตรวจแล้ว)
+    joblib.dump(bundle, out, compress=3)
     print(f"    บันทึก {out}")
 
 

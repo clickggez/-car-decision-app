@@ -1,0 +1,145 @@
+{% extends "admin/base.html" %}
+{% block title %}วิเคราะห์เหตุผลของโมเดล — Admin{% endblock %}
+
+{# --------------------------------------------------------------
+   หน้า admin: อธิบายว่าโมเดล BUY ตัดสินแบบนั้นเพราะอะไร
+   เข้าได้เฉพาะบัญชี admin (@admin_required) — ผู้ใช้ทั่วไปไม่เห็นเมนูนี้
+   -------------------------------------------------------------- #}
+
+{% block content %}
+<h4 class="mb-1">ทำไมโมเดลถึงตอบแบบนี้</h4>
+<p class="text-muted" style="font-size:14px;">
+  วิธีวิเคราะห์: ลองเปลี่ยนค่าทีละช่องเป็นทุกตัวเลือกที่เหลือ
+  แล้ววัดว่าโอกาส &ldquo;ซื้อ&rdquo; ขยับไปเท่าไหร่ &mdash; ช่องที่ขยับมากที่สุดคือเหตุผลหลัก
+</p>
+
+<div class="row g-4">
+
+  <!-- รายการผลพยากรณ์ -->
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header bg-white fw-semibold">
+        ผลพยากรณ์ล่าสุด
+        {% if source == 'firestore' %}
+          <span class="badge bg-secondary ms-1">{{ records|length }} รายการ</span>
+        {% endif %}
+      </div>
+      <div class="list-group list-group-flush" style="max-height:520px;overflow-y:auto;">
+        {% for r in records %}
+          <a href="{{ url_for('admin_explain', id=r.id) }}"
+             class="list-group-item list-group-item-action {% if r.id == selected_id %}active{% endif %}">
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="fw-semibold">{{ r.result }}</span>
+              <small>{{ r.created_at.strftime('%d/%m/%y %H:%M') if r.created_at else '—' }}</small>
+            </div>
+            <small class="d-block text-truncate {% if r.id == selected_id %}text-white-50{% else %}text-muted{% endif %}">
+              {{ r.user_id }}
+            </small>
+          </a>
+        {% else %}
+          <div class="list-group-item text-muted" style="font-size:14px;">
+            {% if source == 'firestore' %}
+              ยังไม่มีผลพยากรณ์ประเภท &ldquo;ซื้อ/ไม่ซื้อ&rdquo; ที่บันทึกไว้
+            {% else %}
+              เชื่อมต่อ Firestore ไม่ได้ &mdash; แสดงผลล่าสุดในเบราว์เซอร์นี้แทน
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- คำอธิบาย -->
+  <div class="col-lg-8">
+
+    {% if not has_input %}
+      <div class="alert alert-warning">
+        ยังไม่มีข้อมูลให้วิเคราะห์ &mdash; ต้องมีผลพยากรณ์ &ldquo;ซื้อ/ไม่ซื้อ&rdquo; อย่างน้อย 1 รายการก่อน
+      </div>
+
+    {% elif not exp.available %}
+      <div class="alert alert-warning">
+        ระบบอยู่ในโหมด mock (<code>USE_MOCK = True</code>) จึงยังอธิบายไม่ได้ &mdash; ต้องใช้โมเดลจริง
+      </div>
+
+    {% else %}
+      <div class="card mb-4">
+        <div class="card-body">
+          <div class="text-muted" style="font-size:14px;">ผลที่โมเดลตัดสิน</div>
+          <div class="fs-2 fw-bold {% if exp.base_result == 'ซื้อ' %}text-success{% else %}text-danger{% endif %}">
+            {{ exp.base_result }}
+          </div>
+          <div class="text-muted">
+            โอกาสที่โมเดลให้กับ &ldquo;ซื้อ&rdquo; = <strong>{{ exp.base_percent }}%</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-white fw-semibold">เหตุผลหลัก (ปัจจัยที่ฉุดผลมากที่สุด)</div>
+        {% if exp.reasons %}
+          <div class="table-responsive">
+            <table class="table mb-0 align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>ปัจจัย</th>
+                  <th>ค่าปัจจุบัน</th>
+                  <th>ถ้าเปลี่ยนเป็น</th>
+                  <th class="text-end">โอกาสใหม่</th>
+                  <th class="text-end">ต่างกัน</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in exp.reasons %}
+                  <tr>
+                    <td>
+                      <strong>{{ r.field_th }}</strong>
+                      {% if r.flips %}<span class="badge bg-success ms-1">พลิกผล</span>{% endif %}
+                    </td>
+                    <td class="text-danger">{{ r.current_th }}</td>
+                    <td class="text-success">{{ r.better_th }}</td>
+                    <td class="text-end">{{ r.new_percent }}%</td>
+                    <td class="text-end">+{{ r.gain }} จุด</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="card-body text-muted" style="font-size:14px;">
+            ไม่มีช่องใดที่เปลี่ยนแล้วขยับผลเกิน 0.5 จุด &mdash; ผลค่อนข้างมั่นคง
+          </div>
+        {% endif %}
+        <div class="card-footer bg-white text-muted" style="font-size:14px;">
+          พลิกผลด้วยการเปลี่ยนช่องเดียว:
+          <strong>{% if exp.can_flip %}ได้{% else %}ไม่ได้{% endif %}</strong>
+        </div>
+      </div>
+
+      {% if exp.suggestions %}
+        <div class="card mb-4">
+          <div class="card-header bg-white fw-semibold">เฉพาะช่องที่ผู้ใช้เปลี่ยนได้จริง</div>
+          <ul class="list-group list-group-flush">
+            {% for r in exp.suggestions %}
+              <li class="list-group-item">
+                {{ r.field_th }}:
+                <span class="text-danger">{{ r.current_th }}</span> &rarr;
+                <span class="text-success">{{ r.better_th }}</span>
+                <span class="text-muted">(+{{ r.gain }} จุด)</span>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      <div class="alert alert-light border" style="font-size:14px;line-height:1.8;">
+        <strong>ข้อจำกัดที่ต้องรู้</strong><br>
+        นี่คือคำอธิบายว่า <em>โมเดลคิดอย่างไร</em> ไม่ใช่ความจริงเชิงสาเหตุ<br>
+        โมเดล BUY มีความแม่นยำ 69.25% &plusmn; 3.91 (20 random splits)<br>
+        ระบบไม่อธิบายผลของ FUEL โดยตั้งใจ เพราะความมั่นใจของ FUEL ชี้ผิดทาง
+      </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

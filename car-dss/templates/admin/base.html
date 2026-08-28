@@ -28,6 +28,7 @@
   <a href="{{ url_for('admin_dashboard') }}" class="{% if request.endpoint=='admin_dashboard' %}active{% endif %}">ภาพรวม</a>
   <a href="{{ url_for('admin_users') }}" class="{% if 'admin_users' in request.endpoint %}active{% endif %}">ผู้ใช้</a>
   <a href="{{ url_for('admin_cars') }}" class="{% if 'admin_cars' in request.endpoint %}active{% endif %}">รถยนต์</a>
+  <a href="{{ url_for('admin_explain') }}" class="{% if 'admin_explain' in request.endpoint %}active{% endif %}">วิเคราะห์โมเดล</a>
   <div class="ms-auto d-flex align-items-center gap-3">
     <span style="font-size:13px;opacity:.6;">{{ session.get('admin_username') }}</span>
     <a href="{{ url_for('index') }}"><i class="bi bi-box-arrow-up-right"></i> ดูเว็บ</a>

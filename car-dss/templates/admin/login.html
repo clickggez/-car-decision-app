@@ -17,7 +17,9 @@
       </div>
       <button class="btn btn-dark w-100">เข้าสู่ระบบ</button>
     </form>
-    <p class="text-muted mt-3 mb-0" style="font-size:11px;">ค่าตั้งต้น: admin / admin123 — เปลี่ยนผ่าน env <code>ADMIN_USERNAME</code>, <code>ADMIN_PASSWORD</code></p>
+    {% if warn %}
+      <div class="alert alert-warning mt-3 mb-0" style="font-size:12px;">{{ warn }}</div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

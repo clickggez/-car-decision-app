@@ -210,6 +210,84 @@
       </div><!-- /row -->
     </div>
 
+    <!-- ========================================================
+         SECTION 3: ประสบการณ์และทัศนคติด้านสิ่งแวดล้อม (คำถามใหม่ 2026-08-01)
+         หมายเหตุ: จุดชาร์จ / ต้นทุนรวม / สิทธิประโยชน์ ถามไปแล้วในหน้าก่อนหน้า
+         ระบบดึงคำตอบเดิมมาใช้อัตโนมัติ จึงไม่ถามซ้ำที่นี่
+         ======================================================== -->
+    <div class="card-cardss mb-4 fade-in fade-in-delay-3">
+      <div class="section-header-cardss ev">
+        <i class="bi bi-tree-fill me-2"></i>ส่วนที่ 3 — ประสบการณ์และทัศนคติด้านสิ่งแวดล้อม
+      </div>
+
+      <div class="row g-3">
+
+        <!-- ประสบการณ์ EV -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="ev_exposure">ท่านเคยทดลองขับหรือนั่งรถยนต์ไฟฟ้า (EV) หรือไฮบริดหรือไม่ <span style="color:var(--color-danger);">*</span></label>
+            <select id="ev_exposure" name="ev_exposure" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกคำตอบ —</option>
+              <option value="both">เคยทั้ง EV และ Hybrid</option>
+              <option value="ev_only">เคยเฉพาะ EV</option>
+              <option value="hybrid_only">เคยเฉพาะ Hybrid</option>
+              <option value="none">ไม่เคยเลย</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- range anxiety -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="range_anxiety">ท่านกังวลว่าแบตเตอรี่รถไฟฟ้าจะหมดระหว่างเดินทางเพียงใด <span style="color:var(--color-danger);">*</span></label>
+            <select id="range_anxiety" name="range_anxiety" class="form-select-cardss" required>
+              <option value="" disabled selected>— 1 (ไม่กังวลเลย) ถึง 7 (กังวลมากที่สุด) —</option>
+              <option value="1">1 — ไม่กังวลเลย</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4 — ปานกลาง</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7 — กังวลมากที่สุด</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- NEP 5 ข้อ -->
+        <div class="col-12">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss">
+              ทัศนคติต่อสิ่งแวดล้อม <span style="color:var(--color-danger);">*</span>
+              <span style="font-size:12px;font-weight:400;color:var(--text-muted);margin-left:4px;">(1 = ไม่เห็นด้วยอย่างยิ่ง ถึง 5 = เห็นด้วยอย่างยิ่ง)</span>
+            </label>
+          </div>
+        </div>
+
+        {% for item in [
+            ('nep_1', 'มนุษย์กำลังใช้ทรัพยากรธรรมชาติเกินกว่าที่โลกจะรองรับได้'),
+            ('nep_2', 'การกระทำของมนุษย์ส่งผลกระทบร้ายแรงต่อสมดุลของธรรมชาติ'),
+            ('nep_3', 'พืชและสัตว์มีสิทธิ์ในการดำรงอยู่เท่าเทียมกับมนุษย์'),
+            ('nep_4', 'หากยังดำเนินต่อไปเช่นนี้ เราจะเผชิญวิกฤตสิ่งแวดล้อมครั้งใหญ่'),
+            ('nep_5', 'ความกังวลเรื่องวิกฤตสิ่งแวดล้อมถูกทำให้เกินจริงไปมาก')
+        ] %}
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="{{ item[0] }}" style="font-weight:400;">{{ item[1] }}</label>
+            <select id="{{ item[0] }}" name="{{ item[0] }}" class="form-select-cardss" required>
+              <option value="" disabled selected>— 1 ถึง 5 —</option>
+              <option value="1">1 — ไม่เห็นด้วยอย่างยิ่ง</option>
+              <option value="2">2</option>
+              <option value="3">3 — เฉย ๆ</option>
+              <option value="4">4</option>
+              <option value="5">5 — เห็นด้วยอย่างยิ่ง</option>
+            </select>
+          </div>
+        </div>
+        {% endfor %}
+
+      </div><!-- /row -->
+    </div>
+
     <!-- Submit -->
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 fade-in fade-in-delay-3">
       <a href="{{ url_for('result_buy') }}" class="btn-cardss-secondary">

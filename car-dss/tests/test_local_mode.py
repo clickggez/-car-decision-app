@@ -33,12 +33,21 @@ VALID_BUY = {
     'housing_type': 'condo', 'housing_status': 'rent', 'parking': 'private',
     'income': '25001-35000', 'budget': '500001-800000',
     'concern': 'fuel_price', 'purpose': 'commute',
+    # คำถามใหม่ที่เพิ่มลงฟอร์มเว็บ 2026-08-09 — validators บังคับครบทุกช่อง
+    # (life_events เป็น multi-select ที่ไม่เลือกเลยได้ จึงไม่ต้องใส่)
+    'charging_access': 'installable', 'tco_awareness': 'slightly_cheaper',
+    'incentive_awareness': 'aware_only',
+    'intention': '5', 'attitude': '5', 'subjective_norm': '4', 'pbc_financial': '4',
 }
 
 VALID_FUEL = {
     'usage_type': 'city', 'frequency': 'everyday', 'distance': '31-50',
     'prev_car': 'ice', 'priority': ['price', 'fuel_cost'],
     'tech_env_concern': '4', 'resale_maintenance_concern': '3',
+    # คำถามใหม่ 2026-08-09 (charging_access / tco / incentive ดึงจาก session
+    # ของหน้า buy จึงไม่อยู่ในฟอร์มนี้)
+    'ev_exposure': 'none', 'range_anxiety': '4',
+    'nep_1': '4', 'nep_2': '4', 'nep_3': '3', 'nep_4': '4', 'nep_5': '2',
 }
 
 

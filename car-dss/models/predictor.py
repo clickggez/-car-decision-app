@@ -15,12 +15,52 @@ import random
 import config
 from models import feature_encoding as fe
 
+def _force_single_thread(obj, _depth=0):
+    """
+    บังคับ n_jobs=1 ทุกชั้นของโมเดลที่โหลดมา (2026-08-09)
+
+    ทำไมต้องทำ: โมเดล BAGGING x25 ห่อ RandomForest 400 ต้น = ~10,000 ต้นไม้
+    ถ้าปล่อย n_jobs=-1 ไว้ sklearn จะแตกงานไป 20 คอร์ "ต่อการทำนาย 1 แถว"
+    ซึ่ง overhead ของการกระจายงานมากกว่างานจริงหลายเท่า
+
+    วัดจริงบนเครื่องนี้: n_jobs=-1 -> 2156 ms | n_jobs=1 -> 831 ms (เร็วขึ้น 2.6 เท่า)
+    และ **predict_proba ออกมาเท่ากันทุกทศนิยม** (ตรวจแล้ว) เพราะ n_jobs
+    มีผลแค่การกระจายงาน ไม่ได้เปลี่ยนวิธีคำนวณ
+
+    เว็บทำนายทีละ 1 คน การขนานจึงมีแต่เสีย — ถ้าอนาคตต้องทำนายเป็น batch
+    ค่อยพิจารณาเปิดกลับ
+    """
+    if _depth > 6 or obj is None:
+        return
+    if hasattr(obj, "n_jobs"):
+        try:
+            obj.n_jobs = 1
+        except (AttributeError, ValueError):
+            pass
+    for attr in ("named_steps", "estimators_", "estimators", "steps",
+                 "final_estimator_", "base_estimator_", "estimator"):
+        sub = getattr(obj, attr, None)
+        if sub is None:
+            continue
+        if isinstance(sub, dict):
+            for v in sub.values():
+                _force_single_thread(v, _depth + 1)
+        elif isinstance(sub, (list, tuple)):
+            for v in sub:
+                _force_single_thread(v[1] if isinstance(v, tuple) and len(v) == 2 else v,
+                                     _depth + 1)
+        else:
+            _force_single_thread(sub, _depth + 1)
+
+
 # จะ import เมื่อ USE_MOCK = False เท่านั้น
 if not config.USE_MOCK:
     try:
         import joblib
         _buy_bundle = joblib.load(config.BUY_MODEL_PATH)
         _fuel_bundle = joblib.load(config.FUEL_MODEL_PATH)
+        _force_single_thread(_buy_bundle.get("pipeline"))
+        _force_single_thread(_fuel_bundle.get("pipeline"))
     except FileNotFoundError:
         print("[WARNING] Model files not found, falling back to mock predictions")
         config.USE_MOCK = True
@@ -78,8 +118,11 @@ def _real_predict_buy(input_data):
     feat = fe.buy_features_from_web(input_data)
     X = pd.DataFrame([feat], columns=_buy_bundle["feature_cols"])
     pipe = _buy_bundle["pipeline"]
-    result = pipe.predict(X)[0]
+    # เรียก predict_proba รอบเดียวแล้วหา label จาก argmax แทนการเรียก predict() ซ้ำ
+    # (2026-08-09) โมเดล BAGGING x25 หนักมาก การเดินซ้ำสองรอบทำให้ช้าเป็นเท่าตัว
+    # ผลลัพธ์เท่ากันเพราะ predict() ของ sklearn คือ classes_[argmax(predict_proba)]
     proba = pipe.predict_proba(X)[0]
+    result = pipe.classes_[int(proba.argmax())]
     confidence = round(float(max(proba)), 3)
 
     return {

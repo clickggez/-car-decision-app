@@ -70,6 +70,14 @@
         </a>
       </li>
       {% endif %}
+      {# เมนูนี้ขึ้นเฉพาะบัญชีที่ตั้ง role = admin ไว้ (ดู app._user_is_admin) #}
+      {% if is_admin %}
+      <li>
+        <a href="{{ url_for('admin_dashboard') }}" class="nav-link">
+          <i class="bi bi-shield-lock me-1"></i> ผู้ดูแลระบบ
+        </a>
+      </li>
+      {% endif %}
     </ul>
 
     <!-- Theme toggle -->

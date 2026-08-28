@@ -3,6 +3,11 @@ firebase-service-account.json
 */firebase-service-account.json
 **/firebase-service-account.json
 
+# Admin credentials — ห้ามคอมมิต (เก็บ hash ของรหัสผ่าน admin)
+# สร้าง/เปลี่ยนด้วย: cd car-dss && python set_admin_password.py
+admin_credentials.json
+**/admin_credentials.json
+
 # Python
 __pycache__/
 *.py[cod]
@@ -24,6 +29,21 @@ car-dss/output_images/
 
 # Local data (อาจมีข้อมูลผู้ใช้)
 car-dss/data/users_local.json
+
+# โฟลเดอร์สำรอง/ทดลองของโมเดล — เป็นไฟล์ทำงานเฉพาะเครื่อง ไม่ควรเข้า git
+# (โมเดล BAGGING x25 มีขนาดระดับ 100+ MB ต่อไฟล์)
+car-dss/_backup_*/
+car-dss/_models_*/
+analysis/autoweka_results*/
+
+# ⚠️ car-dss/models/*.pkl ต้อง "อยู่ใน git" ห้าม ignore
+#    เพราะเว็บ deploy บน PythonAnywhere ด้วยวิธี git pull (ดู 04-handoff.md 2026-08-28)
+#    ถ้า ignore ไฟล์โมเดลจะไปไม่ถึงเซิร์ฟเวอร์ = เว็บใช้โมเดลเก่าตลอดไป
+#
+#    ปัญหาเดิม: BAGGING x25 ทำให้ buy_model.pkl = 137 MB > ลิมิต 100 MB ของ GitHub
+#    ทางแก้ที่ใช้ (2026-08-28): บันทึกด้วย joblib compress=3 -> 25.6 MB
+#    ผลทำนายเท่ากันทุกทศนิยม ตัวเลขในเล่มไม่เปลี่ยน
+#    ⛔ ถ้าเทรนโมเดลใหม่ ต้อง dump แบบ compress ทุกครั้ง ไม่งั้น push ไม่ผ่านอีก
 
 # OS / Editor
 .DS_Store

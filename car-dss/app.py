@@ -11,7 +11,7 @@ from functools import wraps
 
 from flask import (
     Flask, render_template, request, redirect, url_for,
-    flash, session, jsonify
+    flash, session, jsonify, abort
 )
 
 import config
@@ -151,6 +151,29 @@ def inject_user():
     }
 
 
+def _user_is_admin(user_uid, username):
+    """
+    บัญชีผู้ใช้ปกตินี้เป็น admin หรือไม่ (2026-08-28)
+
+    ตั้งค่าที่ตัวข้อมูลผู้ใช้ ไม่ใช่ในโค้ด — ทำได้ 2 ทาง
+      - Firebase: เอกสาร users/<uid> มีฟิลด์ role = "admin"  (หรือ is_admin = true)
+      - โหมด local: data/users_local.json ของ user นั้นมี "is_admin": true
+    ตั้งง่าย ๆ ด้วย:  python make_admin.py <ชื่อผู้ใช้>
+    """
+    if db and user_uid and not str(user_uid).startswith('local_'):
+        try:
+            doc = db.collection('users').document(user_uid).get()
+            if doc.exists:
+                data = doc.to_dict() or {}
+                return data.get('role') == 'admin' or data.get('is_admin') is True
+        except Exception as e:
+            print(f"[ERROR] _user_is_admin: {e}")
+        return False
+
+    record = load_local_users().get(username) or {}
+    return record.get('is_admin') is True
+
+
 # ============================================================
 # Firebase Helpers
 # ============================================================
@@ -242,7 +265,10 @@ def login():
                     session['user_uid'] = data['localId']
                     session['username'] = username
                     session['id_token'] = data.get('idToken', '')
+                    session['is_admin'] = _user_is_admin(data['localId'], username)
                     flash(f'ยินดีต้อนรับ {username}!', 'success')
+                    if session['is_admin']:
+                        return redirect(url_for('admin_dashboard'))
                     return redirect(url_for('predict_buy_page'))
                 error_msg = data.get('error', {}).get('message', '')
                 if 'EMAIL_NOT_FOUND' in error_msg or 'INVALID_PASSWORD' in error_msg or 'INVALID_LOGIN_CREDENTIALS' in error_msg:
@@ -258,7 +284,10 @@ def login():
         if record and record.get('password') == password:
             session['user_uid'] = f"local_{username}"
             session['username'] = username
+            session['is_admin'] = _user_is_admin(session['user_uid'], username)
             flash(f'ยินดีต้อนรับ {username}!', 'success')
+            if session['is_admin']:
+                return redirect(url_for('admin_dashboard'))
             return redirect(url_for('predict_buy_page'))
         elif not record:
             return render_template('login.html', error='ไม่พบชื่อผู้ใช้นี้ กรุณาสมัครสมาชิกก่อน')
@@ -403,7 +432,13 @@ def api_predict_buy():
     input_data = _form_fields([
         'gender', 'age', 'children', 'education', 'occupation', 'family_size',
         'housing_type', 'housing_status', 'parking', 'income', 'budget', 'concern', 'purpose',
+        # คำถามใหม่ 2026-08-01 (ต่อสายเข้าฟอร์มเว็บ 2026-08-09)
+        # 3 ตัวแรกเป็นคำถามกลุ่ม EV ที่ predict_fuel ต้องใช้ด้วย — ถามที่นี่ครั้งเดียว
+        # แล้วส่งต่อผ่าน session ไปหน้า fuel (ผู้ใช้ไม่ต้องตอบซ้ำ)
+        'charging_access', 'tco_awareness', 'incentive_awareness',
+        'intention', 'attitude', 'subjective_norm', 'pbc_financial',
     ])
+    input_data['life_events'] = request.form.getlist('life_events')
 
     valid, err = validate_buy(input_data)
     if not valid:
@@ -426,6 +461,9 @@ def api_predict_fuel():
     input_data = _form_fields([
         'usage_type', 'frequency', 'distance', 'prev_car',
         'tech_env_concern', 'resale_maintenance_concern',
+        # คำถามใหม่ 2026-08-01 (ต่อสายเข้าฟอร์มเว็บ 2026-08-09)
+        'ev_exposure', 'range_anxiety',
+        'nep_1', 'nep_2', 'nep_3', 'nep_4', 'nep_5',
     ])
     input_data['priority'] = request.form.getlist('priority')
 
@@ -433,6 +471,18 @@ def api_predict_fuel():
     if not valid:
         flash(err, 'danger')
         return redirect(url_for('predict_fuel_page'))
+
+    # NEP 5 ข้อ -> คะแนนเฉลี่ย (ข้อที่ 5 เป็น reverse-worded ต้องกลับคะแนนก่อน)
+    # ตรรกะเดียวกับ train_models._nep_score เป๊ะ — ถ้าแก้ที่ใดที่หนึ่งต้องแก้ทั้งคู่
+    nep_vals = [int(input_data['nep_' + str(i)]) for i in range(1, 6)]
+    nep_vals[4] = 6 - nep_vals[4]
+    input_data['nep_score'] = sum(nep_vals) / 5.0
+
+    # 3 คำถามกลุ่ม EV ถามไปแล้วในหน้า buy — ดึงกลับมาใช้ ไม่ถามผู้ใช้ซ้ำ
+    # (ผ่าน validate_buy มาแล้ว จึงไม่ต้อง validate ซ้ำ)
+    prev = session.get('buy_input_data') or {}
+    for k in ('charging_access', 'tco_awareness', 'incentive_awareness'):
+        input_data[k] = prev.get(k, '')
 
     result = predict_fuel(input_data)
     session['fuel_prediction'] = result
@@ -522,6 +572,25 @@ def recommend():
 # ADMIN ROUTES
 # ============================================================
 
+def _admin_credentials_ok(username, password):
+    """
+    ตรวจรหัสผ่าน admin (2026-08-28)
+
+    รองรับทั้งแบบ hash และข้อความธรรมดา ตามที่ config โหลดมาได้
+    ถ้าไม่ได้ตั้งรหัสไว้เลย จะคืน False เสมอ — ไม่มีรหัสเริ่มต้นให้เดา
+    """
+    if not config.ADMIN_LOGIN_ENABLED:
+        return False
+    if username != config.ADMIN_USERNAME:
+        return False
+    if config.ADMIN_PASSWORD_HASH:
+        from werkzeug.security import check_password_hash
+        return check_password_hash(config.ADMIN_PASSWORD_HASH, password)
+    # เทียบแบบ constant-time กันการเดาจากเวลาที่ใช้ตอบ
+    import hmac
+    return hmac.compare_digest(config.ADMIN_PASSWORD_PLAIN or '', password)
+
+
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if session.get('is_admin'):
@@ -529,13 +598,15 @@ def admin_login():
     if request.method == 'POST':
         u = request.form.get('username', '').strip()
         p = request.form.get('password', '')
-        if u == config.ADMIN_USERNAME and p == config.ADMIN_PASSWORD:
+        if _admin_credentials_ok(u, p):
             session['is_admin'] = True
             session['admin_username'] = u
             flash('เข้าสู่ระบบผู้ดูแลสำเร็จ', 'success')
             return redirect(url_for('admin_dashboard'))
         return render_template('admin/login.html', error='ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง')
-    return render_template('admin/login.html')
+    warn = None if config.ADMIN_LOGIN_ENABLED else (
+        'ยังไม่ได้ตั้งรหัสผ่านผู้ดูแลระบบ — เปิด terminal แล้วรัน  python set_admin_password.py')
+    return render_template('admin/login.html', warn=warn)
 
 
 @app.route('/admin/logout')
@@ -640,6 +711,53 @@ def admin_users_delete(uid):
 
 
 # ---------- Cars ----------
+@app.route('/admin/explain')
+@admin_required
+def admin_explain():
+    """
+    หน้า admin: อธิบายว่าโมเดล BUY ตัดสินแบบนั้นเพราะอะไร (2026-08-28)
+
+    เลือกผลพยากรณ์ที่บันทึกไว้ใน Firestore มาวิเคราะห์ได้ ถ้าไม่มี Firestore
+    จะถอยไปใช้ผลล่าสุดใน session ของเบราว์เซอร์นี้แทน
+
+    ⚠️ อธิบายเฉพาะ BUY เท่านั้น — ห้ามทำให้ FUEL (ดู models/explainer.py)
+    """
+    from models.explainer import explain_buy
+
+    records, source = [], 'session'
+    if db:
+        try:
+            docs = (db.collection('predictions')
+                    .order_by('created_at', direction=firestore.Query.DESCENDING)
+                    .limit(50)
+                    .stream())
+            # กรอง type ใน Python ไม่ใช่ใน query — เลี่ยงการต้องสร้าง composite index เพิ่ม
+            for d in docs:
+                item = d.to_dict()
+                if item.get('type') != 'buy':
+                    continue
+                records.append({
+                    'id': d.id,
+                    'user_id': item.get('user_id', ''),
+                    'result': item.get('result', ''),
+                    'created_at': item.get('created_at'),
+                    'input_data': item.get('input_data') or {},
+                })
+            source = 'firestore'
+        except Exception as e:
+            print(f"[ERROR] admin_explain read failed: {e}")
+
+    selected_id = request.args.get('id') or (records[0]['id'] if records else None)
+    chosen = next((r for r in records if r['id'] == selected_id), None)
+
+    input_data = chosen['input_data'] if chosen else session.get('buy_input_data')
+    exp = explain_buy(input_data) if input_data else None
+
+    return render_template('admin/explain.html', exp=exp, records=records,
+                           selected_id=selected_id, chosen=chosen,
+                           source=source, has_input=bool(input_data))
+
+
 @app.route('/admin/cars')
 @admin_required
 def admin_cars():

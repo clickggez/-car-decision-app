@@ -6,6 +6,7 @@
 ## 🏗️ Tech Stack & Core Logic
 
 - **Backend:** Flask (`app.py`), การจัดการ Sessions
+- **Deployment / Hosting:** PythonAnywhere (รันโค้ดผ่าน GitHub Clone: `https://r4tt4.pythonanywhere.com`)
 - **Database:** Firebase (Auth/Firestore) พร้อมระบบ Local Mode สำรอง (JSON)
 - **Data Source:** `data/cars.json` (แบ่งหมวดหมู่เป็น EV, Hybrid, ICE)
 - **AI Models:** Scikit-learn & TensorFlow (เก็บไว้ใน `models/`)
@@ -31,6 +32,95 @@
 
 ## 🐛 Known Issues
 *(Agents: เพิ่ม bug หรือข้อจำกัดที่พบเจอในส่วนนี้)*
+
+### 🔴 โมเดล BAGGING มีขนาด 137 MB — เกินลิมิต GitHub และช้า (พบ 2026-08-09)
+
+`BaggingClassifier(n_estimators=25)` ห่อ `RandomForest(n_estimators=400)` = **~10,000 ต้นไม้**
+
+| | เดิม (SVM/RF เดี่ยว) | ใหม่ (BAGGING) |
+|---|---|---|
+| `buy_model.pkl` | 132 KB | **137 MB** |
+| `fuel_model.pkl` | 51 KB | **18 MB** |
+| เวลาโหลดตอนเริ่มเซิร์ฟเวอร์ | <1 วิ | ~4 วิ |
+
+**⚠️ GitHub ปฏิเสธไฟล์เดี่ยวเกิน 100 MB — `git push` จะไม่ผ่าน**
+`.pkl` ถูก git ติดตามอยู่เดิม ต้องตัดสินใจก่อน push: Git LFS / เลิกติดตาม `.pkl` /
+หรือลด `BAGGING_N_ESTIMATORS` แล้วเทรนใหม่ (ตัวเลขในเล่มจะเปลี่ยน ต้องวัดใหม่ทั้งชุด)
+`.gitignore` กัน `_backup_*/`, `_models_*/`, `autoweka_results*/` ไว้แล้ว แต่ `models/*.pkl` ยังติดตามอยู่
+
+**การแก้ความเร็วที่ทำไปแล้ว (อยู่ใน `models/predictor.py`):**
+
+1. `_force_single_thread()` — บังคับ `n_jobs=1` ทุกชั้นตอนโหลด
+   เพราะ `n_jobs=-1` แตกงานไป 20 คอร์เพื่อทำนาย **แถวเดียว** overhead มากกว่างานจริง
+   **2156 ms → 831 ms** และ `predict_proba` ออกมาเท่ากันทุกทศนิยม (ตรวจแล้ว)
+2. `_real_predict_buy()` เรียก `predict_proba` รอบเดียวแล้วหา label จาก `argmax`
+   แทนการเรียก `predict()` + `predict_proba()` ซ้ำสองรอบ → **706 ms**
+
+รวมปัจจุบัน: `predict_buy` ~706 ms · `predict_fuel` ~542 ms (รับได้สำหรับ form submit)
+⚠️ ถ้าอนาคตต้องทำนายเป็น batch ให้พิจารณาเปิด `n_jobs` กลับ
+
+### ⚠️ ไฟล์ `.ps1` ที่มีภาษาไทย **ต้องบันทึกเป็น UTF-8 ที่มี BOM** (พบ 2026-08-08)
+
+Windows PowerShell 5.1 อ่านไฟล์ `.ps1` เป็น ANSI codepage เมื่อ**ไม่มี BOM** คอมเมนต์ภาษาไทย
+จะกลายเป็น mojibake และอักขระอย่าง `—` `“` `"` ทำให้ตัว parser พังทั้งไฟล์
+(อาการที่เจอ: `Unexpected token '}'`, `The string is missing the terminator`)
+
+⚠️ **เครื่องมือเขียนไฟล์ของ AI agent ส่วนใหญ่บันทึกเป็น UTF-8 ไม่มี BOM** ต้องแปลงหลังเขียนทุกครั้ง
+
+```powershell
+$p = "path\to\script.ps1"
+$t = [System.IO.File]::ReadAllText($p, [System.Text.UTF8Encoding]::new($false))
+[System.IO.File]::WriteAllText($p, $t, [System.Text.UTF8Encoding]::new($true))
+# ตรวจ: 3 ไบต์แรกต้องเป็น 239,187,191
+```
+
+ตรวจไวยากรณ์ก่อนรันงานยาว:
+```powershell
+$e=$null; [void][System.Management.Automation.Language.Parser]::ParseFile($p,[ref]$null,[ref]$e); $e
+```
+
+### 🔴🔴 ไฟล์ผล Auto-WEKA มีตัวเลข 2 ชุด — **ตัวบนคือ training data ห้ามใช้เด็ดขาด** (พบ 2026-08-08)
+
+ไฟล์ `autoweka_results*/cardss_*.txt` แต่ละไฟล์มี `Correctly Classified` และ
+`Kappa statistic` **ปรากฏหลายครั้ง** ชุดแรกคือผลบน training data (โมเดลเห็นคำตอบแล้ว)
+ชุด**สุดท้าย**คือผล 10-fold CV ซึ่งเป็นตัวเดียวที่อ้างอิงได้
+
+ตัวอย่างที่อันตรายที่สุด — `cardss_fuel_balanced` รอบ `-metric kappa`:
+
+| | accuracy | kappa |
+|---|---|---|
+| training data (**ห้ามใช้**) | **82.35%** | **0.7353** |
+| 10-fold CV (ใช้ตัวนี้) | **31.37%** | **−0.0294** |
+
+**ห่างกัน 51 จุด** = overfitting เต็มรูปแบบ ใครหยิบ 82.35% ไปเขียนว่า "เกิน 80% แล้ว"
+จะเป็นกับดักเดียวกับ 86.7% ปลอมใน `00-READ-FIRST.md` §3.1
+
+วิธีดึงเลขที่ถูกต้อง: `Select-String "Correctly Classified" | Select-Object -Last 1`
+
+### ✅ `-metric errorRate` **ไม่ใช่** ต้นตอของ kappa ติดลบ — ทดลองแล้ว (2026-08-08)
+
+เคยตั้งสมมติฐานว่า `run_autoweka.ps1:61` ที่ใช้ `-metric errorRate` ทำให้ FUEL ยุบไปทาย ICE
+จึงรันซ้ำทั้ง 4 ชุดด้วย `-metric kappa` (`run_autoweka_kappa.ps1`, ค่าอื่นคงเดิมทุกตัว)
+**ผลคือสมมติฐานผิด — kappa ยังติดลบทั้งสองชุด และบน `cardss_fuel` แย่ลงด้วยซ้ำ**
+
+| ชุด (10-fold CV) | errorRate | kappa |
+|---|---|---|
+| buy | 71.20% · κ 0.3834 | 68.80% · κ 0.3415 |
+| buy_balanced | 66.11% · κ 0.3221 | 65.14% · κ 0.3029 |
+| fuel | 52.53% · κ −0.0059 | 48.42% · κ **−0.0275** |
+| fuel_balanced | 29.41% · κ −0.0588 | 31.37% · κ **−0.0294** |
+
+**คุณค่าของผลนี้:** ตัดข้อแก้ตัว "เลือก metric ผิด" ทิ้งได้ — FUEL ไร้อำนาจทำนายบน ARFF
+ภายใต้ทั้ง 2 objective เป็นหลักฐาน**ข้ามเครื่องมือ**ที่เสริมข้อสรุปเรื่องเพดานข้อมูล
+
+⚠️ ยังคง **ห้ามนำ Auto-WEKA (FUEL 52.53%) ไปเทียบกับ manual tuning (44.3%) ในเล่ม**
+เพราะ ARFF ไม่ผ่าน SMOTE และไม่มี class weight ขณะที่ pipeline sklearn มีทั้งคู่ —
+ยังเป็นคนละ preprocessing (ข้อนี้**ยังไม่ได้ทดสอบแยก** อย่าเขียนว่าเป็นสาเหตุที่พิสูจน์แล้ว)
+
+**ข้อเท็จจริงที่ยืนยันแล้ว:** โมเดล sklearn ของโปรเจกต์ **ไม่มีอาการ collapse** — `train_models.py`
+ใส่ `class_weight="balanced"` (บรรทัด 527/534/550/559/688/722) และ
+`scoring="balanced_accuracy"` (587) วัดจริง 20 splits ได้ recall EV 0.5036 / Hybrid 0.3344 /
+ICE 0.4485, kappa **+0.1264** (`analysis/fuel_threshold.py`)
 
 ### 🔴 Construct Mismatch ของ label `predict_buy` (พบ 2026-08-02) — ต้นตอที่แท้จริงของทุกความผิดปกติ
 

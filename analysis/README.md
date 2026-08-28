@@ -25,6 +25,16 @@ python <ชื่อสคริปต์>.py
 | `full_analysis.py` | การวิเคราะห์ 8 รายการ (nested CV, selective, learning curve, pairwise, hierarchical, ordinal, confident learning, clustering) | 7.5 |
 | `cl_correct.py` | Confident Learning เวอร์ชันถูกต้องตามระเบียบวิธี | 7.5 (7) |
 | `compare_datasets.py` | เทียบชุดข้อมูลเก่า n=715 กับใหม่ n=500 ด้วยวิธีวัดเดียวกัน | 7.6 |
+| `fuel_binary.py` | เทียบ FUEL 3 คลาส vs 2 คลาส (EV+Hybrid vs ICE) — 2 คลาสได้ accuracy สูงกว่า 11.25 จุดและชนะ baseline แต่ kappa/ROC-AUC ลดลง = ได้จากโจทย์ง่ายลง ผล: `fuel_binary_2026-08-09.txt` | 4 |
+| `alt_framing_bagging_2026-08-09.txt` | ผลของ `alt_framing.py` ด้วยโมเดลชุดปัจจุบัน — **top-2 accuracy 0.7523 แพ้ baseline ของ top-2 (0.7848) ห้ามใช้** · ROC-AUC FUEL 0.5837 / BUY 0.7203 | 4 |
+| `selective_calibration.py` | selective classification (coverage 50/70/90 ตรึงเท่า `full_analysis.py`) + calibration/ECE ของโมเดลชุดปัจจุบัน — **BUY ใช้ selective ได้ (0.7800 ที่ 50%) แต่ FUEL ใช้ไม่ได้ (accuracy ลดลง)** ผล: `selective_calibration_2026-08-09.txt` | 4, 7.5 |
+| `model_health_check.py` | ตรวจสุขภาพโมเดลชุดปัจจุบัน — เสถียร/เดามั่ว/เดาคลาสใหญ่ ด้วย kappa + permutation test + recall รายคลาส + confusion matrix (ผล: `model_health_2026-08-09.txt`) | 4, 7.5 |
+| `balanced_results_bagging_2026-08-09.txt` | ผลของ `balanced_subsample.py` หลังเปิด meta-classifier — **เป็นตัวเลขอ้างอิงชุดปัจจุบัน** (ดู `00-READ-FIRST.md` §1) ส่วน `balanced_results.txt` คือชุดเก่าเก็บไว้เทียบ | 7.5 |
+| `meta_voting_bagging.py` | เทียบ meta-classifier voting vs bagging vs โมเดลเดี่ยว บน 20 splits (ตามคำสั่งอาจารย์ 2026-08-09) — ผล: bagging ดีที่สุดทุกตัวชี้วัดบน BUY แต่ส่วนต่างไม่มีนัยสำคัญ | — |
+| `meta_voting_bagging_results_2026-08-09.txt` | ผลลัพธ์ดิบจาก `meta_voting_bagging.py` | — |
+| `run_autoweka_kappa.ps1` | รัน Auto-WEKA ซ้ำด้วย `-metric kappa` (ผลลง `autoweka_results_kappa/`) — หักล้างสมมติฐานว่า `errorRate` คือต้นตอของ kappa ติดลบ | — |
+| `fuel_threshold.py` | per-class decision threshold (prior correction) บน FUEL — ผล: ไม่ช่วย (inner CV เลือก alpha=0 ใน 18-20/20 splits) และยืนยันว่าโมเดล sklearn ไม่มีอาการ majority-class collapse (kappa +0.1264) | — |
+| `fuel_threshold_results_2026-08-08.txt` | ผลลัพธ์ดิบจาก `fuel_threshold.py` | — |
 | `results_8analyses_2026-08-02.txt` | ผลลัพธ์ดิบที่ได้จาก `full_analysis.py` | — |
 
 ## ⚠️ ข้อควรระวังเชิงระเบียบวิธีที่บันทึกไว้ในโค้ด
