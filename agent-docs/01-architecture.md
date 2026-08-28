@@ -12,6 +12,13 @@
 - **AI Models:** Scikit-learn & TensorFlow (เก็บไว้ใน `models/`)
   - `predict_buy`: ทำนายว่าควร "ซื้อ" หรือ "ไม่ซื้อ"
   - `predict_fuel`: แนะนำประเภทเชื้อเพลิง (EV, Hybrid, ICE)
+  - `models/explainer.py` (2026-08-28): อธิบายผลของ **BUY เท่านั้น** ด้วย counterfactual ทีละฟิลด์
+    ทุก variant ยัดเข้า `predict_proba` **batch เดียว** (369 ms) — แสดงที่ `/admin/explain`
+- **โมเดลที่ deploy จริง:** BAGGING x25 (BUY ห่อ RandomForest 400 · FUEL ห่อ ExtraTrees 300)
+  บันทึกด้วย `joblib compress=3` → 26.9 MB / 4.8 MB (ไม่บีบอัดจะเป็น 137 MB เกินลิมิต GitHub)
+- **สิทธิ์ admin:** เป็น *role บนบัญชีผู้ใช้ปกติ* — Firebase `users/<uid>.role = "admin"`
+  หรือ local `users_local.json` → `is_admin: true` · จัดการด้วย `make_admin.py`
+  `app._user_is_admin()` อ่านค่าตอนล็อกอินแล้วตั้ง `session['is_admin']`
 
 ## ✅ กฎของระบบ (DO)
 
@@ -29,6 +36,14 @@
 3. ห้าม retrain หรือเปลี่ยนไฟล์ model ใน `models/` โดยไม่ได้รับคำสั่ง
 4. ห้ามแก้ไข Firebase Auth flow ที่ใช้งานได้แล้ว
 5. ห้ามเพิ่ม dependency ใหม่โดยไม่ update `requirements.txt` และแจ้งใน handoff
+6. **ห้ามใส่รหัสผ่านหรือ credential ลงในโค้ด** — เดิม `admin123` อยู่ใน `config.py` และ
+   หน้า `/admin/login` โชว์ให้ทุกคนที่เปิดเว็บเห็น (แก้แล้ว 2026-08-28)
+   ใช้ env var หรือไฟล์ที่ `.gitignore` กันไว้เท่านั้น (`admin_credentials.json`,
+   `firebase-service-account.json`)
+7. **ห้าม `git rm --cached` ไฟล์โมเดล / ห้ามใส่ `car-dss/models/*.pkl` ใน `.gitignore`**
+   เว็บ deploy ด้วย `git pull` ถ้า ignore เซิร์ฟเวอร์จะค้างโมเดลเก่าตลอดไป
+8. **ห้ามเอา `compress=3` ออกจาก `joblib.dump` ใน `train_models.py`** (2 จุด)
+   ไม่งั้นไฟล์โมเดลจะกลับไป 137 MB แล้ว `git push` ไม่ผ่าน
 
 ## 🐛 Known Issues
 *(Agents: เพิ่ม bug หรือข้อจำกัดที่พบเจอในส่วนนี้)*

@@ -106,10 +106,10 @@ n=500, 20 random splits, กลุ่มสมดุลสุ่มลด 10 see
 แต่ EV recall จะเป็น 0 ซึ่งทำให้ระบบแนะนำรถไร้ประโยชน์ — โมเดลเลือกทางที่ถูกสำหรับ DSS
 แล้วถูกตัวชี้วัด accuracy ลงโทษ (accuracy paradox)
 
-**ตรวจสถานะ deploy ล่าสุด 2026-08-28:** โมเดล BAGGING **อยู่บนเว็บแล้ว** ตั้งแต่ 2026-08-09
-(`models/buy_model.pkl` 143.8 MB · `models/fuel_model.pkl` 19.2 MB) `verify_deploy.py` ผ่านเกณฑ์ §3.1.1
-ครบ 3 ข้อ และ `python -m unittest discover -s tests` ผ่าน 41/41 — **ไม่ต้อง deploy ซ้ำ**
-⚠️ เครื่องนี้ไม่มี `pytest` ให้ใช้ `unittest` แทน
+**โมเดลที่ระบบใช้อยู่** — `car-dss/models/buy_model.pkl` **26.9 MB** · `fuel_model.pkl` **4.8 MB**
+(BAGGING x25 บันทึกแบบ `joblib compress=3` — ขนาดที่เห็นคือหลังบีบอัด ตัวโมเดลเท่าเดิมทุกประการ)
+`verify_deploy.py` ผ่านเกณฑ์ §3.1.1 ครบ 3 ข้อ · `python -m unittest discover -s tests` ผ่าน 41/41
+⚠️ เครื่องนี้ **ไม่มี `pytest`** ให้ใช้ `unittest` แทน
 
 **✅ ปิดเบาะแสค้าง 2026-08-28: label FUEL เป็น construct mismatch — ยืนยันแล้ว**
 `analysis/fuel_label_construct.py` → `fuel_label_construct_2026-08-28.txt`
@@ -124,14 +124,40 @@ label FUEL **ไม่สัมพันธ์กับข้อจำกัด�
 (ข้อมูลจาก Antigravity 2026-08-28 · ยืนยันแล้วโดยเปิดเว็บจริง)
 ⚠️ `firebase-service-account.json` ไม่อยู่ใน git ต้องอัปโหลดแยกผ่านหน้า Files ของ PythonAnywhere
 
-🔴 **เว็บออนไลน์ยังเป็นของเก่าทั้งหมด** (commit `a48be3d`) — โมเดลเก่า 135 KB และ**ไม่มีคำถามใหม่ 10 ข้อ**
-งานตั้งแต่ 2026-08-09 ทั้งหมด **ยังไม่เคย commit/push**
+✅ **deploy สำเร็จแล้ว 2026-08-28** — เว็บออนไลน์รันโค้ดชุดปัจจุบันครบทั้งหมด
+(โมเดล BAGGING · คำถามใหม่ 10 ข้อ · explainer · ระบบ admin ใหม่ · โหมดมืด)
+**โมเดล ~10,000 ต้นไม้ทำงานได้บน PythonAnywhere บัญชีฟรี ไม่มี 500** — ความเสี่ยงเรื่อง RAM ไม่เกิดขึ้นจริง
+
+**ขั้นตอน deploy ที่ใช้ได้จริง** (ทำซ้ำได้ตามนี้)
+```
+cd ./-car-decision-app        # ชื่อโฟลเดอร์มีขีดนำหน้า ต้องมี ./ ไม่งั้น shell มองเป็น option
+git branch                    # ต้องอยู่ main
+git pull
+touch /var/www/r4tt4_pythonanywhere_com_wsgi.py   # reload โดยไม่ต้องหาปุ่มในหน้า Web
+```
+⚠️ ถ้า `git pull` ขึ้น "local changes would be overwritten" ให้ดู `git status --short` ก่อน
+ถ้าไฟล์ขึ้นเป็น `D` **พร้อมกับ** `??` = index เพี้ยนจาก `git rm -r --cached .` → **แก้ด้วย `git reset` เฉย ๆ**
+(⛔ ห้าม `git reset --hard` เด็ดขาด)
+⚠️ ไฟล์ CSV ชื่อไทยใน `files/` ยาวเกิน 255 ไบต์ สร้างบน Linux ไม่ได้ ขึ้น "File name too long"
+**ไม่กระทบเว็บ** เพราะเว็บใช้แค่ `.pkl`
 
 **✅ ปิดปัญหาลิมิต GitHub 2026-08-28 ด้วยการบีบอัดโมเดล**
 `buy_model.pkl` 137.2 MB → **25.7 MB** · `fuel_model.pkl` 18.4 → **4.6 MB** (`joblib compress=3`)
 **ผลทำนายเท่ากันทุกทศนิยม ตัวเลขในเล่มไม่เปลี่ยน** · `verify_deploy.py` ตรงกันทั้ง 4 โปรไฟล์ · tests 41/41
 ⛔ **ห้าม ignore `car-dss/models/*.pkl`** (เว็บ deploy ด้วย git pull) และ
 ⛔ **ห้ามเอา `compress=3` ออกจาก `train_models.py`**
+
+**🔐 ระบบ admin (เปลี่ยนใหม่ 2026-08-28)** — สิทธิ์เก็บที่ **ตัวบัญชีผู้ใช้ ไม่ใช่ในโค้ด**
+Firebase `users/<uid>.role = "admin"` หรือ local `users_local.json` → `"is_admin": true`
+ตั้งด้วย `python make_admin.py <ชื่อผู้ใช้>` (`--remove` ถอด · `--list` ดูรายชื่อ) · ตั้งให้ `click` แล้ว
+ล็อกอินที่ `/login` ตามปกติ → ระบบพาเข้า `/admin` เอง + มีเมนู "ผู้ดูแลระบบ" ใน navbar
+⚠️ ผู้ที่เพิ่งได้สิทธิ์ **ต้อง logout/login ใหม่** เพราะ `session['is_admin']` ตั้งตอนล็อกอินครั้งเดียว
+⛔ **ห้ามใส่รหัสผ่านลงโค้ดอีก** — เดิม `admin123` อยู่ใน `config.py` **และหน้า login โชว์ให้ทุกคนเห็น**
+ทางสำรอง `/admin/login` อ่านรหัสจาก env หรือ `admin_credentials.json` (git ไม่ติดตาม) ไม่มีรหัสเริ่มต้น
+
+**🔍 หน้า `/admin/explain`** — อธิบายว่าโมเดล BUY ตัดสินแบบนั้นเพราะอะไร (`models/explainer.py`)
+counterfactual ทีละฟิลด์ ยัดทุก variant เข้า `predict_proba` **batch เดียว** → 369 ms
+⛔ **ห้ามแก้เป็นวนลูปทีละแถว** (จะกลายเป็นหลายสิบวินาที) · ⛔ **ห้ามทำ explainer ให้ FUEL** (calibration ชี้ผิดทาง §3.3)
 
 **งานที่เหลือ:** ผู้ใช้คุยกับอาจารย์ → ร่างบทที่ 4-5
 
