@@ -259,6 +259,108 @@ function handle(msg) {
   }
 }
 
+// ---------- โหมดดูสด: เปิดหน้าเว็บในเบราว์เซอร์ ----------
+
+const PAGE = `<!doctype html><html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ห้องประชุม AI — CarDSS</title><style>
+*{box-sizing:border-box}
+body{margin:0;background:#0f1115;color:#e6e6e6;
+  font-family:"Sarabun","Leelawadee UI","Segoe UI",sans-serif;font-size:15px;line-height:1.7}
+header{position:sticky;top:0;background:#161920;border-bottom:1px solid #262b36;
+  padding:14px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;z-index:5}
+h1{font-size:17px;margin:0;font-weight:600}
+.dot{width:9px;height:9px;border-radius:50%;background:#39d353;animation:p 2s infinite}
+@keyframes p{50%{opacity:.3}}
+.meta{color:#8b93a7;font-size:13px;margin-left:auto}
+main{max-width:900px;margin:0 auto;padding:20px}
+.topic{color:#8b93a7;font-size:13px;margin:26px 0 10px;text-transform:none;
+  border-bottom:1px solid #262b36;padding-bottom:6px}
+.msg{background:#161920;border:1px solid #262b36;border-left:3px solid var(--c);
+  border-radius:8px;padding:12px 16px;margin-bottom:12px;white-space:pre-wrap;word-wrap:break-word}
+.msg.new{animation:f .8s}
+@keyframes f{from{background:#1e2634;border-color:var(--c)}}
+.who{font-weight:600;color:var(--c);font-size:14px}
+.when{color:#6b7280;font-size:12px;margin-left:8px;font-weight:400}
+.body{margin-top:8px}
+.claude{--c:#d97757}.codex{--c:#10a37f}.antigravity{--c:#4285f4}
+.user{--c:#eab308}.cursor{--c:#a78bfa}
+form{display:flex;gap:8px;margin-top:24px;position:sticky;bottom:0;background:#0f1115;padding:12px 0}
+textarea{flex:1;background:#161920;border:1px solid #262b36;color:#e6e6e6;border-radius:8px;
+  padding:10px 12px;font-family:inherit;font-size:14px;resize:vertical;min-height:44px}
+button{background:#eab308;color:#111;border:0;border-radius:8px;padding:0 20px;
+  font-family:inherit;font-weight:600;font-size:14px;cursor:pointer}
+button:hover{background:#facc15}
+.empty{color:#6b7280;text-align:center;padding:60px 0}
+</style></head><body>
+<header><span class="dot"></span><h1>ห้องประชุม AI — CarDSS</h1>
+<span class="meta" id="meta">กำลังต่อ…</span></header>
+<main><div id="feed"><div class="empty">กำลังโหลด…</div></div>
+<form id="f"><textarea id="t" placeholder="พิมพ์เพื่อร่วมประชุมในนามคุณ (กด Enter ส่ง)"></textarea>
+<button>ส่ง</button></form></main>
+<script>
+let seen=new Set(), first=true;
+const feed=document.getElementById("feed");
+async function tick(){
+  try{
+    const r=await fetch("/api");const d=await r.json();
+    document.getElementById("meta").textContent=d.messages.length+" ข้อความ · อัปเดต "+new Date().toLocaleTimeString("th-TH");
+    if(first){feed.innerHTML="";first=false;}
+    let topic=null;
+    for(const m of d.messages){
+      if(seen.has(m.id))continue;
+      seen.add(m.id);
+      if(m.topic!==topic){topic=m.topic;
+        const h=document.createElement("div");h.className="topic";h.textContent="หัวข้อ: "+m.topic;feed.appendChild(h);}
+      const el=document.createElement("div");
+      el.className="msg new "+m.agent;
+      const re=m.reply_to?" ↩ ตอบ #"+m.reply_to:"";
+      el.innerHTML='<span class="who">#'+m.id+' '+m.agent+'</span><span class="when">'+m.local+re+'</span>';
+      const b=document.createElement("div");b.className="body";b.textContent=m.message;
+      el.appendChild(b);feed.appendChild(el);
+      window.scrollTo(0,document.body.scrollHeight);
+    }
+    if(!feed.children.length)feed.innerHTML='<div class="empty">ยังไม่มีใครโพสต์</div>';
+  }catch(e){document.getElementById("meta").textContent="ต่อไม่ติด";}
+}
+tick();setInterval(tick,1500);
+const f=document.getElementById("f"),t=document.getElementById("t");
+f.onsubmit=async e=>{e.preventDefault();const v=t.value.trim();if(!v)return;t.value="";
+  await fetch("/api",{method:"POST",headers:{"content-type":"application/json"},
+    body:JSON.stringify({agent:"user",topic:"แบ่งหน้าที่",message:v})});tick();};
+t.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();f.requestSubmit();}};
+</script></body></html>`;
+
+async function serve(port) {
+  const { createServer } = await import("node:http");
+  createServer((req, res) => {
+    if (req.url === "/api" && req.method === "GET") {
+      res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+      return res.end(JSON.stringify(load()));
+    }
+    if (req.url === "/api" && req.method === "POST") {
+      let body = "";
+      req.on("data", (c) => (body += c));
+      return req.on("end", () => {
+        try {
+          const a = JSON.parse(body);
+          callTool("meeting_post", a);
+          res.writeHead(200, { "content-type": "application/json" });
+          res.end('{"ok":true}');
+        } catch (e) {
+          res.writeHead(400, { "content-type": "application/json; charset=utf-8" });
+          res.end(JSON.stringify({ error: e.message }));
+        }
+      });
+    }
+    res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+    res.end(PAGE);
+  }).listen(port, "127.0.0.1", () => {
+    console.log(`ห้องประชุมเปิดที่ http://127.0.0.1:${port}`);
+    console.log("กด Ctrl+C เพื่อปิด");
+  });
+}
+
 // ---------- โหมดบรรทัดคำสั่ง (ไว้ใช้ตอน MCP ต่อไม่ได้) ----------
 // node server.mjs read [หัวข้อ]
 // node server.mjs post <agent> <หัวข้อ> <ข้อความ>
@@ -266,7 +368,8 @@ function handle(msg) {
 if (process.argv[2]) {
   const [, , cmd, ...rest] = process.argv;
   try {
-    if (cmd === "read") console.log(callTool("meeting_read", { topic: rest[0] }));
+    if (cmd === "serve") await serve(Number(rest[0]) || 7788);
+    else if (cmd === "read") console.log(callTool("meeting_read", { topic: rest[0] }));
     else if (cmd === "topics") console.log(callTool("meeting_topics", {}));
     else if (cmd === "post")
       console.log(
@@ -284,7 +387,7 @@ if (process.argv[2]) {
     console.error("ผิดพลาด:", e.message);
     process.exit(1);
   }
-  process.exit(0);
+  if (cmd !== "serve") process.exit(0); // serve ต้องค้างไว้ ไม่งั้นเซิร์ฟเวอร์ดับ
 }
 
 let buf = "";
