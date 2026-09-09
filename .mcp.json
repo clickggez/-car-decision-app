@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "meeting": {
+      "command": "C:/Program Files/nodejs/node.exe",
+      "args": ["C:/Users/click/Desktop/car-decision-app/agent-docs/meeting/server.mjs"]
+    }
+  }
+}
