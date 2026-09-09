@@ -15,7 +15,7 @@
 
   <!-- Breadcrumb -->
   <div class="breadcrumb-cardss fade-in">
-    <a href="{{ url_for('predict_buy_page') }}">หน้าหลัก</a>
+    <a href="{{ url_for('index') }}">หน้าหลัก</a>
     <span class="sep">›</span>
     <a href="{{ url_for('result_fuel') }}">ผลพยากรณ์ประเภทเชื้อเพลิง</a>
     <span class="sep">›</span>
@@ -48,9 +48,11 @@
   <div class="fade-in fade-in-delay-1" style="margin-bottom:32px;">
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
       {% for key, meta in type_map.items() %}
+      {# data-color ส่งสีจาก type_map ให้ JS ใช้ จะได้ไม่ต้องฮาร์ดโค้ดสีซ้ำในสคริปต์ #}
       <button class="tab-btn {% if key == fuel_key %}active{% endif %}"
               onclick="switchTab('{{ key }}')"
               id="tab-{{ key }}"
+              data-color="{{ meta.color }}"
               style="
                 display:inline-flex;align-items:center;gap:8px;
                 padding:12px 24px;border-radius:8px;border:2px solid var(--border-light);
@@ -62,7 +64,7 @@
         <i class="bi {{ meta.icon }}" style="font-size:18px;"></i>
         {{ meta.thai }}
         {% if key == fuel_key %}
-          <span style="background:rgba(255,255,255,0.3);padding:2px 8px;border-radius:100px;font-size:11px;font-weight:500;">แนะนำ</span>
+          <span class="tab-badge">แนะนำ</span>
         {% endif %}
       </button>
       {% endfor %}
@@ -316,18 +318,20 @@ function switchTab(key) {
   var content = document.getElementById('content-' + key);
   if (content) content.style.display = '';
 
-  // Update button styles
-  var colorMap = { EV: '#00A550', Hybrid: '#0072CE', ICE: '#FF6B00' };
+  // Update button styles — สีอ่านจาก data-color ที่ template ใส่ไว้ ไม่ฮาร์ดโค้ดซ้ำ
   document.querySelectorAll('.tab-btn').forEach(function (btn) {
+    btn.classList.remove('active');
     btn.style.background = 'var(--bg-surface)';
     btn.style.color = 'var(--text-primary)';
     btn.style.borderColor = 'var(--border-light)';
   });
   var activeBtn = document.getElementById('tab-' + key);
   if (activeBtn) {
-    activeBtn.style.background = colorMap[key] || '#1A1A1A';
+    var c = activeBtn.dataset.color || '#1A1A1A';
+    activeBtn.classList.add('active');
+    activeBtn.style.background = c;
     activeBtn.style.color = 'white';
-    activeBtn.style.borderColor = colorMap[key] || '#1A1A1A';
+    activeBtn.style.borderColor = c;
   }
 }
 </script>

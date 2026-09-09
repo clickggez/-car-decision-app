@@ -11,7 +11,7 @@
 
   <!-- Breadcrumb -->
   <div class="breadcrumb-cardss fade-in">
-    <a href="{{ url_for('predict_buy_page') }}">หน้าหลัก</a>
+    <a href="{{ url_for('index') }}">หน้าหลัก</a>
     <span class="sep">›</span>
     <span class="current">Dashboard สรุปผล</span>
   </div>
@@ -266,9 +266,13 @@ document.addEventListener('DOMContentLoaded', function () {
     ice:    [3800, 2000, 940]
   };
 
+  // เก็บอ้างอิงกราฟไว้ เพื่ออัปเดตสีตอนผู้ใช้สลับธีม
+  // (Chart.js อ่านค่าจาก CSS variable ครั้งเดียวตอนสร้าง ไม่อัปเดตเอง)
+  var cardssCharts = [];
+
   // ----- PIE CHART -----
   var pieCtx = document.getElementById('pieChart').getContext('2d');
-  new Chart(pieCtx, {
+  cardssCharts.push(new Chart(pieCtx, {
     type: 'doughnut',
     data: {
       labels: ['EV (ไฟฟ้า)', 'Hybrid (ไฮบริด)', 'ICE (สันดาป)'],
@@ -304,11 +308,11 @@ document.addEventListener('DOMContentLoaded', function () {
         easing: 'easeOutQuart'
       }
     }
-  });
+  }));
 
   // ----- BAR CHART -----
   var barCtx = document.getElementById('barChart').getContext('2d');
-  new Chart(barCtx, {
+  cardssCharts.push(new Chart(barCtx, {
     type: 'bar',
     data: {
       labels: mockCosts.labels,
@@ -384,11 +388,11 @@ document.addEventListener('DOMContentLoaded', function () {
         easing: 'easeOutQuart'
       }
     }
-  });
+  }));
 
   // ----- INSURANCE BAR CHART -----
   var insCtx = document.getElementById('insuranceChart').getContext('2d');
-  new Chart(insCtx, {
+  cardssCharts.push(new Chart(insCtx, {
     type: 'bar',
     data: {
       labels: ['EV (ไฟฟ้า)', 'Hybrid (ไฮบริด)', 'ICE (สันดาป)'],
@@ -442,6 +446,33 @@ document.addEventListener('DOMContentLoaded', function () {
         easing: 'easeOutQuart'
       }
     }
+  }));
+
+  // ----- อัปเดตสีกราฟเมื่อสลับธีม -----
+  // main.js ยิง event นี้ตอนกดปุ่มสลับธีม ถ้าไม่อัปเดต เส้นกริดกับตัวเลขแกน
+  // จะค้างสีเดิมและอ่านไม่ออกบนพื้นสีเข้ม
+  function cardssReadVar(name, fallback) {
+    var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return v || fallback;
+  }
+  document.addEventListener('cardss:themechange', function () {
+    var grid = cardssReadVar('--border-light', '#F0F0F0');
+    var text = cardssReadVar('--text-muted', '#6B7280');
+    cardssCharts.forEach(function (ch) {
+      if (!ch || !ch.options) return;
+      var scales = ch.options.scales;
+      if (scales) {
+        Object.keys(scales).forEach(function (k) {
+          var ax = scales[k];
+          if (!ax) return;
+          if (ax.grid) ax.grid.color = grid;
+          if (ax.ticks) ax.ticks.color = text;
+        });
+      }
+      var lg = ch.options.plugins && ch.options.plugins.legend;
+      if (lg && lg.labels) lg.labels.color = text;
+      ch.update('none');
+    });
   });
 
   // ----- ANIMATE SCORE BARS -----

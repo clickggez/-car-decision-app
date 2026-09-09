@@ -322,14 +322,15 @@ document.getElementById('predictFuelForm').addEventListener('submit', function(e
 
   // Check selects
   const selects = this.querySelectorAll('select[required]');
+  let firstInvalid = null;
   selects.forEach(function(sel) {
     if (!sel.value) {
+      // ใช้แค่สีเส้นขอบ ไม่ใช้ boxShadow เพราะ 02-design-system.md ห้ามใช้เงา
       sel.style.borderColor = 'var(--brand-primary)';
-      sel.style.boxShadow = '0 0 0 3px var(--brand-primary-light)';
       valid = false;
+      if (!firstInvalid) firstInvalid = sel;
     } else {
       sel.style.borderColor = '';
-      sel.style.boxShadow = '';
     }
   });
 
@@ -343,6 +344,7 @@ document.getElementById('predictFuelForm').addEventListener('submit', function(e
     document.getElementById('priorityGrid').style.borderRadius = '4px';
     document.getElementById('priorityGrid').style.padding = '8px';
     valid = false;
+    if (!firstInvalid) firstInvalid = document.getElementById('priorityGrid');
   } else {
     priorityErr.style.display = 'none';
     document.getElementById('priorityGrid').style.border = '';
@@ -351,7 +353,11 @@ document.getElementById('predictFuelForm').addEventListener('submit', function(e
 
   if (!valid) {
     e.preventDefault();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // เลื่อนไปที่จุดที่ยังไม่ได้กรอกจุดแรก แทนการเด้งขึ้นบนสุด
+    if (firstInvalid) {
+      firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (firstInvalid.focus) firstInvalid.focus({ preventScroll: true });
+    }
   }
 });
 

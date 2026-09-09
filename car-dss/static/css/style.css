@@ -668,3 +668,18 @@ h1,h2,h3,h4,h5,h6{
   font-weight:500;vertical-align:middle;
 }
 [data-theme="dark"] .mock-tag{background:#26220f;color:#d4b800}
+
+/* ── ป้าย "แนะนำ" บนแท็บหน้ารถแนะนำ (recommend.html) ──────────────
+   เดิมเป็น inline rgba(255,255,255,.3) ตายตัว พอผู้ใช้สลับไปแท็บอื่น
+   พื้นแท็บเดิมกลายเป็นสีอ่อน ป้ายขาวโปร่งเลยจมหายไปมองไม่เห็น
+   แก้ให้สีป้ายเปลี่ยนตามสถานะ .active ของปุ่ม — ไม่มีเงา ไม่มีไล่สี */
+.tab-badge{
+  padding:2px 8px;border-radius:100px;
+  font-size:11px;font-weight:500;
+  background:var(--border-light);
+  color:var(--text-muted);
+}
+.tab-btn.active .tab-badge{
+  background:rgba(255,255,255,0.3);
+  color:#fff;
+}

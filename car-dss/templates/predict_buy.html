@@ -6,7 +6,7 @@
 
   <!-- Breadcrumb -->
   <div class="breadcrumb-cardss fade-in">
-    <a href="{{ url_for('predict_buy_page') }}">หน้าหลัก</a>
+    <a href="{{ url_for('index') }}">หน้าหลัก</a>
     <span class="sep">›</span>
     <span class="current">พยากรณ์การตัดสินใจซื้อรถยนต์</span>
   </div>
@@ -429,19 +429,19 @@
 document.getElementById('predictBuyForm').addEventListener('submit', function(e) {
   const selects = this.querySelectorAll('select[required]');
   let valid = true;
+  let firstInvalid = null;
   selects.forEach(function(sel) {
     if (!sel.value) {
+      // ใช้แค่สีเส้นขอบ ไม่ใช้ boxShadow เพราะ 02-design-system.md ห้ามใช้เงา
       sel.style.borderColor = 'var(--brand-primary)';
-      sel.style.boxShadow = '0 0 0 3px var(--brand-primary-light, #EEF2FD)';
       valid = false;
+      if (!firstInvalid) firstInvalid = sel;
     } else {
       sel.style.borderColor = '';
-      sel.style.boxShadow = '';
     }
   });
   if (!valid) {
     e.preventDefault();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
     // Show error banner
     const banner = document.createElement('div');
     banner.className = 'alert-cardss error fade-in';
@@ -451,6 +451,11 @@ document.getElementById('predictBuyForm').addEventListener('submit', function(e)
     const existing = form.querySelector('.alert-cardss.error');
     if (existing) existing.remove();
     form.insertBefore(banner, form.firstChild);
+    // เลื่อนไปที่ช่องที่ยังไม่ได้กรอกช่องแรก แทนการเด้งขึ้นบนสุด
+    if (firstInvalid) {
+      firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      firstInvalid.focus({ preventScroll: true });
+    }
   }
 });
 

@@ -42,6 +42,9 @@
       html.setAttribute('data-theme', next);
       localStorage.setItem('theme', next);
       updateIcon();
+      // แจ้งให้ส่วนที่วาดเองอย่าง Chart.js รู้ว่าธีมเปลี่ยน
+      // (Chart อ่านค่าสีจาก CSS variable ตอนสร้างครั้งเดียว ไม่อัปเดตเอง)
+      document.dispatchEvent(new CustomEvent('cardss:themechange', { detail: { theme: next } }));
     });
   }
 })();
@@ -69,6 +72,9 @@ window.addEventListener('pageshow', function (e) {
       icon.className = 'bi bi-moon-fill';
     }
   }
+  document.dispatchEvent(new CustomEvent('cardss:themechange', {
+    detail: { theme: html.getAttribute('data-theme') || 'light' }
+  }));
 });
 
 // ============================================================
