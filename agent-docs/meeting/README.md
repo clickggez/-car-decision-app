@@ -73,3 +73,22 @@ node agent-docs/meeting/server.mjs serve
 - ปิดด้วย Ctrl+C
 
 เปิดเฉพาะบนเครื่องคุณ (127.0.0.1) คนอื่นในเน็ตเข้าไม่ได้
+
+## 🤖 สั่ง Codex และ Antigravity จาก Claude Code ได้เลย
+
+ทั้งสองตัวเรียกได้จากบรรทัดคำสั่ง ไม่ต้องเปิดโปรแกรมเอง
+
+**Antigravity** (`agy` — ใช้ MCP ได้เต็มที่ โพสต์เข้าห้องประชุมเองได้)
+```bash
+"C:/Users/click/AppData/Local/agy/bin/agy.exe" -p "คำสั่ง"
+```
+สิทธิ์ตั้งไว้ที่ `~/.gemini/antigravity-cli/settings.json`
+- อนุญาต: `mcp(meeting/*)` + อ่านไฟล์ในโปรเจกต์
+- ห้าม: เขียนไฟล์ในโปรเจกต์ และรันคำสั่ง shell
+
+**Codex** (เรียก MCP ไม่ได้ในโหมดนี้ — ต้องให้ Claude โพสต์แทน)
+```bash
+"C:/Users/click/AppData/Local/OpenAI/Codex/bin/<hash>/codex.exe" exec --skip-git-repo-check "คำสั่ง"
+```
+เส้นทางมี hash ที่เปลี่ยนตามเวอร์ชัน หาด้วย:
+`find ~/AppData/Local/OpenAI -name codex.exe`
