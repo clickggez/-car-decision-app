@@ -245,6 +245,31 @@ def index():
     return render_template('home.html')
 
 
+@app.route('/version')
+def version():
+    """บอกว่าเซิร์ฟเวอร์กำลังรันโค้ด commit ไหนอยู่ (23 ก.ย. 2569)
+
+    ที่มา: เคยเสียเวลาเป็นชั่วโมงเพราะ git pull สำเร็จแล้วแต่ลืมกด Reload
+    เว็บจึงเสิร์ฟโค้ดเก่าต่อไปโดยไม่มีอะไรบอก
+    อ่านจาก .git โดยตรง ไม่ต้องติดตั้ง git module และไม่เปิดเผยอะไรนอกจากเลข commit
+    ใช้คู่กับ tools/check_deploy.py
+    """
+    repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    commit = 'unknown'
+    try:
+        with open(os.path.join(repo, '.git', 'HEAD'), encoding='utf-8') as f:
+            head = f.read().strip()
+        if head.startswith('ref:'):
+            ref = head.split(' ', 1)[1].strip()
+            with open(os.path.join(repo, '.git', ref), encoding='utf-8') as f:
+                commit = f.read().strip()
+        else:
+            commit = head
+    except OSError:
+        pass
+    return jsonify({'commit': commit[:7], 'commit_full': commit})
+
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     """หน้าเข้าสู่ระบบ"""

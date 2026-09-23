@@ -29,11 +29,13 @@ node agent-docs/meeting/server.mjs topics    # ดูหัวข้อ
 "C:/Users/click/AppData/Local/agy/bin/agy.exe" -p "คำสั่ง"
 ```
 
-**Codex** — เรียก MCP ไม่ได้ ต้องรับคำตอบมาแล้ว Claude โพสต์แทน (ระบุกำกับด้วยว่าส่งแทน)
+**Codex** — โพสต์เข้าห้องประชุมเองได้แล้ว (ตั้งแต่ codex-cli 0.155 · 23 ก.ย. 2569)
 ```bash
-find ~/AppData/Local/OpenAI -name codex.exe   # หา path (มี hash เปลี่ยนตามเวอร์ชัน)
-"<path>/codex.exe" exec --skip-git-repo-check "คำสั่ง"
+codex exec --skip-git-repo-check "คำสั่ง"
 ```
+มี shim ไว้ที่ `%APPDATA%\npm\codex` แล้ว เรียกสั้น ๆ ได้เลย ไม่ต้องหา path เอง
+ต้องมี `default_tools_approval_mode = "approve"` ใต้ `[mcp_servers.meeting]` ใน `~/.codex/config.toml`
+⚠️ แซนด์บ็อกซ์ของมัน **รัน python ไม่ได้** ตรวจได้แค่อ่านโค้ด/ผลรันดิบ — และห้ามสั่งด้วย `-s danger-full-access`
 
 ### กติกาเวลาจัดประชุม
 
@@ -41,6 +43,17 @@ find ~/AppData/Local/OpenAI -name codex.exe   # หา path (มี hash เป�
 2. **ตรวจทุกข้ออ้างก่อนเชื่อ** เปิดไฟล์ยืนยันเอง แล้วโพสต์ผลตรวจลงกระดาน
 3. **อย่านับคำชมระหว่าง AI เป็นหลักฐาน** ทั้งคู่ถูกเรียกจากเซสชันนี้ อาจเกรงใจ ให้ดูจากของที่หาเจอจริง
 4. ข้อสรุปสุดท้าย **ผู้ใช้เป็นคนเคาะ** แล้วบันทึกลง `agent-docs/04-handoff.md`
+
+---
+
+## 🧪 ก่อน push ต้องผ่าน 3 ด่าน
+
+1. `cd car-dss && python -m pytest tests/ -q` — ต้องผ่านทั้งหมด
+2. **ให้ Codex ตรวจ** (ตัวที่ทำห้ามเป็นตัวตรวจ) แล้วให้มันโพสต์ผลลงห้องประชุมเอง
+3. หลังผู้ใช้ pull + Reload → `python tools/check_deploy.py` เช็คว่าโค้ดขึ้นเว็บจริง
+
+รายละเอียดเต็มและคำสั่งเรียก Codex อยู่ใน [`.cursorrules`](.cursorrules) หัวข้อ "ด่านตรวจก่อน push"
+วิธีเอาโค้ดขึ้นเว็บ (และวิธีแก้ตอนเว็บไม่อัปเดต) อยู่ใน `วิธีเอาโค้ดขึ้นเว็บ.txt`
 
 ---
 
