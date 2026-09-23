@@ -43,15 +43,29 @@
   <!-- ========================================================
        RESULT BANNER — ผลลัพธ์เด่นชัด
        ======================================================== -->
+  {% if fuel %}
   <div class="result-banner fade-in" id="resultBanner">
     <div class="result-banner-icon"><i class="bi bi-lightning-charge-fill"></i></div>
     <div>
-      <div class="result-banner-title">ผลลัพธ์: คุณเหมาะสมกับ รถยนต์ไฟฟ้า (EV)</div>
+      <div class="result-banner-title">ผลลัพธ์: คุณเหมาะสมกับ {{ fuel.result }}</div>
       <div class="result-banner-sub">
-        ความมั่นใจ 78.0% — วิเคราะห์โดย ANN <span class="mock-tag" style="margin-left:8px;">Mock</span>
+        ความมั่นใจ {{ '%.1f'|format(fuel.confidence * 100) }}% — วิเคราะห์โดย {{ fuel.model_used }}
+        {% if 'mock' in fuel.model_used|lower %}<span class="mock-tag" style="margin-left:8px;">Mock</span>{% endif %}
       </div>
     </div>
   </div>
+  {% else %}
+  <div class="chart-card fade-in" style="text-align:center;padding:40px 24px;">
+    <i class="bi bi-clipboard-data" style="font-size:36px;color:var(--text-muted);display:block;margin-bottom:12px;"></i>
+    <div style="font-size:16px;font-weight:500;color:var(--text-primary);margin-bottom:8px;">ยังไม่มีผลวิเคราะห์</div>
+    <div style="font-size:14px;color:var(--text-muted);margin-bottom:20px;">
+      ทำแบบประเมินก่อน แล้วผลของคุณจะแสดงที่หน้านี้
+    </div>
+    <a href="{{ url_for('predict_fuel_page') }}" class="btn-cardss-primary" style="padding:8px 32px;min-height:40px;">
+      เริ่มทำแบบประเมิน
+    </a>
+  </div>
+  {% endif %}
 
   <!-- ========================================================
        CHARTS ROW: Pie + Bar
@@ -71,15 +85,15 @@
         <div style="display:flex;justify-content:center;gap:20px;margin-top:16px;flex-wrap:wrap;">
           <div style="display:flex;align-items:center;gap:6px;">
             <div style="width:12px;height:12px;border-radius:2px;background:var(--color-ev);"></div>
-            <span style="font-size:13px;font-weight:600;">EV <span style="color:var(--text-muted);" id="evPct">78%</span></span>
+            <span style="font-size:13px;font-weight:600;">EV <span style="color:var(--text-muted);" id="evPct">{{ fuel.scores['EV'] if fuel and fuel.scores else '—' }}%</span></span>
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
             <div style="width:12px;height:12px;border-radius:2px;background:var(--color-hybrid);"></div>
-            <span style="font-size:13px;font-weight:600;">Hybrid <span style="color:var(--text-muted);" id="hybridPct">65%</span></span>
+            <span style="font-size:13px;font-weight:600;">Hybrid <span style="color:var(--text-muted);" id="hybridPct">{{ fuel.scores['Hybrid'] if fuel and fuel.scores else '—' }}%</span></span>
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
             <div style="width:12px;height:12px;border-radius:2px;background:var(--color-ice);"></div>
-            <span style="font-size:13px;font-weight:600;">ICE <span style="color:var(--text-muted);" id="icePct">42%</span></span>
+            <span style="font-size:13px;font-weight:600;">ICE <span style="color:var(--text-muted);" id="icePct">{{ fuel.scores['ICE'] if fuel and fuel.scores else '—' }}%</span></span>
           </div>
         </div>
       </div>
@@ -167,81 +181,34 @@
   </div>
 
   <!-- ========================================================
-       SCORE CARDS: คะแนนความสอดคล้อง
-       ======================================================== -->
-  <div class="fade-in fade-in-delay-2 mb-4">
-    <div style="font-size:15px;font-weight:500;color:var(--text-primary);margin-bottom:16px;">
-      <i class="bi bi-speedometer2 me-2 text-brand"></i>คะแนนความสอดคล้องกับพฤติกรรมของคุณ
-    </div>
-    <div class="row g-3">
-      <div class="col-6 col-md-3">
-        <div class="score-card">
-          <div class="score-value text-ev" id="scoreEnergy">92</div>
-          <div class="score-label">ประหยัดพลังงาน</div>
-          <div style="margin-top:8px;">
-            <div class="confidence-bar-wrap" style="height:6px;">
-              <div class="confidence-bar-fill ev" style="width:0%;" data-width="92"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="score-card">
-          <div class="score-value text-hybrid" id="scoreConvenience">75</div>
-          <div class="score-label">ความสะดวก</div>
-          <div style="margin-top:8px;">
-            <div class="confidence-bar-wrap" style="height:6px;">
-              <div class="confidence-bar-fill hybrid" style="width:0%;" data-width="75"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="score-card">
-          <div class="score-value text-ev" id="scoreMaintenance">88</div>
-          <div class="score-label">ค่าบำรุงรักษา</div>
-          <div style="margin-top:8px;">
-            <div class="confidence-bar-wrap" style="height:6px;">
-              <div class="confidence-bar-fill ev" style="width:0%;" data-width="88"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="score-card">
-          <div class="score-value text-ice" id="scoreResale">60</div>
-          <div class="score-label">มูลค่าขายต่อ</div>
-          <div style="margin-top:8px;">
-            <div class="confidence-bar-wrap" style="height:6px;">
-              <div class="confidence-bar-fill ice" style="width:0%;" data-width="60"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ========================================================
        SUMMARY: สรุปเหตุผลแนะนำ
        ======================================================== -->
+  {% if fuel %}
   <div class="summary-card ev fade-in fade-in-delay-3 mb-4">
     <div class="summary-card-title">
-      <i class="bi bi-lightbulb me-2 text-ev"></i>สรุปเหตุผลแนะนำ
+      <i class="bi bi-lightbulb me-2 text-ev"></i>สรุปผลการวิเคราะห์ของคุณ
     </div>
     <div class="summary-card-text">
       <p style="margin-bottom:12px;">
-        จากข้อมูลส่วนบุคคล พฤติกรรมการใช้งาน และทัศนคติของคุณ ระบบแนะนำ <strong>รถยนต์ไฟฟ้า (EV)</strong>
-        เนื่องจากเหตุผลดังนี้:
+        จากคำตอบที่คุณกรอกไว้ ระบบแนะนำ <strong>{{ fuel.result }}</strong>
+        ด้วยความมั่นใจ {{ '%.1f'|format(fuel.confidence * 100) }}%
       </p>
+      {% if fuel.scores %}
       <ul style="padding-left:20px;margin:0;line-height:2;">
-        <li>คุณขับรถเป็นประจำในเขตเมือง — EV ประหยัดค่าพลังงานได้สูงถึง 70% เทียบกับรถสันดาป</li>
-        <li>ระยะทางเฉลี่ยต่อวันอยู่ในช่วงที่ EV รองรับได้สะดวก ไม่ต้องกังวลเรื่องแบตหมด</li>
-        <li>มีพื้นที่จอดรถส่วนตัว เอื้อต่อการติดตั้งจุดชาร์จ</li>
-        <li>คะแนนความใส่ใจด้านเทคโนโลยีและสิ่งแวดล้อมสูง สอดคล้องกับแนวคิด EV</li>
-        <li>ค่าบำรุงรักษาต่ำกว่ารถสันดาปมาก เนื่องจากชิ้นส่วนเคลื่อนไหวน้อยกว่า</li>
+        {% for name, score in fuel.scores.items() %}
+        <li>{{ name }} — คะแนนความเหมาะสม {{ score }}%</li>
+        {% endfor %}
       </ul>
+      {% endif %}
+      {% if buy %}
+      <p style="margin:12px 0 0 0;">
+        ผลการวิเคราะห์การตัดสินใจซื้อ: <strong>{{ buy.result }}</strong>
+        ({{ '%.1f'|format(buy.confidence * 100) }}%)
+      </p>
+      {% endif %}
     </div>
   </div>
+  {% endif %}
 
   <!-- Actions -->
   <div class="text-center fade-in fade-in-delay-3" style="padding-bottom:16px;">
@@ -257,8 +224,9 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-  // ----- MOCK DATA -----
-  var mockScores = { EV: 78, Hybrid: 65, ICE: 42 };
+  // ----- คะแนนจากผลวิเคราะห์จริงของผู้ใช้ (ส่งมาจาก app.py dashboard()) -----
+  // ยังไม่เคยวิเคราะห์ = null -> ไม่วาดกราฟวงกลม ไม่แสดงค่าจำลองแทน
+  var fuelScores = {{ (fuel.scores if fuel and fuel.scores else None)|tojson }};
   var mockCosts = {
     labels: ['ค่าเชื้อเพลิง', 'ค่าบำรุงรักษา', 'ค่าประกัน'],
     ev:     [800,  500,  2700],
@@ -277,7 +245,7 @@ document.addEventListener('DOMContentLoaded', function () {
     data: {
       labels: ['EV (ไฟฟ้า)', 'Hybrid (ไฮบริด)', 'ICE (สันดาป)'],
       datasets: [{
-        data: [mockScores.EV, mockScores.Hybrid, mockScores.ICE],
+        data: fuelScores ? [fuelScores.EV, fuelScores.Hybrid, fuelScores.ICE] : [0, 0, 0],
         backgroundColor: [
           getComputedStyle(document.documentElement).getPropertyValue('--color-ev').trim(),
           getComputedStyle(document.documentElement).getPropertyValue('--color-hybrid').trim(),

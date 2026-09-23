@@ -110,12 +110,31 @@ def get_current_user():
 
 
 def login_required(f):
-    """Decorator: ต้อง login ก่อนเข้าหน้านี้"""
+    """Decorator: ต้อง login ก่อนเข้าหน้านี้ (ใช้กับหน้าที่ต้องมีบัญชีจริงเท่านั้น)"""
     @wraps(f)
     def decorated(*args, **kwargs):
         if 'user_uid' not in session:
             flash('กรุณาเข้าสู่ระบบก่อน', 'danger')
             return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated
+
+
+def session_required(f):
+    """Decorator: ให้ผู้ใช้ทั่วไปเข้าใช้ระบบได้ทันทีโดยไม่ต้องล็อกอิน (23 ก.ย. 2569)
+
+    ระบบนี้เป็น DSS แบบใช้ครั้งเดียวจบ การบังคับสมัครสมาชิกสร้าง friction เกินจำเป็น
+    - ยังไม่มีตัวตนในเซสชัน → ออก guest uid ให้อัตโนมัติ (`guest_<random>`)
+    - ผลวิเคราะห์ยังถูกบันทึกเข้า Firebase ด้วย uid นี้ ตามที่ผู้ใช้เคาะไว้ จึงแยกคนได้
+    - guest ไม่มีสิทธิ์แอดมินเด็ดขาด (`is_admin` ไม่ถูกตั้งที่นี่) ฝั่งแอดมินยังใช้ admin_required เหมือนเดิม
+    - ถ้าล็อกอินด้วยบัญชีจริงอยู่แล้ว จะใช้ uid ของบัญชีนั้น ไม่ถูกทับ
+    """
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'user_uid' not in session:
+            session['user_uid'] = 'guest_' + uuid.uuid4().hex[:12]
+            session['username'] = 'ผู้ใช้ทั่วไป'
+            session['is_guest'] = True
         return f(*args, **kwargs)
     return decorated
 
@@ -370,14 +389,14 @@ def logout():
 # ============================================================
 
 @app.route('/predict/buy')
-@login_required
+@session_required
 def predict_buy_page():
     """แสดงฟอร์มพยากรณ์ซื้อ/ไม่ซื้อ"""
     return render_template('predict_buy.html', use_mock=config.USE_MOCK)
 
 
 @app.route('/predict/fuel')
-@login_required
+@session_required
 @buy_result_required
 def predict_fuel_page():
     """แสดงฟอร์มพยากรณ์ประเภทเชื้อเพลิง"""
@@ -385,7 +404,7 @@ def predict_fuel_page():
 
 
 @app.route('/result/buy')
-@login_required
+@session_required
 def result_buy():
     """แสดงผลพยากรณ์ซื้อ/ไม่ซื้อ"""
     result = session.get('buy_prediction')
@@ -396,7 +415,7 @@ def result_buy():
 
 
 @app.route('/result/fuel')
-@login_required
+@session_required
 def result_fuel():
     """แสดงผลพยากรณ์ประเภทเชื้อเพลิง"""
     result = session.get('fuel_prediction')
@@ -407,10 +426,18 @@ def result_fuel():
 
 
 @app.route('/dashboard')
-@login_required
+@session_required
 def dashboard():
-    """แสดง Dashboard แผนภาพข้อมูล"""
-    return render_template('dashboard.html')
+    """แสดง Dashboard แผนภาพข้อมูล — ใช้ผลวิเคราะห์ล่าสุดของผู้ใช้จาก session
+
+    ถ้ายังไม่เคยวิเคราะห์ ให้หน้าเว็บแสดงสถานะว่าง ห้ามแสดงค่าจำลองเป็นผลลัพธ์
+    (บั๊กเดิม: dashboard.html ฝังค่า EV 78% ANN ไว้ตรง ๆ จนผู้ใช้เห็นผลของคนอื่น)
+    """
+    return render_template(
+        'dashboard.html',
+        fuel=session.get('fuel_prediction'),
+        buy=session.get('buy_prediction'),
+    )
 
 
 # ============================================================
@@ -426,7 +453,7 @@ def _form_fields(keys):
 
 
 @app.route('/api/predict/buy', methods=['POST'])
-@login_required
+@session_required
 def api_predict_buy():
     """รับข้อมูลฟอร์ม → ส่งเข้าโมเดล → redirect ไปหน้าผลลัพธ์"""
     input_data = _form_fields([
@@ -454,7 +481,7 @@ def api_predict_buy():
 
 
 @app.route('/api/predict/fuel', methods=['POST'])
-@login_required
+@session_required
 @buy_result_required
 def api_predict_fuel():
     """รับข้อมูลฟอร์ม → ส่งเข้าโมเดล → redirect ไปหน้าผลลัพธ์"""
@@ -492,7 +519,7 @@ def api_predict_fuel():
 
 
 @app.route('/api/dashboard')
-@login_required
+@session_required
 def api_dashboard():
     """ดึงข้อมูลสำหรับ Dashboard (JSON)"""
     user_uid = _current_uid()
@@ -503,32 +530,31 @@ def api_dashboard():
     if firebase_data:
         return jsonify({'source': 'firebase', 'data': firebase_data})
 
-    # Fallback: ใช้ข้อมูลจาก session หรือ mock
+    # Fallback: ใช้ผลจริงใน session
+    # 23 ก.ย. 2569: เลิกเติมค่าจำลองแทนผลที่ยังไม่มี — เดิมผู้ใช้ที่ยังไม่ได้วิเคราะห์
+    # จะเห็น "EV 78% ANN (mock)" เหมือนเป็นผลของตัวเอง
     buy_pred = session.get('buy_prediction', {})
     fuel_pred = session.get('fuel_prediction', {})
 
-    # Mock dashboard data
+    if not buy_pred and not fuel_pred:
+        return jsonify({'source': 'empty', 'has_result': False})
+
     dashboard_data = {
-        'source': 'mock',
-        'buy_result': buy_pred.get('result', 'ซื้อ'),
-        'buy_confidence': buy_pred.get('confidence', 0.875),
-        'buy_model': buy_pred.get('model_used', 'SVM (mock)'),
-        'fuel_result': fuel_pred.get('result', 'ไฟฟ้า (EV)'),
-        'fuel_scores': fuel_pred.get('scores', {'EV': 78, 'Hybrid': 65, 'ICE': 42}),
-        'fuel_confidence': fuel_pred.get('confidence', 0.78),
-        'fuel_model': fuel_pred.get('model_used', 'ANN (mock)'),
+        'source': 'session',
+        'has_result': True,
+        'buy_result': buy_pred.get('result'),
+        'buy_confidence': buy_pred.get('confidence'),
+        'buy_model': buy_pred.get('model_used'),
+        'fuel_result': fuel_pred.get('result'),
+        'fuel_scores': fuel_pred.get('scores'),
+        'fuel_confidence': fuel_pred.get('confidence'),
+        'fuel_model': fuel_pred.get('model_used'),
         'cost_comparison': {
             'labels': ['ค่าเชื้อเพลิง', 'ค่าบำรุงรักษา', 'ค่าประกัน'],
             'ev': [800, 500, 8500],
             'hybrid': [2200, 1200, 9000],
             'ice': [3800, 2000, 8000]
         },
-        'behavior_scores': {
-            'energy_saving': 92,
-            'convenience': 75,
-            'maintenance': 88,
-            'resale': 60
-        }
     }
 
     return jsonify(dashboard_data)
@@ -540,7 +566,7 @@ def api_dashboard():
 
 
 @app.route('/recommend')
-@login_required
+@session_required
 def recommend():
     """หน้าแนะนำรถยนต์ตามประเภทเชื้อเพลิงที่โมเดลพยากรณ์"""
     fuel_pred = session.get('fuel_prediction')

@@ -37,16 +37,25 @@ _BUY_WHITELISTS = {
 # จึงตรวจแยกจาก _BUY_WHITELISTS ซึ่งบังคับว่าต้องมีค่า
 _LIFE_EVENT_ALLOWED = {'job', 'move', 'child', 'income'}
 
+# ฟิลด์ที่ฟอร์มเว็บยังถามอยู่ = ฟิลด์ที่โมเดล fuel ใช้จริง (ดู analysis/fuel_feature_usage_2026-09-23.txt)
+# 23 ก.ย. 2569: ตัด usage_type / frequency / distance / tech_env_concern /
+# resale_maintenance_concern / ev_exposure / range_anxiety ออกจากฟอร์ม เพราะ pipeline
+# ของ fuel_model.pkl ตั้ง remainder='drop' ทิ้งคอลัมน์เหล่านี้ทั้งหมด — สลับค่ามั่ว 10 รอบ
+# คำตอบไม่เปลี่ยนสักเคส (0.0%) จึงไม่บังคับให้ผู้ใช้กรอกอีกต่อไป
+# feature_encoding.fuel_features_from_web ใส่ค่า default ให้ครบอยู่แล้ว โมเดลจึงรับ input ครบ 26 คอลัมน์เท่าเดิม
 _FUEL_WHITELISTS = {
+    'prev_car': {'ice', 'hybrid', 'ev', 'none'},
+}
+
+# ฟิลด์ที่เลิกถามแล้ว — ถ้ายังถูกส่งมา (เช่น ทดสอบเก่า หรือ client เดิม) ต้องยังผ่าน validate ได้
+_FUEL_OPTIONAL_WHITELISTS = {
     'usage_type':                 {'city', 'highway', 'both'},
     'frequency':                  {'occasional', '1-2days', '3-4days', '5-6days', 'everyday'},
     'distance':                   {'lt10', '10-30', '31-50', '51-70', '71-90', '90+'},
-    'prev_car':                   {'ice', 'hybrid', 'ev', 'none'},
     'tech_env_concern':           {'1', '2', '3', '4', '5'},
     'resale_maintenance_concern': {'1', '2', '3', '4', '5'},
-    # ---- คำถามใหม่ 2026-08-01 (เพิ่มลงฟอร์มเว็บ 2026-08-09) ----
-    'ev_exposure':   {'both', 'ev_only', 'hybrid_only', 'none'},
-    'range_anxiety': {'1', '2', '3', '4', '5', '6', '7'},
+    'ev_exposure':                {'both', 'ev_only', 'hybrid_only', 'none'},
+    'range_anxiety':              {'1', '2', '3', '4', '5', '6', '7'},
 }
 
 # NEP 5 ข้อ (สเกล 1-5) — ข้อที่ 5 เป็น reverse-worded, app.py เป็นผู้กลับคะแนน
@@ -86,6 +95,12 @@ def validate_fuel(input_data):
         if not isinstance(val, str) or not val.strip():
             return False, 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
         if val not in allowed:
+            return False, 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
+
+    # ฟิลด์ที่เลิกถามแล้ว: ไม่ส่งมาก็ได้ แต่ถ้าส่งมาต้องเป็นค่าที่ถูกต้อง
+    for field, allowed in _FUEL_OPTIONAL_WHITELISTS.items():
+        val = input_data.get(field, '')
+        if isinstance(val, str) and val.strip() and val not in allowed:
             return False, 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
 
     priority = input_data.get('priority', [])

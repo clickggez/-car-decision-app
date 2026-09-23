@@ -179,12 +179,25 @@ class ApiPredictBuyTests(unittest.TestCase):
         self.assertEqual(resp.status_code, 302)
         self.assertIn('/predict/buy', resp.headers.get('Location', ''))
 
-    # --- 2.4 unauthenticated ---
-    def test_unauthenticated_blocked(self):
+    # --- 2.4 guest session (23 ก.ย. 2569: เลิกบังคับล็อกอินฝั่งผู้ใช้) ---
+    def test_guest_not_redirected_to_login(self):
+        """ไม่ล็อกอินต้องเข้าใช้ระบบได้ ไม่ถูกเด้งไปหน้า login อีกต่อไป"""
         client = flask_app_module.app.test_client()  # ไม่ set session
+        resp = client.get('/predict/buy', follow_redirects=False)
+        self.assertEqual(resp.status_code, 200)
+
         resp = client.post('/api/predict/buy', data=VALID_INPUT, follow_redirects=False)
         self.assertEqual(resp.status_code, 302)
-        self.assertIn('/login', resp.headers.get('Location', ''))
+        self.assertNotIn('/login', resp.headers.get('Location', ''))
+
+    def test_guest_gets_own_uid_and_no_admin_rights(self):
+        """guest ต้องมี uid ของตัวเอง (บันทึก Firebase แยกคนได้) และห้ามได้สิทธิ์แอดมิน"""
+        client = flask_app_module.app.test_client()
+        client.post('/api/predict/buy', data=VALID_INPUT, follow_redirects=False)
+        with client.session_transaction() as sess:
+            self.assertTrue(sess['user_uid'].startswith('guest_'))
+            self.assertTrue(sess.get('is_guest'))
+            self.assertFalse(sess.get('is_admin'))
 
 
 if __name__ == '__main__':

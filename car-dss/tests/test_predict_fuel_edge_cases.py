@@ -149,11 +149,13 @@ class ApiPredictFuelTests(unittest.TestCase):
         self.assertIn('/predict/fuel', resp.headers.get('Location', ''))
 
     # --- 2.4 Security Decorators ---
-    def test_unauthenticated_blocked(self):
+    def test_guest_not_sent_to_login_but_must_pass_buy_step(self):
+        """guest ไม่ถูกเด้งไป login แล้ว แต่ยังต้องผ่านขั้น 'ซื้อ' ก่อนเข้าหน้าเชื้อเพลิง"""
         client = flask_app_module.app.test_client()
         resp = client.post('/api/predict/fuel', data=VALID_INPUT_FUEL, follow_redirects=False)
         self.assertEqual(resp.status_code, 302)
-        self.assertIn('/login', resp.headers.get('Location', ''))
+        self.assertNotIn('/login', resp.headers.get('Location', ''))
+        self.assertIn('/predict/buy', resp.headers.get('Location', ''))
 
     def test_buy_result_not_buy_blocked(self):
         with self.client.session_transaction() as sess:

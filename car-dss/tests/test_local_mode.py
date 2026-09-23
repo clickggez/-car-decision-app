@@ -81,26 +81,40 @@ class LocalModeDashboardTests(unittest.TestCase):
             sess['user_uid'] = 'test_uid'
             sess['username'] = 'tester'
 
-    def test_dashboard_api_returns_mock_when_firebase_down(self):
+    def test_dashboard_api_source_is_never_mock(self):
+        """ห้ามคืนค่าจำลองเป็นผลของผู้ใช้ (บั๊กเดิม 23 ก.ย. 2569: เห็น EV 78% ทั้งที่ยังไม่ได้วิเคราะห์)"""
         resp = self.client.get('/api/dashboard')
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
-        self.assertIn('source', data)
-        self.assertIn(data['source'], ('firebase', 'mock'))
+        self.assertIn(data['source'], ('firebase', 'session', 'empty'))
+        self.assertNotEqual(data['source'], 'mock')
 
-    def test_dashboard_api_returns_mock_source_when_no_db(self):
+    def test_dashboard_api_returns_empty_when_no_result(self):
+        """ยังไม่เคยวิเคราะห์ = ต้องบอกว่าว่าง ไม่ใช่เติมตัวเลขให้"""
         with patch.object(flask_app_module, 'db', None):
             resp = self.client.get('/api/dashboard')
             self.assertEqual(resp.status_code, 200)
             data = json.loads(resp.data)
-            self.assertEqual(data['source'], 'mock')
+            self.assertEqual(data['source'], 'empty')
+            self.assertFalse(data['has_result'])
 
-    def test_dashboard_mock_has_required_keys(self):
+    def test_dashboard_returns_real_session_result(self):
+        """มีผลใน session = ต้องคืนค่าจริงของผู้ใช้คนนั้น"""
+        with self.client.session_transaction() as sess:
+            sess['fuel_prediction'] = {
+                'result': 'สันดาป (ICE)',
+                'scores': {'EV': 21, 'Hybrid': 35, 'ICE': 44},
+                'confidence': 0.44,
+                'model_used': 'BAGGING',
+            }
         with patch.object(flask_app_module, 'db', None):
             resp = self.client.get('/api/dashboard')
             data = json.loads(resp.data)
-            for key in ('buy_result', 'buy_confidence', 'fuel_result',
-                        'fuel_scores', 'cost_comparison', 'behavior_scores'):
+            self.assertEqual(data['source'], 'session')
+            self.assertTrue(data['has_result'])
+            self.assertEqual(data['fuel_result'], 'สันดาป (ICE)')
+            self.assertEqual(data['fuel_scores']['ICE'], 44)
+            for key in ('buy_result', 'fuel_result', 'fuel_scores', 'cost_comparison'):
                 self.assertIn(key, data)
 
 
