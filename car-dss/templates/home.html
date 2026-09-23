@@ -30,7 +30,7 @@
 
     <!-- CTA Buttons — Tesla style side by side -->
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-      <a href="{% if current_user and current_user.is_authenticated %}{{ url_for('predict_buy_page') }}{% else %}{{ url_for('login') }}{% endif %}"
+      <a href="{{ url_for('predict_buy_page') }}"
          class="btn-cardss-primary" style="padding:8px 40px;min-height:40px;">
         เริ่มวิเคราะห์
       </a>
@@ -244,7 +244,7 @@
 
     <!-- Final CTA -->
     <div class="text-center fade-in" style="margin-top:48px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-      <a href="{% if current_user and current_user.is_authenticated %}{{ url_for('predict_buy_page') }}{% else %}{{ url_for('login') }}{% endif %}"
+      <a href="{{ url_for('predict_buy_page') }}"
          class="btn-cardss-primary" style="padding:8px 40px;min-height:40px;">
         เริ่มวิเคราะห์เลย
       </a>
