@@ -1,0 +1,83 @@
+การใช้ฟีเจอร์จริงของโมเดลที่ deploy อยู่ — 23 ก.ย. 2569
+ตอบห้องประชุม #25 ข้อ 2 (ตัดฟอร์มส่วนที่ 3 ได้ไหม)
+
+======================================================================
+fuel_model.pkl  (BAGGING)
+======================================================================
+  SHA-256        : 7eaeadebcc2ff6ebfdbf510fa4cdb5f11308be3759c1dfa542c95c370f6eb7ce
+  feature_cols   : 26 คอลัมน์ (ที่ predictor.py ส่งเข้า pipeline)
+  num_cols       : ['nep_score', 'prio_installment', 'prio_technology', 'prio_warranty']
+  cat_cols       : ['prev_car']
+  remainder      : drop
+  → ใช้จริง      : 5 คอลัมน์
+  → ถูกทิ้ง      : 21 คอลัมน์ ['usage_type', 'frequency', 'distance', 'charging_access', 'ev_exposure', 'tco_awareness', 'incentive_awareness', 'tech_env_concern', 'resale_maintenance_concern', 'priority_count', 'mileage_intensity', 'tech_cost_balance', 'range_anxiety', 'ev_readiness_index', 'prio_price', 'prio_fuel_cost', 'prio_electricity_cost', 'prio_maintenance_cost', 'prio_performance', 'prio_design', 'prio_value']
+      [Outlier] tech_env_concern     แทนที่ 2 ค่าผิดปกติด้วยค่ามัธยฐาน (5.0)
+      [Outlier] resale_maintenance_concern แทนที่ 4 ค่าผิดปกติด้วยค่ามัธยฐาน (5.0)
+      [Outlier] priority_count       แทนที่ 4 ค่าผิดปกติด้วยค่ามัธยฐาน (1.0)
+      [Outlier] mileage_intensity    แทนที่ 10 ค่าผิดปกติด้วยค่ามัธยฐาน (0.1)
+      [Outlier] range_anxiety        แทนที่ 38 ค่าผิดปกติด้วยค่ามัธยฐาน (4.0)
+
+  permutation test — FUEL (n=316, seed=0)
+    สลับฟีเจอร์ที่ไม่ได้ใช้พร้อมกัน 21 ตัว → คำตอบเปลี่ยน 0.0%   [ตรงตามคาด]
+    สลับ nep_score                    → คำตอบเปลี่ยน  18.0%
+    สลับ prev_car                     → คำตอบเปลี่ยน  13.0%
+    สลับ prio_installment             → คำตอบเปลี่ยน  10.4%
+    สลับ prio_technology              → คำตอบเปลี่ยน  39.9%
+    สลับ prio_warranty                → คำตอบเปลี่ยน  14.2%
+
+  จำลองตัดฟอร์มส่วนที่ 3 (ev_exposure + range_anxiety + NEP 5 ข้อ)
+    คำตอบเปลี่ยนไป      : 18.0% ของผู้ตอบ
+    accuracy (in-sample): 0.4842 → 0.4810
+    การกระจายผล ก่อน    : {'ICE': np.int64(122), 'EV': np.int64(114), 'Hybrid': np.int64(80)}
+    การกระจายผล หลัง    : {'ICE': np.int64(144), 'EV': np.int64(102), 'Hybrid': np.int64(70)}
+    หมายเหตุ: accuracy in-sample ใช้เทียบ 'ก่อน/หลัง' เท่านั้น
+             ห้ามเอาไปแทนเลข 0.4180 ที่วัดด้วย 20 splits ใน verify_web_accuracy.py
+
+======================================================================
+buy_model.pkl  (BAGGING)
+======================================================================
+  SHA-256        : f6d7eefd201f461d9386d0d56ad54ad2189bdf244076a547a561e9fe3d0d9a28
+  feature_cols   : 27 คอลัมน์ (ที่ predictor.py ส่งเข้า pipeline)
+  num_cols       : ['income_budget_gap', 'financial_readiness_gap', 'intention', 'attitude', 'subjective_norm', 'pbc_financial', 'evt_job', 'evt_move', 'evt_child', 'evt_income']
+  cat_cols       : ['gender', 'age', 'children', 'education', 'occupation', 'family_size', 'housing_type', 'housing_status', 'parking', 'income', 'budget', 'concern', 'purpose', 'purpose_housing', 'charging_access', 'tco_awareness', 'incentive_awareness']
+  remainder      : drop
+  → ใช้จริง      : 27 คอลัมน์
+  → ถูกทิ้ง      : 0 คอลัมน์ 
+      [Outlier] financial_readiness_gap แทนที่ 2 ค่าผิดปกติด้วยค่ามัธยฐาน (-0.23333333333333334)
+      [Outlier] intention            แทนที่ 61 ค่าผิดปกติด้วยค่ามัธยฐาน (5.0)
+      [Outlier] attitude             แทนที่ 68 ค่าผิดปกติด้วยค่ามัธยฐาน (4.0)
+      [Outlier] subjective_norm      แทนที่ 53 ค่าผิดปกติด้วยค่ามัธยฐาน (5.0)
+
+  permutation test — BUY (n=500, seed=0)
+    สลับ age                          → คำตอบเปลี่ยน   1.0%
+    สลับ attitude                     → คำตอบเปลี่ยน   0.6%
+    สลับ budget                       → คำตอบเปลี่ยน   1.2%
+    สลับ charging_access              → คำตอบเปลี่ยน   2.4%
+    สลับ children                     → คำตอบเปลี่ยน   0.8%
+    สลับ concern                      → คำตอบเปลี่ยน   1.6%
+    สลับ education                    → คำตอบเปลี่ยน   1.0%
+    สลับ evt_child                    → คำตอบเปลี่ยน   0.4%
+    สลับ evt_income                   → คำตอบเปลี่ยน   0.2%
+    สลับ evt_job                      → คำตอบเปลี่ยน   0.4%
+    สลับ evt_move                     → คำตอบเปลี่ยน   0.8%
+    สลับ family_size                  → คำตอบเปลี่ยน   1.2%
+    สลับ financial_readiness_gap      → คำตอบเปลี่ยน   1.8%
+    สลับ gender                       → คำตอบเปลี่ยน   0.8%
+    สลับ housing_status               → คำตอบเปลี่ยน   0.4%
+    สลับ housing_type                 → คำตอบเปลี่ยน   3.8%
+    สลับ incentive_awareness          → คำตอบเปลี่ยน   2.0%
+    สลับ income                       → คำตอบเปลี่ยน   0.8%
+    สลับ income_budget_gap            → คำตอบเปลี่ยน   0.8%
+    สลับ intention                    → คำตอบเปลี่ยน   0.4%
+    สลับ occupation                   → คำตอบเปลี่ยน   1.8%
+    สลับ parking                      → คำตอบเปลี่ยน   1.0%
+    สลับ pbc_financial                → คำตอบเปลี่ยน   0.8%
+    สลับ purpose                      → คำตอบเปลี่ยน   1.6%
+    สลับ purpose_housing              → คำตอบเปลี่ยน   1.2%
+    สลับ subjective_norm              → คำตอบเปลี่ยน   1.0%
+    สลับ tco_awareness                → คำตอบเปลี่ยน   1.6%
+
+======================================================================
+สรุป: ฟีเจอร์ที่ถูก drop สลับค่ายังไงคำตอบก็ไม่ขยับ = โมเดลไม่ได้ใช้จริง
+      คำถามในฟอร์มที่ป้อนฟีเจอร์เหล่านั้น ตัดได้โดยคำตอบไม่เปลี่ยน
+      แต่การตัดคำถาม = เลิกเก็บข้อมูลวิจัยชุดนั้น ผู้ใช้เป็นคนเคาะ

@@ -390,23 +390,26 @@ if (process.argv[2]) {
   if (cmd !== "serve") process.exit(0); // serve ต้องค้างไว้ ไม่งั้นเซิร์ฟเวอร์ดับ
 }
 
-let buf = "";
-process.stdin.setEncoding("utf8");
-process.stdin.on("data", (chunk) => {
-  buf += chunk;
-  let i;
-  while ((i = buf.indexOf("\n")) >= 0) {
-    const line = buf.slice(0, i).trim();
-    buf = buf.slice(i + 1);
-    if (!line) continue;
-    let msg;
-    try {
-      msg = JSON.parse(line);
-    } catch {
-      process.stderr.write("อ่าน JSON ไม่ออก ข้ามบรรทัดนี้\n");
-      continue;
+// โหมด serve ไม่ต้องต่อ stdin — ไม่งั้นพอ stdin ปิด (เช่นรันเบื้องหลัง) เซิร์ฟเวอร์จะดับตาม
+if (process.argv[2] !== "serve") {
+  let buf = "";
+  process.stdin.setEncoding("utf8");
+  process.stdin.on("data", (chunk) => {
+    buf += chunk;
+    let i;
+    while ((i = buf.indexOf("\n")) >= 0) {
+      const line = buf.slice(0, i).trim();
+      buf = buf.slice(i + 1);
+      if (!line) continue;
+      let msg;
+      try {
+        msg = JSON.parse(line);
+      } catch {
+        process.stderr.write("อ่าน JSON ไม่ออก ข้ามบรรทัดนี้\n");
+        continue;
+      }
+      handle(msg);
     }
-    handle(msg);
-  }
-});
-process.stdin.on("end", () => process.exit(0));
+  });
+  process.stdin.on("end", () => process.exit(0));
+}
