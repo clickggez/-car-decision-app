@@ -1,10 +1,26 @@
 {% extends "base.html" %}
-{% block title %}Dashboard สรุปผล — CarDSS{% endblock %}
+{% block title %}ภาพรวมข้อมูลงานวิจัย — CarDSS{% endblock %}
+
+{#
+  หน้าสาธารณะ (25 ก.ย. 2569) — ทุกคนเห็นเหมือนกัน ไม่ต้องล็อกอิน
+  ตัวเลขทุกตัวมาจาก app.dashboard():
+    overview    = data/dataset_overview.json (สร้างโดย analysis/dashboard_overview.py)
+    car_summary = data/cars.json นับสดตอนเปิดหน้า
+  ⛔ ห้ามฝังตัวเลขลงใน template นี้ (เคยพลาด: EV 78%, score card 92/75/88/60, ค่าใช้จ่าย 800/2200/3800)
+#}
 
 {% block extra_head %}
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 {% endblock %}
+
+{% macro pct(part, whole) -%}
+{{ '%.1f'|format(part * 100.0 / whole) if whole else '0.0' }}%
+{%- endmacro %}
+
+{% macro baht(v) -%}
+{{ '{:,}'.format(v) if v else '—' }}
+{%- endmacro %}
 
 {% block content %}
 <div class="page-container-wide" style="padding-top:48px;">
@@ -13,444 +29,264 @@
   <div class="breadcrumb-cardss fade-in">
     <a href="{{ url_for('index') }}">หน้าหลัก</a>
     <span class="sep">›</span>
-    <span class="current">Dashboard สรุปผล</span>
-  </div>
-
-  <!-- Step indicator (all done) -->
-  <div class="steps fade-in">
-    <div class="step-item">
-      <div class="step-circle done"><i class="bi bi-check-lg" style="font-size:14px;"></i></div>
-      <span class="step-label">พยากรณ์ซื้อ/ไม่ซื้อ</span>
-    </div>
-    <div class="step-line done"></div>
-    <div class="step-item">
-      <div class="step-circle done"><i class="bi bi-check-lg" style="font-size:14px;"></i></div>
-      <span class="step-label">ประเภทเชื้อเพลิง</span>
-    </div>
-    <div class="step-line done"></div>
-    <div class="step-item">
-      <div class="step-circle active">3</div>
-      <span class="step-label active">Dashboard</span>
-    </div>
+    <span class="current">ภาพรวมข้อมูล</span>
   </div>
 
   <!-- Page header -->
   <div class="page-header fade-in">
-    <h1><i class="bi bi-bar-chart-line me-2 text-brand"></i>Dashboard สรุปผลการวิเคราะห์</h1>
-    <p>แผนภาพข้อมูลสนับสนุนการตัดสินใจซื้อรถยนต์ของคุณ</p>
+    <h1><i class="bi bi-bar-chart-line me-2 text-brand"></i>ภาพรวมข้อมูลงานวิจัย</h1>
+    <p>สถิติเชิงพรรณนาของแบบสอบถามที่ใช้สร้างโมเดลในระบบนี้ — ทุกคนเห็นข้อมูลชุดเดียวกัน</p>
   </div>
 
   <!-- ========================================================
-       RESULT BANNER — ผลลัพธ์เด่นชัด
+       CTA — ชวนล็อกอิน / เริ่มวิเคราะห์ของตัวเอง
        ======================================================== -->
-  {% if fuel %}
-  <div class="result-banner fade-in" id="resultBanner">
-    <div class="result-banner-icon"><i class="bi bi-lightning-charge-fill"></i></div>
-    <div>
-      <div class="result-banner-title">ผลลัพธ์: คุณเหมาะสมกับ {{ fuel.result }}</div>
-      <div class="result-banner-sub">
-        ความมั่นใจ {{ '%.1f'|format(fuel.confidence * 100) }}% — วิเคราะห์โดย {{ fuel.model_used }}
-        {% if 'mock' in fuel.model_used|lower %}<span class="mock-tag" style="margin-left:8px;">Mock</span>{% endif %}
+  <div class="chart-card fade-in mb-4" id="dashboardCta" style="height:auto;">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+      <div>
+        <div style="font-size:16px;font-weight:500;color:var(--text-primary);margin-bottom:4px;">
+          อยากรู้ว่ารถประเภทไหนเหมาะกับคุณ?
+        </div>
+        <div style="font-size:14px;color:var(--text-muted);">
+          {% if current_user and current_user.is_authenticated %}
+            ทำแบบประเมิน 2 ขั้น (ซื้อ/ไม่ซื้อ → ประเภทเชื้อเพลิง) ผลจะบันทึกไว้กับบัญชีของคุณ
+          {% else %}
+            เข้าสู่ระบบก่อนเริ่มวิเคราะห์ เพื่อให้ผลของคุณบันทึกไว้กับบัญชีของคุณเอง
+          {% endif %}
+        </div>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        {% if current_user and current_user.is_authenticated %}
+          <a href="{{ url_for('predict_buy_page') }}" class="btn-cardss-primary" id="ctaStart" style="padding:10px 28px;">
+            เริ่มวิเคราะห์
+          </a>
+        {% else %}
+          <a href="{{ url_for('login') }}" class="btn-cardss-primary" id="ctaLogin" style="padding:10px 28px;">
+            เข้าสู่ระบบเพื่อเริ่มวิเคราะห์
+          </a>
+          <a href="{{ url_for('register') }}" class="btn-cardss-secondary" id="ctaRegister" style="padding:10px 24px;">
+            สมัครสมาชิก
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if overview %}
+  <!-- ========================================================
+       ตัวเลขหลัก
+       ======================================================== -->
+  <div class="row g-3 mb-4 fade-in fade-in-delay-1">
+    <div class="col-6 col-md-4">
+      <div class="stat-card">
+        <div class="stat-value" id="statRespondents">{{ overview.source.rows }}</div>
+        <div class="stat-label">ผู้ตอบแบบสอบถาม (คน)</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="stat-card">
+        <div class="stat-value" id="statFuelN">{{ overview.fuel.n }}</div>
+        <div class="stat-label">ผู้มีรถยนต์อยู่แล้ว (ใช้สร้างโมเดลเชื้อเพลิง)</div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="stat-card">
+        <div class="stat-value" id="statCars">{{ car_summary|sum(attribute='count') }}</div>
+        <div class="stat-label">รุ่นรถในฐานข้อมูลแนะนำ</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       การกระจายของคำตอบในแบบสอบถามทั้งชุด (n=630 ตั้งแต่ 28 ก.ย. — BUY บนเว็บเทรนจากชุดย่อย n=514)
+       ======================================================== -->
+  <div class="row g-4 mb-4 fade-in fade-in-delay-1">
+    <div class="col-md-6">
+      <div class="chart-card">
+        <div class="chart-card-title">
+          แนวโน้มการซื้อรถยนต์ <span style="color:var(--text-muted);font-weight:400;">(n={{ overview.buy.n }})</span>
+        </div>
+        <div style="position:relative;height:220px;">
+          <canvas id="buyChart" aria-label="สัดส่วนแนวโน้มการซื้อ"></canvas>
+        </div>
+        <table class="dash-table" id="buyTable">
+          {% for lab in overview.buy.labels %}
+          {% set c = overview.buy.counts[loop.index0] %}
+          <tr><td>{{ lab }}</td><td class="num">{{ c }} คน</td><td class="num">{{ pct(c, overview.buy.n) }}</td></tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="chart-card">
+        <div class="chart-card-title">
+          ประเภทเชื้อเพลิงที่สนใจ <span style="color:var(--text-muted);font-weight:400;">(n={{ overview.fuel.n }})</span>
+        </div>
+        <div style="position:relative;height:220px;">
+          <canvas id="fuelChart" aria-label="สัดส่วนประเภทเชื้อเพลิงที่สนใจ"></canvas>
+        </div>
+        <table class="dash-table" id="fuelTable">
+          {% for lab in overview.fuel.labels %}
+          {% set c = overview.fuel.counts[loop.index0] %}
+          <tr><td>{{ lab }}</td><td class="num">{{ c }} คน</td><td class="num">{{ pct(c, overview.fuel.n) }}</td></tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       ลักษณะผู้ตอบ
+       ======================================================== -->
+  <div class="row g-4 mb-4 fade-in fade-in-delay-2">
+    <div class="col-md-6">
+      <div class="chart-card">
+        <div class="chart-card-title">
+          ช่วงอายุของผู้ตอบ <span style="color:var(--text-muted);font-weight:400;">(n={{ overview.age.n }})</span>
+        </div>
+        <div style="position:relative;height:260px;">
+          <canvas id="ageChart" aria-label="ช่วงอายุของผู้ตอบ"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="chart-card">
+        <div class="chart-card-title">
+          รายได้เฉลี่ยต่อเดือนของผู้ตอบ <span style="color:var(--text-muted);font-weight:400;">(n={{ overview.income.n }})</span>
+        </div>
+        <div style="position:relative;height:260px;">
+          <canvas id="incomeChart" aria-label="รายได้เฉลี่ยต่อเดือนของผู้ตอบ"></canvas>
+        </div>
       </div>
     </div>
   </div>
   {% else %}
-  <div class="chart-card fade-in" style="text-align:center;padding:40px 24px;">
-    <i class="bi bi-clipboard-data" style="font-size:36px;color:var(--text-muted);display:block;margin-bottom:12px;"></i>
-    <div style="font-size:16px;font-weight:500;color:var(--text-primary);margin-bottom:8px;">ยังไม่มีผลวิเคราะห์</div>
-    <div style="font-size:14px;color:var(--text-muted);margin-bottom:20px;">
-      ทำแบบประเมินก่อน แล้วผลของคุณจะแสดงที่หน้านี้
-    </div>
-    <a href="{{ url_for('predict_fuel_page') }}" class="btn-cardss-primary" style="padding:8px 32px;min-height:40px;">
-      เริ่มทำแบบประเมิน
-    </a>
-  </div>
-  {% endif %}
-
-  <!-- ========================================================
-       CHARTS ROW: Pie + Bar
-       ======================================================== -->
-  <div class="row g-4 mb-4 fade-in fade-in-delay-1">
-
-    <!-- Pie Chart: สัดส่วนความเหมาะสม -->
-    <div class="col-md-5">
-      <div class="chart-card">
-        <div class="chart-card-title">
-          <i class="bi bi-pie-chart me-2 text-brand"></i>สัดส่วนความเหมาะสมตามประเภทเชื้อเพลิง
-        </div>
-        <div style="position:relative;max-width:320px;margin:0 auto;">
-          <canvas id="pieChart"></canvas>
-        </div>
-        <!-- Legend (manual for better styling) -->
-        <div style="display:flex;justify-content:center;gap:20px;margin-top:16px;flex-wrap:wrap;">
-          <div style="display:flex;align-items:center;gap:6px;">
-            <div style="width:12px;height:12px;border-radius:2px;background:var(--color-ev);"></div>
-            <span style="font-size:13px;font-weight:600;">EV <span style="color:var(--text-muted);" id="evPct">{{ fuel.scores['EV'] if fuel and fuel.scores else '—' }}%</span></span>
-          </div>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <div style="width:12px;height:12px;border-radius:2px;background:var(--color-hybrid);"></div>
-            <span style="font-size:13px;font-weight:600;">Hybrid <span style="color:var(--text-muted);" id="hybridPct">{{ fuel.scores['Hybrid'] if fuel and fuel.scores else '—' }}%</span></span>
-          </div>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <div style="width:12px;height:12px;border-radius:2px;background:var(--color-ice);"></div>
-            <span style="font-size:13px;font-weight:600;">ICE <span style="color:var(--text-muted);" id="icePct">{{ fuel.scores['ICE'] if fuel and fuel.scores else '—' }}%</span></span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Bar Chart: เปรียบเทียบค่าใช้จ่าย -->
-    <div class="col-md-7">
-      <div class="chart-card">
-        <div class="chart-card-title">
-          <i class="bi bi-bar-chart me-2 text-brand"></i>เปรียบเทียบค่าใช้จ่ายเฉลี่ยต่อเดือน (บาท)
-        </div>
-        <div style="position:relative;">
-          <canvas id="barChart"></canvas>
-        </div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:12px;text-align:center;">
-          * ข้อมูลจำลอง — ประมาณการค่าใช้จ่ายเฉลี่ยสำหรับเขตบางขุนเทียน
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ========================================================
-       INSURANCE CHART: เปรียบเทียบเบี้ยประกัน
-       ======================================================== -->
-  <div class="row g-4 mb-4 fade-in fade-in-delay-1">
-    <div class="col-md-7">
-      <div class="chart-card">
-        <div class="chart-card-title">
-          <i class="bi bi-shield-check me-2 text-brand"></i>เปรียบเทียบเบี้ยประกันภัยชั้น 1 เฉลี่ย (บาท/ปี)
-        </div>
-        <div style="position:relative;">
-          <canvas id="insuranceChart"></canvas>
-        </div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:12px;text-align:center;">
-          * เบี้ยเฉลี่ยจากข้อมูลรถแนะนำ 15 รุ่น — ซ่อมห้าง ประกันชั้น 1
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-5">
-      <div class="chart-card" style="height:100%;">
-        <div class="chart-card-title">
-          <i class="bi bi-info-circle me-2 text-brand"></i>หมายเหตุ: ประกันภัย EV
-        </div>
-        <div style="font-size:13px;color:var(--text-secondary);line-height:1.8;">
-          <div style="margin-bottom:12px;">
-            <strong style="color:var(--text-primary);"><i class="bi bi-file-earmark-text-fill me-1"></i> กฎ คปภ. (1 มิ.ย. 67)</strong><br>
-            หักค่าเสื่อมแบตเตอรี่ EV ตามอายุ:
-          </div>
-          <table style="width:100%;font-size:12px;border-collapse:collapse;">
-            <tr style="background:var(--bg-secondary);">
-              <td style="padding:6px 10px;font-weight:500;">ปีที่ 1</td>
-              <td style="padding:6px 10px;text-align:right;font-weight:500;color:var(--color-ev);">100%</td>
-            </tr>
-            <tr>
-              <td style="padding:6px 10px;">ปีที่ 2</td>
-              <td style="padding:6px 10px;text-align:right;">90%</td>
-            </tr>
-            <tr style="background:var(--bg-secondary);">
-              <td style="padding:6px 10px;">ปีที่ 3</td>
-              <td style="padding:6px 10px;text-align:right;">80%</td>
-            </tr>
-            <tr>
-              <td style="padding:6px 10px;">ปีที่ 4</td>
-              <td style="padding:6px 10px;text-align:right;">70%</td>
-            </tr>
-            <tr style="background:var(--bg-secondary);">
-              <td style="padding:6px 10px;">ปีที่ 5</td>
-              <td style="padding:6px 10px;text-align:right;">60%</td>
-            </tr>
-            <tr>
-              <td style="padding:6px 10px;">5+ ปี</td>
-              <td style="padding:6px 10px;text-align:right;color:var(--color-ice);">50%</td>
-            </tr>
-          </table>
-          <div style="margin-top:12px;padding:10px;background:var(--bg-secondary);border-radius:6px;font-size:12px;">
-            <strong style="color:var(--color-ice);"><i class="bi bi-exclamation-triangle-fill me-1"></i> ข้อควรรู้</strong><br>
-            • ค่าซ่อม EV ต่อครั้งสูงกว่า ICE <strong>50–60%</strong><br>
-            • Loss Ratio ของ EV สูงเกิน <strong>120%</strong><br>
-            • ส่งผลให้เบี้ยประกัน EV สูงกว่า ICE เฉลี่ย <strong>20–30%</strong>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ========================================================
-       SUMMARY: สรุปเหตุผลแนะนำ
-       ======================================================== -->
-  {% if fuel %}
-  <div class="summary-card ev fade-in fade-in-delay-3 mb-4">
-    <div class="summary-card-title">
-      <i class="bi bi-lightbulb me-2 text-ev"></i>สรุปผลการวิเคราะห์ของคุณ
-    </div>
-    <div class="summary-card-text">
-      <p style="margin-bottom:12px;">
-        จากคำตอบที่คุณกรอกไว้ ระบบแนะนำ <strong>{{ fuel.result }}</strong>
-        ด้วยความมั่นใจ {{ '%.1f'|format(fuel.confidence * 100) }}%
-      </p>
-      {% if fuel.scores %}
-      <ul style="padding-left:20px;margin:0;line-height:2;">
-        {% for name, score in fuel.scores.items() %}
-        <li>{{ name }} — คะแนนความเหมาะสม {{ score }}%</li>
-        {% endfor %}
-      </ul>
-      {% endif %}
-      {% if buy %}
-      <p style="margin:12px 0 0 0;">
-        ผลการวิเคราะห์การตัดสินใจซื้อ: <strong>{{ buy.result }}</strong>
-        ({{ '%.1f'|format(buy.confidence * 100) }}%)
-      </p>
-      {% endif %}
+  <div class="chart-card fade-in mb-4" id="overviewUnavailable" style="height:auto;text-align:center;padding:40px 24px;">
+    <div style="font-size:16px;font-weight:500;color:var(--text-primary);margin-bottom:8px;">ยังไม่มีข้อมูลสรุป</div>
+    <div style="font-size:14px;color:var(--text-muted);">
+      ไม่พบไฟล์สรุปข้อมูลงานวิจัยบนเซิร์ฟเวอร์ ผู้ดูแลต้องรัน <code>analysis/dashboard_overview.py</code>
     </div>
   </div>
   {% endif %}
 
-  <!-- Actions -->
-  <div class="text-center fade-in fade-in-delay-3" style="padding-bottom:16px;">
-    <a href="{{ url_for('predict_buy_page') }}" class="btn-cardss-primary" style="padding:14px 36px;">
-      <i class="bi bi-arrow-counterclockwise"></i> เริ่มวิเคราะห์ใหม่
-    </a>
+  <!-- ========================================================
+       รถในฐานข้อมูลแนะนำ (cars.json นับสด)
+       ======================================================== -->
+  <div class="chart-card fade-in fade-in-delay-2 mb-4" style="height:auto;">
+    <div class="chart-card-title">รถที่ระบบใช้แนะนำ แยกตามประเภทเชื้อเพลิง</div>
+    <table class="dash-table" id="carTable">
+      <tr class="head"><td>ประเภท</td><td class="num">จำนวนรุ่น</td><td class="num">ช่วงราคา (บาท)</td></tr>
+      {% for row in car_summary %}
+      <tr>
+        <td><span class="text-{{ row.fuel|lower }}">{{ row.fuel }}</span></td>
+        <td class="num">{{ row.count }}</td>
+        <td class="num">{% if row.price_min %}{{ baht(row.price_min) }} – {{ baht(row.price_max) }}{% else %}—{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <!-- ที่มาของข้อมูล -->
+  <div class="fade-in fade-in-delay-3" style="font-size:12px;color:var(--text-muted);line-height:1.8;padding-bottom:24px;">
+    ที่มา: แบบสอบถามงานวิจัย{% if overview %} {{ overview.source.rows }} คน{% endif %} ชุดเดียวกับที่ใช้สร้างโมเดล ·
+    กลุ่มประเภทเชื้อเพลิงนับเฉพาะผู้ที่มีรถยนต์อยู่แล้ว ·
+    ข้อมูลรถมาจากฐานข้อมูลรถแนะนำของระบบ<br>
+    ตัวเลขเป็นสัดส่วนของกลุ่มตัวอย่างในงานวิจัยนี้ ไม่ใช่ตัวแทนผู้ซื้อรถทั้งประเทศ
   </div>
 
 </div>
+
+<style>
+  .dash-table{width:100%;font-size:13px;border-collapse:collapse;margin-top:16px}
+  .dash-table td{padding:6px 8px;border-bottom:1px solid var(--border-light);color:var(--text-secondary)}
+  .dash-table tr:last-child td{border-bottom:none}
+  .dash-table tr.head td{color:var(--text-muted);font-weight:500}
+  .dash-table td.num{text-align:right;font-variant-numeric:tabular-nums}
+</style>
 {% endblock %}
 
 {% block extra_scripts %}
+{% if overview %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+  if (typeof Chart === 'undefined') return;  // โหลด CDN ไม่ได้ = ยังเหลือตารางตัวเลขให้อ่าน
 
-  // ----- คะแนนจากผลวิเคราะห์จริงของผู้ใช้ (ส่งมาจาก app.py dashboard()) -----
-  // ยังไม่เคยวิเคราะห์ = null -> ไม่วาดกราฟวงกลม ไม่แสดงค่าจำลองแทน
-  var fuelScores = {{ (fuel.scores if fuel and fuel.scores else None)|tojson }};
-  var mockCosts = {
-    labels: ['ค่าเชื้อเพลิง', 'ค่าบำรุงรักษา', 'ค่าประกัน'],
-    ev:     [800,  500,  2700],
-    hybrid: [2200, 1200, 1630],
-    ice:    [3800, 2000, 940]
-  };
+  // ข้อมูลทั้งหมดมาจาก server (dataset_overview.json) — ไม่มีตัวเลขในสคริปต์นี้
+  var ov = {{ overview|tojson }};
 
-  // เก็บอ้างอิงกราฟไว้ เพื่ออัปเดตสีตอนผู้ใช้สลับธีม
-  // (Chart.js อ่านค่าจาก CSS variable ครั้งเดียวตอนสร้าง ไม่อัปเดตเอง)
-  var cardssCharts = [];
-
-  // ----- PIE CHART -----
-  var pieCtx = document.getElementById('pieChart').getContext('2d');
-  cardssCharts.push(new Chart(pieCtx, {
-    type: 'doughnut',
-    data: {
-      labels: ['EV (ไฟฟ้า)', 'Hybrid (ไฮบริด)', 'ICE (สันดาป)'],
-      datasets: [{
-        data: fuelScores ? [fuelScores.EV, fuelScores.Hybrid, fuelScores.ICE] : [0, 0, 0],
-        backgroundColor: [
-          getComputedStyle(document.documentElement).getPropertyValue('--color-ev').trim(),
-          getComputedStyle(document.documentElement).getPropertyValue('--color-hybrid').trim(),
-          getComputedStyle(document.documentElement).getPropertyValue('--color-ice').trim()
-        ],
-        borderWidth: 0,
-        hoverOffset: 8
-      }]
-    },
-    options: {
-      responsive: true,
-      cutout: '60%',
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: function (ctx) {
-              return ctx.label + ': ' + ctx.parsed + '%';
-            }
-          },
-          titleFont: { family: "'Noto Sans Thai', sans-serif" },
-          bodyFont: { family: "'Noto Sans Thai', sans-serif" }
-        }
-      },
-      animation: {
-        animateRotate: true,
-        duration: 1200,
-        easing: 'easeOutQuart'
-      }
-    }
-  }));
-
-  // ----- BAR CHART -----
-  var barCtx = document.getElementById('barChart').getContext('2d');
-  cardssCharts.push(new Chart(barCtx, {
-    type: 'bar',
-    data: {
-      labels: mockCosts.labels,
-      datasets: [
-        {
-          label: 'EV (ไฟฟ้า)',
-          data: mockCosts.ev,
-          backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--color-ev').trim(),
-          borderRadius: 4,
-          barPercentage: 0.7,
-          categoryPercentage: 0.7
-        },
-        {
-          label: 'Hybrid (ไฮบริด)',
-          data: mockCosts.hybrid,
-          backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--color-hybrid').trim(),
-          borderRadius: 4,
-          barPercentage: 0.7,
-          categoryPercentage: 0.7
-        },
-        {
-          label: 'ICE (สันดาป)',
-          data: mockCosts.ice,
-          backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--color-ice').trim(),
-          borderRadius: 4,
-          barPercentage: 0.7,
-          categoryPercentage: 0.7
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: {
-            font: { family: "'Noto Sans Thai', sans-serif", size: 12 }
-          }
-        },
-        y: {
-          beginAtZero: true,
-          grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-light').trim() || '#F0F0F0' },
-          ticks: {
-            font: { family: "'Noto Sans Thai', sans-serif", size: 12 },
-            callback: function (value) {
-              return value.toLocaleString() + ' ฿';
-            }
-          }
-        }
-      },
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: {
-            font: { family: "'Noto Sans Thai', sans-serif", size: 12 },
-            padding: 16,
-            usePointStyle: true,
-            pointStyle: 'rectRounded'
-          }
-        },
-        tooltip: {
-          callbacks: {
-            label: function (ctx) {
-              return ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString() + ' บาท/เดือน';
-            }
-          },
-          titleFont: { family: "'Noto Sans Thai', sans-serif" },
-          bodyFont: { family: "'Noto Sans Thai', sans-serif" }
-        }
-      },
-      animation: {
-        duration: 1000,
-        easing: 'easeOutQuart'
-      }
-    }
-  }));
-
-  // ----- INSURANCE BAR CHART -----
-  var insCtx = document.getElementById('insuranceChart').getContext('2d');
-  cardssCharts.push(new Chart(insCtx, {
-    type: 'bar',
-    data: {
-      labels: ['EV (ไฟฟ้า)', 'Hybrid (ไฮบริด)', 'ICE (สันดาป)'],
-      datasets: [{
-        label: 'เบี้ยประกันชั้น 1 เฉลี่ย (บาท/ปี)',
-        data: [32500, 19600, 11300],
-        backgroundColor: [
-          getComputedStyle(document.documentElement).getPropertyValue('--color-ev').trim(),
-          getComputedStyle(document.documentElement).getPropertyValue('--color-hybrid').trim(),
-          getComputedStyle(document.documentElement).getPropertyValue('--color-ice').trim()
-        ],
-        borderRadius: 6,
-        barPercentage: 0.6
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      scales: {
-        x: {
-          beginAtZero: true,
-          grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-light').trim() || '#F0F0F0' },
-          ticks: {
-            font: { family: "'Noto Sans Thai', sans-serif", size: 12 },
-            callback: function (value) {
-              return value.toLocaleString() + ' ฿';
-            }
-          }
-        },
-        y: {
-          grid: { display: false },
-          ticks: {
-            font: { family: "'Noto Sans Thai', sans-serif", size: 13, weight: 'bold' }
-          }
-        }
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: function (ctx) {
-              return 'เฉลี่ย: ' + ctx.parsed.x.toLocaleString() + ' บาท/ปี';
-            }
-          },
-          titleFont: { family: "'Noto Sans Thai', sans-serif" },
-          bodyFont: { family: "'Noto Sans Thai', sans-serif" }
-        }
-      },
-      animation: {
-        duration: 1000,
-        easing: 'easeOutQuart'
-      }
-    }
-  }));
-
-  // ----- อัปเดตสีกราฟเมื่อสลับธีม -----
-  // main.js ยิง event นี้ตอนกดปุ่มสลับธีม ถ้าไม่อัปเดต เส้นกริดกับตัวเลขแกน
-  // จะค้างสีเดิมและอ่านไม่ออกบนพื้นสีเข้ม
-  function cardssReadVar(name, fallback) {
+  function cssVar(name, fallback) {
     var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
     return v || fallback;
   }
-  document.addEventListener('cardss:themechange', function () {
-    var grid = cardssReadVar('--border-light', '#F0F0F0');
-    var text = cardssReadVar('--text-muted', '#6B7280');
-    cardssCharts.forEach(function (ch) {
-      if (!ch || !ch.options) return;
-      var scales = ch.options.scales;
-      if (scales) {
-        Object.keys(scales).forEach(function (k) {
-          var ax = scales[k];
-          if (!ax) return;
-          if (ax.grid) ax.grid.color = grid;
-          if (ax.ticks) ax.ticks.color = text;
-        });
+  var FONT = { family: "'Noto Sans Thai', sans-serif", size: 12 };
+  var charts = [];
+
+  function doughnut(id, block, colors) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    charts.push(new Chart(el.getContext('2d'), {
+      type: 'doughnut',
+      data: { labels: block.labels, datasets: [{ data: block.counts, backgroundColor: colors, borderWidth: 0 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '60%',
+        plugins: {
+          legend: { position: 'bottom', labels: { font: FONT, color: cssVar('--text-muted', '#5C5E62'), usePointStyle: true } },
+          tooltip: { callbacks: { label: function (ctx) {
+            return ctx.label + ': ' + ctx.parsed + ' คน (' + (ctx.parsed * 100 / block.n).toFixed(1) + '%)';
+          } } }
+        }
       }
+    }));
+  }
+
+  function bars(id, block) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    charts.push(new Chart(el.getContext('2d'), {
+      type: 'bar',
+      data: { labels: block.labels, datasets: [{ data: block.counts, backgroundColor: cssVar('--brand-primary', '#3E6AE1'), borderRadius: 4 }] },
+      options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        scales: {
+          x: { beginAtZero: true, grid: { color: cssVar('--border-light', '#EEEEEE') }, ticks: { font: FONT, color: cssVar('--text-muted', '#5C5E62'), precision: 0 } },
+          y: { grid: { display: false }, ticks: { font: FONT, color: cssVar('--text-muted', '#5C5E62') } }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: function (ctx) {
+            return ctx.parsed.x + ' คน (' + (ctx.parsed.x * 100 / block.n).toFixed(1) + '%)';
+          } } }
+        }
+      }
+    }));
+  }
+
+  doughnut('buyChart', ov.buy, [cssVar('--brand-primary', '#3E6AE1'), cssVar('--text-muted', '#5C5E62')]);
+  doughnut('fuelChart', ov.fuel, [cssVar('--color-ev', '#00A550'), cssVar('--color-hybrid', '#0072CE'), cssVar('--color-ice', '#FF6B00')]);
+  bars('ageChart', ov.age);
+  bars('incomeChart', ov.income);
+
+  // ----- อัปเดตสีกราฟเมื่อสลับธีม -----
+  // Chart.js อ่าน CSS variable ครั้งเดียวตอนสร้าง ถ้าไม่อัปเดต ตัวเลขแกน/เส้นกริดจะค้างสีเดิม
+  document.addEventListener('cardss:themechange', function () {
+    var grid = cssVar('--border-light', '#EEEEEE');
+    var text = cssVar('--text-muted', '#5C5E62');
+    var brand = cssVar('--brand-primary', '#3E6AE1');
+    charts.forEach(function (ch) {
+      var scales = ch.options.scales || {};
+      Object.keys(scales).forEach(function (k) {
+        if (scales[k].grid && scales[k].grid.display !== false) scales[k].grid.color = grid;
+        if (scales[k].ticks) scales[k].ticks.color = text;
+      });
       var lg = ch.options.plugins && ch.options.plugins.legend;
       if (lg && lg.labels) lg.labels.color = text;
+      if (ch.config.type === 'bar') ch.data.datasets[0].backgroundColor = brand;
+      if (ch.canvas.id === 'buyChart') ch.data.datasets[0].backgroundColor = [brand, text];
       ch.update('none');
     });
   });
-
-  // ----- ANIMATE SCORE BARS -----
-  var bars = document.querySelectorAll('.confidence-bar-fill[data-width]');
-  bars.forEach(function (bar, i) {
-    setTimeout(function () {
-      bar.style.width = bar.dataset.width + '%';
-    }, 600 + i * 150);
-  });
-
 });
 </script>
+{% endif %}
 {% endblock %}

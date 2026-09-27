@@ -22,6 +22,24 @@ CarDSS — Training Script
 หมายเหตุ proxy: แบบสอบถามไม่มีคำถาม "tech_env_concern" / "resale_maintenance_concern"
 ตรงตัว (เป็น field เฉพาะของฟอร์มเว็บ predict_fuel.html) — ใช้คะแนน 7P Likert ที่ใกล้เคียง
 ที่สุดเป็น proxy แทน (ดู comment ในโค้ด) เป็นการประมาณ ไม่ใช่ค่าที่ถามตรงในแบบสอบถาม
+
+⚠️ 2026-09-26 — เปลี่ยนข้อมูลหลักเป็นแบบสอบถามชุดใหม่ (n=511) ตามคำสั่งผู้ใช้โดยตรง
+    ไฟล์: files/user_from/survey_2026-09-26_n511.csv (ชุด 500 แถวเดิมย้ายไป files/archive_2026-09-26/)
+    ชุดใหม่ไม่มีคำถามที่เพิ่มทีหลัง 15 ข้อ (TPB / เหตุการณ์กระตุ้น / กลุ่ม EV / NEP) และอาจารย์
+    ไม่ต้องการคำถามกลุ่ม EV แล้ว จึงตัดฟีเจอร์เหล่านั้นทิ้งทั้งหมด
+    เลิกอ้างคอลัมน์ด้วยตำแหน่ง (r.iloc[20] ฯลฯ) — ดึงด้วยชื่อหัวคอลัมน์ผ่าน SURVEY_HEADERS แทน
+    (ชุดใหม่ไม่มีคอลัมน์ timestamp คอลัมน์ 0 เป็นคอลัมน์ว่าง ถ้าอ้างตำแหน่งจะเพี้ยนได้ง่าย)
+    โปรโตคอลประเมินล็อกไว้ก่อนเทรนที่หัวไฟล์ analysis/verify_newdata_2026-09-26.py
+
+⚠️ 2026-09-27 — แทนชุด n=511 ด้วยชุด n=514 (ผู้ใช้อนุมัติ) ไฟล์ files/user_from/survey_2026-09-27_n514.csv
+    ชุด n=511 ถูกถอดเพราะ Likert 21 ข้อแจกแจงเท่ากันทุกข้อ (ห้องประชุม #32–#36) ย้ายไป files/archive_2026-09-26/
+    ชุด n=514 ไม่มี timestamp และมีคอลัมน์ว่าง "คอลัมน์ 1" ท้ายไฟล์ -> load_survey() ทิ้งให้
+    คำถามเลือกได้หลายข้อ (prev_car / concern / purpose) เข้ารหัสแบบ multi-hot ไม่ยุบเหลือตัวเลือกแรก
+    โปรโตคอลประเมินล็อกไว้ก่อนเทรนที่หัวไฟล์ analysis/verify_newdata_2026-09-27.py
+
+⚠️ 2026-09-28 — files/user_from/ เป็นชุด n=630 (n514 + ไฟล์ EV 73 + ไฟล์ไฮบริด 43 คน มีรถทุกคน · เก็บเพิ่มเจาะกลุ่ม)
+    n514 ย้ายไป files/archive_2026-09-28/ · ผู้ใช้เลือกให้เว็บใช้ BUY จากชุด n514 + FUEL จากชุด n630
+    (BUY บน n630 ได้ 0.534 lift แค่ +0.02 เพราะคนที่เพิ่มมาไม่ช่วยฝั่ง BUY) — รันไฟล์นี้ตรง ๆ ตอนนี้จะได้ BUY ชุด n630
 """
 
 import os
@@ -72,30 +90,96 @@ BAGGING_N_ESTIMATORS = 25
 # อาจารย์ที่ปรึกษากำหนดให้ใช้ meta-classifier (2026-08-09)
 # ตั้งเป็น False เพื่อกลับไปเลือกโมเดลที่คะแนน CV สูงสุดโดยไม่สนชนิด
 PREFER_META_CLASSIFIER = True
-META_MODEL_NAMES = ("BAGGING", "ENSEMBLE", "STACK")
+# 2026-09-26: จำกัดให้เหลือ BAGGING ตัวเดียว (เดิม BAGGING/ENSEMBLE/STACK แล้วเลือกตามคะแนน CV)
+# อาจารย์กำหนดให้ใช้ voting หรือ bagging และเลือก bagging ไปแล้วตั้งแต่ 2026-08-09
+# ตัดสินไว้ก่อนเทรนข้อมูลชุดใหม่ — ไม่ใช่การเลือกตามผลรอบนี้ (ENSEMBLE/STACK ยังถูกวัดและบันทึกใน cv_all)
+META_MODEL_NAMES = ("BAGGING",)
 
 
 # ============================================================
 # โหลดข้อมูล
 # ============================================================
 
-def load_survey():
-    matches = glob.glob(os.path.join(HERE, "..", "files", "user_from", "*.csv"))
+def survey_path():
+    """คืน path ของ CSV แบบสอบถามใน files/user_from/ — ต้องมีไฟล์เดียวเท่านั้น
+    (เดิมหยิบ matches[0] เงียบ ๆ ถ้ามีหลายไฟล์จะได้ไฟล์ไหนก็ไม่รู้ — 2026-09-26 เปลี่ยนเป็นหยุดทันที)"""
+    matches = sorted(glob.glob(os.path.join(HERE, "..", "files", "user_from", "*.csv")))
     if not matches:
         raise FileNotFoundError("ไม่พบไฟล์ CSV แบบสอบถามใน files/user_from/")
-    df = pd.read_csv(matches[0], encoding="utf-8")
-    return df
+    if len(matches) > 1:
+        raise RuntimeError(f"files/user_from/ ต้องมี CSV ไฟล์เดียว แต่พบ {len(matches)} ไฟล์: {matches}")
+    return matches[0]
+
+
+def load_survey():
+    df = pd.read_csv(survey_path(), encoding="utf-8")
+    # 2026-09-27: Google Forms ใส่คอลัมน์ว่างชื่อ "คอลัมน์ N" มาด้วย (ชุด n=511 อยู่หน้า, ชุด n=514 อยู่ท้าย)
+    # ทิ้งเฉพาะคอลัมน์ที่ว่างทั้งคอลัมน์และชื่อขึ้นต้นด้วย "คอลัมน์" — ไม่แตะคอลัมน์อื่น
+    empty = [c for c in df.columns if str(c).strip().startswith("คอลัมน์") and df[c].isna().all()]
+    return df.drop(columns=empty)
 
 
 # ============================================================
-# ตาราง map ไทย -> web value space
-# column layout ปัจจุบัน (หลังเพิ่ม children / housing_status ในฟอร์ม):
-# 0=timestamp 1=gender 2=age 3=children 4=education 5=occupation
-# 6=family_size 7=housing_type 8=housing_status 9=parking(3lvl) 10=income
-# 11=has_car 12=usage_type 13=frequency 14=distance 15=concern 16=prev_car
-# 17=priority 18=budget 19=purpose 20=buy_label 21=fuel_label 22=reason
-# 23..43 = 7P Likert (1-5)
+# หัวคอลัมน์ของแบบสอบถาม (2026-09-26) — ดึงคอลัมน์ด้วย "ชื่อ" แทนตำแหน่ง
+# เทียบแบบตัดช่องว่างซ้ำ/หัวท้ายแล้ว (หัวคอลัมน์จาก Google Forms มีช่องว่างเกินหลายจุด)
+# ตรวจแล้วว่าตรงทั้งชุด n=514 (2026-09-27, ไม่มี timestamp คอลัมน์ว่างอยู่ท้าย), n=511 และ n=500
+# layout เดิม (อ้างอิง): 1=gender 2=age 3=children 4=education 5=occupation 6=family_size
+# 7=housing_type 8=housing_status 9=parking 10=income 11=has_car 12=usage_type 13=frequency
+# 14=distance 15=concern 16=prev_car 17=priority 18=budget 19=purpose 20=buy_label
+# 21=fuel_label 22=reason 23..43 = 7P Likert (1-5)
 # ============================================================
+
+SURVEY_HEADERS = {
+    "gender": "1. เพศ",
+    "age": "2. อายุ",
+    "children": "จำนวนบุตรที่มีทั้งหมด",
+    "education": "3. ระดับการศึกษา",
+    "occupation": "4. อาชีพ",
+    "family_size": "5. จำนวนสมาชิกในครอบครัวมีจำนวนทั้งหมดกี่คน โดยนับรวมผู้ตอบแบบสอบถามด้วย",
+    "housing_type": "6. ลักษณะที่พักอาศัย",
+    "housing_status": "สถานะการครอบครองที่พักอาศัย",
+    "parking": "7. พื้นที่จอดรถ",
+    "income": "8. รายได้เฉลี่ยต่อเดือน",
+    "has_car": "1. ปัจจุบันท่านมีรถยนต์หรือไม่",
+    "usage_type": "2. ลักษณะการใช้งานรถยนต์",
+    "frequency": "3. ความถี่ในการใช้รถยนต์",
+    "distance": "4. ระยะทางในการใช้งานรถยนต์โดยเฉลี่ยต่อวัน",
+    "concern": "5. ข้อกังวลหรือปัญหาในการใช้รถยนต์",
+    "prev_car": "6. ประสบการณ์ประเภทรถยนต์ที่เคยใช้",
+    "priority": "1. สิ่งสำคัญในการเลือกซื้อรถยนต์",
+    "budget": "2. งบประมาณที่มีในการซื้อรถยนต์",
+    "purpose": "3. วัตถุประสงค์ในการตัดสินใจเลือกซื้อรถยนต์",
+    "buy_label": "4. ท่านมีแนวโน้มจะซื้อรถยนต์ตามประเภทเชื้อเพลิงที่ท่านสนใจหรือไม่",
+    "fuel_label": "5. หากต้องเลือกซื้อรถยนต์ ท่านสนใจรถประเภทใดมากที่สุด",
+    # 7P Likert ที่ใช้เป็น proxy ของ tech_env_concern / resale_maintenance_concern
+    # (แบบสอบถามไม่มีคำถามตรงตัว ใช้รายการที่ใกล้เคียงที่สุดเป็นตัวแทน)
+    "likert_energy_fit": "ปัจจัยด้านผลิตภัณฑ์ [ประเภทพลังงานของรถยนต์มีความเหมาะสมกับการใช้งาน]",
+    "likert_maintenance": "ปัจจัยด้านราคา [ค่าใช้จ่ายในการบำรุงรักษาซ่อมแซมรถยนต์อยู่ในระดับที่เหมาะสม]",
+}
+
+
+def _norm_header(h):
+    return " ".join(str(h).split())
+
+
+def resolve_columns(df):
+    """คืน {key: ชื่อคอลัมน์จริงใน df} ตาม SURVEY_HEADERS — ขาดหรือซ้ำ = หยุดทันที ไม่เดา"""
+    by_norm = {}
+    for c in df.columns:
+        by_norm.setdefault(_norm_header(c), []).append(c)
+    out, missing = {}, []
+    for key, header in SURVEY_HEADERS.items():
+        found = by_norm.get(_norm_header(header), [])
+        if len(found) == 1:
+            out[key] = found[0]
+        elif not found:
+            missing.append(f"{key} ('{header}')")
+        else:
+            raise ValueError(f"หัวคอลัมน์ซ้ำ {len(found)} คอลัมน์: '{header}'")
+    if missing:
+        raise KeyError("CSV ไม่มีคอลัมน์ที่ต้องใช้: " + ", ".join(missing))
+    return out
+
 
 GENDER = {"ชาย": "male", "หญิง": "female"}
 AGE = {
@@ -196,63 +280,9 @@ FUEL_LABEL = {
     "รถยนต์สันดาป (ดีเซล / เบนซิน)": "ICE",
 }
 
-# 7P Likert column index สำหรับ proxy tech_env_concern / resale_maintenance_concern
-# (แบบสอบถามไม่มีคำถามตรงตัว ใช้รายการที่ใกล้เคียงที่สุดเป็นตัวแทน)
-COL_LIKERT_ENERGY_FIT = 23    # "ประเภทพลังงานของรถยนต์มีความเหมาะสมกับการใช้งาน" -> proxy tech_env_concern
-COL_LIKERT_MAINTENANCE = 28   # "ค่าใช้จ่ายในการบำรุงรักษาซ่อมแซม...เหมาะสม" -> proxy resale_maintenance_concern
-
-
-# ============================================================
-# คำถามใหม่ที่เพิ่มต่อท้ายแบบสอบถาม (2026-08-01) — คอลัมน์ 44-58
-# แบบสอบถามเดิม (คอลัมน์ 0-43) ไม่ถูกแก้ ตามเงื่อนไขที่อาจารย์ให้ไว้
-# ไฟล์เก่าที่ไม่มีคอลัมน์เหล่านี้ถูกย้ายไป files/user_from_archive/ แล้ว
-# ============================================================
-
-COL_INTENTION = 44        # เจตนาซื้อภายใน 6 เดือน (1-7)
-COL_ATTITUDE = 45         # การมีรถสำคัญเพียงใด (1-7)
-COL_SUBJ_NORM = 46        # คนใกล้ชิดคิดว่าควรมีรถ (1-7)
-COL_PBC = 47              # ความพร้อมทางการเงิน (1-7)
-COL_LIFE_EVENTS = 48      # เหตุการณ์ 6 เดือนที่ผ่านมา (multi-select)
-COL_CHARGING = 49         # จุดชาร์จที่บ้าน/ที่ทำงาน
-COL_EV_EXPOSURE = 50      # เคยลองขับ EV/Hybrid
-COL_RANGE_ANXIETY = 51    # กังวลแบตหมดระหว่างทาง (1-7)
-COL_TCO = 52              # ความรู้เรื่องต้นทุนรวม
-COL_INCENTIVE = 53        # ความรู้เรื่องสิทธิประโยชน์ภาครัฐ
-COL_NEP_START = 54        # NEP 5 ข้อ (54-58) ข้อสุดท้าย (58) เป็น reverse-worded
-COL_NEP_END = 58
-
-CHARGING_ACCESS = {
-    "มีอยู่แล้ว": "has",
-    "ไม่มีแต่สามารถติดตั้งเพิ่มได้": "installable",
-    "ไม่มีและไม่สามารถติดตั้งได้ (เช่น คอนโด/หอพักที่ไม่อนุญาต)": "cannot",
-    "ไม่แน่ใจ": "unsure",
-}
-EV_EXPOSURE = {
-    "เคยทั้ง EV และ Hybrid": "both",
-    "เคยเฉพาะ EV": "ev_only",
-    "เคยเฉพาะ Hybrid": "hybrid_only",
-    "ไม่เคยเลย": "none",
-}
-TCO_AWARENESS = {
-    "ทราบ และคิดว่าถูกกว่ามาก": "much_cheaper",
-    "ทราบ แต่คิดว่าถูกกว่าเล็กน้อย": "slightly_cheaper",
-    "ทราบ แต่คิดว่าไม่ต่างกันมาก": "similar",
-    "ไม่ทราบเลย": "unknown",
-}
-INCENTIVE_AWARENESS = {
-    "ทราบและเคยพิจารณาใช้สิทธิ์": "aware_considered",
-    "ทราบแต่ไม่เคยพิจารณา": "aware_only",
-    "ไม่ทราบเลย": "unknown",
-}
-# life event (multi-select) -> multi-hot token; "ไม่มีเหตุการณ์ข้างต้น" = ไม่ติดธงใดเลย
-LIFE_EVENTS = {
-    "เปลี่ยนงาน/ที่ทำงานใหม่": "job",
-    "ย้ายที่อยู่อาศัย": "move",
-    "มีบุตร/สมาชิกครอบครัวเพิ่ม": "child",
-    "รายได้เปลี่ยนแปลงอย่างมีนัยสำคัญ (เพิ่มขึ้นหรือลดลง)": "income",
-}
-
-NEP_REVERSE_OFFSET = 4    # ข้อที่ 5 (index 58) เป็น reverse-worded -> กลับคะแนน
+# 2026-09-26: ลบค่าคงที่ COL_* (อ้างคอลัมน์ด้วยตำแหน่ง) และตาราง map ของคำถามใหม่ 15 ข้อ
+# (CHARGING_ACCESS / EV_EXPOSURE / TCO_AWARENESS / INCENTIVE_AWARENESS / LIFE_EVENTS / NEP)
+# เพราะแบบสอบถามชุดใหม่ไม่มีคำถามเหล่านั้น — ดูประวัติได้ใน git
 
 
 def _likert(cell, default=4):
@@ -270,29 +300,6 @@ def _likert(cell, default=4):
         return int(num)
     except ValueError:
         return default
-
-
-def _all_mapped(cell, mapping):
-    """multi-select: คืน web token ทุกตัวที่ map ได้ (ต่างจาก _first_mapped ที่คืนตัวแรก)"""
-    if pd.isna(cell):
-        return []
-    out = []
-    for t in str(cell).split(","):
-        t = t.strip()
-        if t in mapping and mapping[t] not in out:
-            out.append(mapping[t])
-    return out
-
-
-def _nep_score(row):
-    """คะแนนเฉลี่ย New Ecological Paradigm 5 ข้อ (1-5) — ข้อสุดท้าย reverse-worded"""
-    vals = []
-    for i in range(COL_NEP_START, COL_NEP_END + 1):
-        v = _likert(row.iloc[i], default=3)
-        if i == COL_NEP_START + NEP_REVERSE_OFFSET:
-            v = 6 - v          # กลับคะแนน (1<->5) ตามหลัก reverse-worded item
-        vals.append(v)
-    return float(np.mean(vals)) if vals else 3.0
 
 
 # ============================================================
@@ -640,6 +647,10 @@ def build_and_select(X, y, cat_cols, num_cols, alpha=0.10, force_keep=None):
         for c in force_keep:
             if c in cat_cols and c not in mi_cat:
                 mi_cat.append(c)
+            # 2026-09-27: force_keep ที่เป็นคอลัมน์ตัวเลข (prev_* multi-hot) ต้องถูกบังคับเก็บในชุด MI ด้วย
+            # ให้เหมือน prev_car เดิมที่เป็น categorical
+            if c in num_cols and c not in mi_num:
+                mi_num.append(c)
     mi_pair = (mi_cat, mi_num)
     if mi_pair not in feature_sets.values():
         feature_sets["mi"] = mi_pair
@@ -857,49 +868,66 @@ def build_and_select(X, y, cat_cols, num_cols, alpha=0.10, force_keep=None):
 # predict_buy
 # ============================================================
 
-def train_buy(df):
-    print("\n[predict_buy] เตรียมข้อมูล...")
+def _all_mapped(cell, mapping):
+    """multi-select: คืน web token ทุกตัวที่ map ได้ (ไม่ซ้ำ ตามลำดับที่ตอบ) — ใช้ทำ multi-hot (2026-09-27)"""
+    if pd.isna(cell):
+        return []
+    out = []
+    for t in str(cell).split(","):
+        t = t.strip()
+        if t in mapping and mapping[t] not in out:
+            out.append(mapping[t])
+    return out
+
+
+def _cell(r, cols, key):
+    """ค่าในแถว r ของคอลัมน์ตาม key ใน SURVEY_HEADERS (ตัดช่องว่างหัวท้าย)"""
+    return str(r[cols[key]]).strip()
+
+
+def build_buy_xy(df):
+    """แปลงแบบสอบถาม -> (X, y) ของ predict_buy — ใช้ร่วมกันทั้ง train และ analysis/
+    ผู้ตอบทุกคน (ไม่ตัดใครออก) label = คอลัมน์ buy_label"""
+    cols = resolve_columns(df)
     rows, labels = [], []
     for _, r in df.iterrows():
-        lab = BUY_LABEL.get(str(r.iloc[20]).strip())
+        lab = BUY_LABEL.get(_cell(r, cols, "buy_label"))
         if lab is None:
             continue
         web = {
-            "gender": GENDER.get(str(r.iloc[1]).strip(), ""),
-            "age": AGE.get(str(r.iloc[2]).strip(), ""),
-            "children": CHILDREN.get(str(r.iloc[3]).strip(), ""),
-            "education": EDUCATION.get(str(r.iloc[4]).strip(), ""),
-            "occupation": OCCUPATION.get(str(r.iloc[5]).strip(), ""),
-            "family_size": FAMILY_SIZE.get(str(r.iloc[6]).strip(), ""),
-            "housing_type": HOUSING_TYPE.get(str(r.iloc[7]).strip(), ""),
-            "housing_status": HOUSING_STATUS.get(str(r.iloc[8]).strip(), ""),
-            "parking": PARKING.get(str(r.iloc[9]).strip(), ""),
-            "income": INCOME.get(str(r.iloc[10]).strip(), ""),
-            "budget": BUDGET.get(str(r.iloc[18]).strip(), ""),
-            "concern": _first_mapped(r.iloc[15], CONCERN),
-            "purpose": _first_mapped(r.iloc[19], PURPOSE),
-            # คำถามใหม่ (2026-08-01) — TPB constructs + life event + EV-domain
-            "intention": _likert(r.iloc[COL_INTENTION]),
-            "attitude": _likert(r.iloc[COL_ATTITUDE]),
-            "subjective_norm": _likert(r.iloc[COL_SUBJ_NORM]),
-            "pbc_financial": _likert(r.iloc[COL_PBC]),
-            "life_events": _all_mapped(r.iloc[COL_LIFE_EVENTS], LIFE_EVENTS),
-            "charging_access": CHARGING_ACCESS.get(str(r.iloc[COL_CHARGING]).strip(), ""),
-            "tco_awareness": TCO_AWARENESS.get(str(r.iloc[COL_TCO]).strip(), ""),
-            "incentive_awareness": INCENTIVE_AWARENESS.get(str(r.iloc[COL_INCENTIVE]).strip(), ""),
+            "gender": GENDER.get(_cell(r, cols, "gender"), ""),
+            "age": AGE.get(_cell(r, cols, "age"), ""),
+            "children": CHILDREN.get(_cell(r, cols, "children"), ""),
+            "education": EDUCATION.get(_cell(r, cols, "education"), ""),
+            "occupation": OCCUPATION.get(_cell(r, cols, "occupation"), ""),
+            "family_size": FAMILY_SIZE.get(_cell(r, cols, "family_size"), ""),
+            "housing_type": HOUSING_TYPE.get(_cell(r, cols, "housing_type"), ""),
+            "housing_status": HOUSING_STATUS.get(_cell(r, cols, "housing_status"), ""),
+            "parking": PARKING.get(_cell(r, cols, "parking"), ""),
+            "income": INCOME.get(_cell(r, cols, "income"), ""),
+            "budget": BUDGET.get(_cell(r, cols, "budget"), ""),
+            # 2026-09-27: multi-select -> multi-hot ทุกตัวเลือก (เดิม _first_mapped เก็บแค่ตัวแรก)
+            # concern ถามเฉพาะผู้มีรถ ผู้ไม่มีรถได้ list ว่าง = 0 ทุกคอลัมน์ (เลิก mode-fill)
+            "concern": _all_mapped(r[cols["concern"]], CONCERN),
+            "purpose": _all_mapped(r[cols["purpose"]], PURPOSE),
         }
         rows.append(fe.buy_features_from_web(web))
         labels.append(lab)
 
-    cols = fe.buy_feature_columns()
-    X = pd.DataFrame(rows, columns=cols)
+    X = pd.DataFrame(rows, columns=fe.buy_feature_columns())
     for c in fe.BUY_CAT_COLS:
         X[c] = X[c].replace("", np.nan)
         X[c] = X[c].fillna(_mode(X[c]))
     if fe.BUY_NUM_COLS:
         print("    การจัดการค่าขาดหาย/ผิดปกติ (เชิงปริมาณ):")
         X = handle_missing_and_outliers(X, fe.BUY_NUM_COLS)
-    y = pd.Series(labels)
+    return X, pd.Series(labels)
+
+
+def train_buy(df):
+    print("\n[predict_buy] เตรียมข้อมูล...")
+    X, y = build_buy_xy(df)
+    cols = fe.buy_feature_columns()
     print(f"    ตัวอย่าง: {len(y)} | label: {dict(y.value_counts())}")
 
     pipe, name, metrics, sel_cat, sel_num = build_and_select(X, y, fe.BUY_CAT_COLS, fe.BUY_NUM_COLS)
@@ -927,57 +955,59 @@ def train_buy(df):
 # predict_fuel  (ใช้เฉพาะผู้ที่มีรถ = มีข้อมูล usage/frequency/distance)
 # ============================================================
 
-def train_fuel(df):
-    print("\n[predict_fuel] เตรียมข้อมูล...")
+def build_fuel_xy(df):
+    """แปลงแบบสอบถาม -> (X, y) ของ predict_fuel — ใช้ร่วมกันทั้ง train และ analysis/
+    เฉพาะผู้ที่ตอบคำถามการใช้รถ (usage_type ไม่ว่าง = ผู้ที่มีรถยนต์อยู่แล้ว) ออกแบบเดิมไม่เปลี่ยน"""
+    cols = resolve_columns(df)
     rows, labels = [], []
     for _, r in df.iterrows():
-        lab = FUEL_LABEL.get(str(r.iloc[21]).strip())
-        usage = USAGE_TYPE.get(str(r.iloc[12]).strip(), "")
+        lab = FUEL_LABEL.get(_cell(r, cols, "fuel_label"))
+        usage = USAGE_TYPE.get(_cell(r, cols, "usage_type"), "")
         if lab is None or usage == "":
             continue  # ข้ามผู้ไม่มีรถ (usage/frequency/distance ว่าง)
         priority_tokens = []
-        if not pd.isna(r.iloc[17]):
-            for t in str(r.iloc[17]).split(","):
+        if not pd.isna(r[cols["priority"]]):
+            for t in str(r[cols["priority"]]).split(","):
                 t = t.strip()
                 if t in PRIORITY:
                     priority_tokens.append(PRIORITY[t])
         web = {
             "usage_type": usage,
-            "frequency": FREQUENCY.get(str(r.iloc[13]).strip(), ""),
-            "distance": DISTANCE.get(str(r.iloc[14]).strip(), ""),
-            "prev_car": _first_mapped(r.iloc[16], PREV_CAR) or "none",
+            "frequency": FREQUENCY.get(_cell(r, cols, "frequency"), ""),
+            "distance": DISTANCE.get(_cell(r, cols, "distance"), ""),
+            # 2026-09-27: multi-hot (เดิม _first_mapped -> คำตอบผสมกลายเป็น 'ice' หมด)
+            "prev_car": _all_mapped(r[cols["prev_car"]], PREV_CAR),
             "priority": priority_tokens,
             # proxy: แบบสอบถามไม่มีคำถามตรงตัว ใช้ 7P Likert ที่ใกล้เคียงที่สุดแทน
-            "tech_env_concern": r.iloc[COL_LIKERT_ENERGY_FIT],
-            "resale_maintenance_concern": r.iloc[COL_LIKERT_MAINTENANCE],
-            # คำถามใหม่ (2026-08-01) — กรอบงานวิจัย EV adoption
-            "charging_access": CHARGING_ACCESS.get(str(r.iloc[COL_CHARGING]).strip(), ""),
-            "ev_exposure": EV_EXPOSURE.get(str(r.iloc[COL_EV_EXPOSURE]).strip(), ""),
-            "tco_awareness": TCO_AWARENESS.get(str(r.iloc[COL_TCO]).strip(), ""),
-            "incentive_awareness": INCENTIVE_AWARENESS.get(str(r.iloc[COL_INCENTIVE]).strip(), ""),
-            "range_anxiety": _likert(r.iloc[COL_RANGE_ANXIETY]),
-            "nep_score": _nep_score(r),
+            "tech_env_concern": r[cols["likert_energy_fit"]],
+            "resale_maintenance_concern": r[cols["likert_maintenance"]],
         }
         rows.append(fe.fuel_features_from_web(web))
         labels.append(lab)
 
-    cols = fe.fuel_feature_columns()
-    X = pd.DataFrame(rows, columns=cols)
+    X = pd.DataFrame(rows, columns=fe.fuel_feature_columns())
     for c in fe.FUEL_CAT_COLS:
         X[c] = X[c].replace("", np.nan)
         X[c] = X[c].fillna(_mode(X[c]))
     print("    การจัดการค่าขาดหาย/ผิดปกติ (เชิงปริมาณ):")
     X = handle_missing_and_outliers(X, fe.FUEL_NUM_COLS)
-    y = pd.Series(labels)
+    return X, pd.Series(labels)
+
+
+def train_fuel(df):
+    print("\n[predict_fuel] เตรียมข้อมูล...")
+    X, y = build_fuel_xy(df)
+    cols = fe.fuel_feature_columns()
     print(f"    ตัวอย่าง: {len(y)} | label: {dict(y.value_counts())}")
 
     num_cols = fe.FUEL_NUM_COLS + ["prio_" + t for t in fe.PRIORITY_TOKENS]
-    # alpha ผ่อนปรนกว่า buy (0.10->0.15) + บังคับเก็บ prev_car: เล่มไม่ได้ล็อก alpha ตายตัว
-    # (ยืนยันผ่าน NotebookLM) fuel มีฟีเจอร์ผู้สมัครน้อย (16 ตัว, ล็อกจาก predict_fuel()
-    # signature) การกรองแบบ univariate ที่ alpha=0.10 เดิมทิ้ง prev_car ซึ่งมีเหตุผล
-    # ทางทฤษฎีชัดเจน (รถเดิมมักทำนายชนิดเชื้อเพลิงที่เลือกครั้งถัดไป)
+    # alpha ผ่อนปรนกว่า buy (0.10->0.15) + บังคับเก็บ prev_car (2026-09-27: เป็น multi-hot 3 คอลัมน์
+    # prev_ice/prev_hybrid/prev_ev จึงบังคับเก็บทั้งสาม เหตุผลเดิม): เล่มไม่ได้ล็อก alpha ตายตัว
+    # (ยืนยันผ่าน NotebookLM) fuel มีฟีเจอร์ผู้สมัครน้อย การกรองแบบ univariate ที่ alpha=0.10
+    # เดิมทิ้ง prev_car ซึ่งมีเหตุผลทางทฤษฎีชัดเจน (รถเดิมมักทำนายชนิดเชื้อเพลิงที่เลือกครั้งถัดไป)
     pipe, name, metrics, sel_cat, sel_num = build_and_select(
-        X, y, fe.FUEL_CAT_COLS, num_cols, alpha=0.15, force_keep=["prev_car"])
+        X, y, fe.FUEL_CAT_COLS, num_cols, alpha=0.15,
+        force_keep=["prev_" + t for t in fe.PREV_CAR_TOKENS])
 
     bundle = {
         "pipeline": pipe,
@@ -990,17 +1020,18 @@ def train_fuel(df):
     }
     os.makedirs(MODEL_DIR, exist_ok=True)
     out = os.path.join(MODEL_DIR, "fuel_model.pkl")
-    # compress=3 บังคับไว้ตั้งแต่ 2026-08-28 — ห้ามเอาออก
-    # โมเดล BAGGING x25 ไม่บีบอัดจะได้ 137 MB เกินลิมิต 100 MB ของ GitHub
-    # ซึ่งทำให้ git push ไม่ผ่าน และเว็บบน PythonAnywhere (deploy ด้วย git pull)
-    # จะไม่ได้โมเดลใหม่เลย · บีบแล้วเหลือ 25.7 MB ผลทำนายเท่ากันทุกทศนิยม (ตรวจแล้ว)
+    # compress=3 บังคับไว้ตั้งแต่ 2026-08-28 — ห้ามเอาออก (เหตุผลเดียวกับ buy_model.pkl ข้างบน)
     joblib.dump(bundle, out, compress=3)
     print(f"    บันทึก {out}")
 
 
 if __name__ == "__main__":
-    df = load_survey()
-    print(f"โหลดข้อมูล: {len(df)} แถว")
-    train_buy(df)
-    train_fuel(df)
+    # 2026-09-28: เรียกผ่านโมดูล train_models ไม่ใช่ __main__ — ถ้าโมเดลที่เลือกมี XGBClassifierStr
+    # pickle จะอ้าง "__main__.XGBClassifierStr" แล้วเว็บโหลด .pkl ไม่ได้ (เจอจริงตอนเทรน BUY ชุด n=630)
+    import train_models as tm
+    df = tm.load_survey()
+    print(f"โหลดข้อมูล: {len(df)} แถว จาก {tm.survey_path()}")
+    print(f"บันทึกโมเดลลง: {tm.MODEL_DIR}")
+    tm.train_buy(df)
+    tm.train_fuel(df)
     print("\nเสร็จสิ้น — ตั้ง config.USE_MOCK = False เพื่อใช้โมเดลจริง")

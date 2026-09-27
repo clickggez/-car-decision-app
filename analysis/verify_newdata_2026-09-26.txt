@@ -1,0 +1,228 @@
+
+วัดผลโมเดลที่เทรนจากข้อมูลแบบสอบถามชุดใหม่ (n=511) — 2026-09-26
+
+================================================================================
+🔒 โปรโตคอลการประเมิน + เกณฑ์ — เขียนและล็อกไว้ "ก่อน" เทรนและก่อนเห็นผลใด ๆ
+================================================================================
+ที่มา: ผู้ใช้สั่งตรง 2026-09-26 ให้ใช้ข้อมูลชุดใหม่แทนชุด 500 แถวเดิมเป็นข้อมูลหลัก
+(อาจารย์ไม่ต้องการคำถามกลุ่ม EV แล้ว) — ข้อมูลชุดใหม่ไม่มีคำถามที่เพิ่มทีหลัง 15 ข้อ
+(TPB 4 ข้อ, เหตุการณ์กระตุ้น, จุดชาร์จ, ประสบการณ์ EV, range anxiety, TCO,
+สิทธิประโยชน์, NEP 5 ข้อ) จึงตัดฟีเจอร์เหล่านั้นทิ้งทั้งหมด
+
+ข้อมูล
+  ไฟล์   : files/user_from/survey_2026-09-26_n511.csv
+  SHA-256: 3a62c4976baf75fd970fc5096055735dbb3c09ddb27fc0e000946f7672c45fe4
+  BUY  : ผู้ตอบทุกคน (n=511) label = "4. ท่านมีแนวโน้มจะซื้อรถยนต์ตามประเภทเชื้อเพลิงที่ท่านสนใจหรือไม่"
+  FUEL : เฉพาะผู้ที่มีรถยนต์ (ตอบคำถามการใช้รถ usage/frequency/distance) — ออกแบบเดิมไม่เปลี่ยน
+         label = "5. หากต้องเลือกซื้อรถยนต์ ท่านสนใจรถประเภทใดมากที่สุด"
+  ดึงคอลัมน์ด้วย "ชื่อหัวคอลัมน์" (train_models.SURVEY_HEADERS) ไม่ใช้ตำแหน่ง
+
+โมเดล (train_models.py — ไม่เปลี่ยนวิธี นอกจากตาราง map ข้อมูลและรายการฟีเจอร์)
+  - ขั้นเลือกชุดฟีเจอร์/จูนพารามิเตอร์ด้วย CV ภายในเหมือนเดิมทุกอย่าง
+  - meta-classifier ที่ deploy = BaggingClassifier x25 **บังคับ** (อาจารย์กำหนดให้ใช้ voting หรือ
+    bagging และเลือก bagging ไปแล้ว 2026-08-09) — ตัดสินก่อนเห็นผล ไม่เลือกตามคะแนนรอบนี้
+  - base learner ของ bagging = โมเดลเดี่ยวที่ CV ดีที่สุดที่ไม่ใช่ ANN (กลไกเดิม) ใช้ random_state=42 เดิม
+  - เทรนลง car-dss/_models_2026-09-26_newdata/ (CARDSS_MODEL_DIR) — ไม่ทับ car-dss/models/*.pkl
+
+การวัด (สคริปต์นี้)
+  - StratifiedShuffleSplit n_splits=20, test_size=0.2, random_state=42
+  - ทุก split: clone pipeline จาก .pkl แล้ว fit ใหม่เฉพาะ train fold วัดบน test fold
+  - รายงาน: accuracy mean ± sd (min–max), Cohen kappa mean ± sd, balanced accuracy mean ± sd,
+    majority baseline (สัดส่วนคลาสใหญ่สุดของข้อมูลเต็ม), lift = accuracy เฉลี่ย − baseline,
+    SHA-256 ของ .pkl แต่ละไฟล์, เทียบกับเลขที่ฝังใน .pkl
+  - np.std แบบ population (ddof=0) เหมือน verify_web_accuracy.py เพื่อให้เทียบกันได้
+
+เกณฑ์ (ล็อกก่อนเห็นผล)
+  - **ไม่มีเกณฑ์ "สำเร็จ" ที่ผูกกับ accuracy** — รายงานผลตามจริงทุกกรณี ไม่ว่าดีขึ้นหรือแย่ลง
+  - ห้ามเปลี่ยน random_state / threshold / ชุดฟีเจอร์ / label / กลุ่มตัวอย่าง หลังเห็นผล
+  - ห้ามเทียบ accuracy ข้ามกับชุดข้อมูลเดิม (สัดส่วนคลาสต่างกัน) — เทียบได้เฉพาะ lift และ kappa
+  - การตีความ: lift ≤ 0 หรือ kappa ≈ 0 ให้รายงานตรง ๆ ว่า "ไม่ดีกว่าการทายคลาสใหญ่สุด"
+    ไม่ใช่เหตุผลให้จูนใหม่
+  - เงื่อนไขทางเทคนิคก่อนเสนอ deploy (ไม่ใช่เกณฑ์ผลงาน):
+      (1) model_name ของทั้งสองไฟล์ = BAGGING
+      (2) feature_cols ใน .pkl ตรงกับ feature_encoding ปัจจุบัน
+      (3) ค่าเฉลี่ยที่วัดใหม่ ต่างจากค่าที่ฝังใน .pkl < 0.005
+      (4) เทสต์ car-dss/tests ผ่านทั้งหมดเมื่อชี้ไปที่โฟลเดอร์โมเดลใหม่
+
+ข้อจำกัดที่ต้องระบุ (รู้ล่วงหน้า)
+  - ชุดฟีเจอร์และพารามิเตอร์ถูกเลือกด้วย CV บนข้อมูลเต็ม ก่อนแบ่ง 20 splits
+    (เหมือนโปรโตคอลเดิมของ train_models.py) จึงอาจมองโลกในแง่ดีเล็กน้อย
+  - FUEL มี n เล็ก (เฉพาะผู้มีรถ) ความผันผวนระหว่าง split จะสูง ต้องรายงาน ± เสมอ
+
+รัน:
+    set CARDSS_EVAL_MODEL_DIR=car-dss/_models_2026-09-26_newdata   (ค่าเริ่มต้นของสคริปต์นี้อยู่แล้ว)
+    python analysis/verify_newdata_2026-09-26.py > analysis/verify_newdata_2026-09-26.txt
+**อ่านอย่างเดียว — ไม่เขียนทับ .pkl ใด ๆ**
+
+====================================================================================
+  รันเมื่อ      : 2026-09-26 00:35:42
+  เครื่อง       : Windows-11-10.0.26200-SP0
+  Python       : 3.13.13
+  scikit-learn : 1.8.0
+  โฟลเดอร์โมเดล : C:\Users\click\Desktop\car-decision-app\car-dss\_models_2026-09-26_newdata
+  ไฟล์ข้อมูล    : C:\Users\click\Desktop\car-decision-app\files\user_from\survey_2026-09-26_n511.csv
+  SHA-256 ข้อมูล: 3a62c4976baf75fd970fc5096055735dbb3c09ddb27fc0e000946f7672c45fe4  (ตรงกับที่ล็อกไว้)
+====================================================================================
+
+====================================================================================
+  BUY  (ซื้อ / ไม่ซื้อ)  —  buy_model.pkl
+====================================================================================
+  ไฟล์        : C:\Users\click\Desktop\car-decision-app\car-dss\_models_2026-09-26_newdata\buy_model.pkl
+  ขนาด        : 87,681 bytes
+  SHA-256     : 67fa5780751cb01b5d19d3215f0666f4dc01d24e6957cf729465b641cc5ad53a
+  โมเดล       : BAGGING  (ตัวจำแนกจริง = BaggingClassifier, ฐาน = SVC)
+  best_params : {'base': 'SVM', 'n_estimators': 25}
+  ชุดฟีเจอร์   : 'selected'  1 categorical + 1 numeric
+    cat : ['occupation']
+    num : ['income_budget_gap']
+  CV (ภายใน, balanced_accuracy) ทุกผู้สมัคร:
+      selected/SVM           0.5690
+      selected/ANN           0.5624
+      selected/ET            0.5601
+      selected/XGB           0.5563
+      all/SVM                0.5390
+      all/GB                 0.5378
+      selected/GB            0.5368
+      all/XGB                0.5352
+      selected/STACK         0.5342
+      selected/ENSEMBLE      0.5327
+      selected/RF            0.5292
+      all/ANN                0.5265
+      all/RF                 0.5263
+      all/ET                 0.5235
+      selected/BAGGING       0.5105
+
+  [เงื่อนไข 1] model_name == BAGGING           : ผ่าน
+  [เงื่อนไข 2] feature_cols ตรง feature_encoding : ผ่าน
+
+  ข้อมูล n=511  สัดส่วนคลาส: {'ไม่ซื้อ': np.int64(296), 'ซื้อ': np.int64(215)}
+  baseline (ทายคลาสใหญ่สุด 'ไม่ซื้อ' เสมอ) = 0.5793
+    split  1/20  accuracy = 0.5340  kappa = +0.0419
+    split  2/20  accuracy = 0.3981  kappa = -0.1064
+    split  3/20  accuracy = 0.4175  kappa = -0.0111
+    split  4/20  accuracy = 0.4951  kappa = -0.0113
+    split  5/20  accuracy = 0.4660  kappa = -0.0801
+    split  6/20  accuracy = 0.6214  kappa = +0.2189
+    split  7/20  accuracy = 0.4369  kappa = +0.0003
+    split  8/20  accuracy = 0.4951  kappa = -0.0518
+    split  9/20  accuracy = 0.5631  kappa = +0.0805
+    split 10/20  accuracy = 0.5631  kappa = +0.1332
+    split 11/20  accuracy = 0.5437  kappa = +0.1171
+    split 12/20  accuracy = 0.5631  kappa = +0.1047
+    split 13/20  accuracy = 0.5437  kappa = +0.0649
+    split 14/20  accuracy = 0.5049  kappa = +0.0299
+    split 15/20  accuracy = 0.5049  kappa = -0.0421
+    split 16/20  accuracy = 0.5631  kappa = +0.0988
+    split 17/20  accuracy = 0.3981  kappa = -0.1064
+    split 18/20  accuracy = 0.5437  kappa = +0.0649
+    split 19/20  accuracy = 0.4854  kappa = +0.0458
+    split 20/20  accuracy = 0.3495  kappa = -0.2063
+
+  ── ผล 20 splits ──
+    accuracy          = 0.4995 ± 0.0683  (0.3495–0.6214)
+    Cohen kappa       = +0.0193 ± 0.0971
+    balanced accuracy = 0.5088 ± 0.0511
+    baseline          = 0.5793
+    lift              = -0.0797
+
+  เลขที่ฝังใน .pkl : 0.4995 ± 0.0683
+  [เงื่อนไข 3] ส่วนต่างกับที่วัดใหม่ < 0.005       : ผ่าน (+0.0000)
+
+  ── รายละเอียดรายคลาส (split สุดท้าย ใช้ดูประกอบเท่านั้น) ──
+              precision    recall  f1-score   support
+
+        ซื้อ       0.34      0.60      0.44        43
+     ไม่ซื้อ       0.37      0.17      0.23        60
+
+    accuracy                           0.35       103
+   macro avg       0.36      0.39      0.33       103
+weighted avg       0.36      0.35      0.32       103
+
+
+====================================================================================
+  FUEL (EV / Hybrid / ICE)  —  fuel_model.pkl
+====================================================================================
+  ไฟล์        : C:\Users\click\Desktop\car-decision-app\car-dss\_models_2026-09-26_newdata\fuel_model.pkl
+  ขนาด        : 66,390 bytes
+  SHA-256     : 0658fe5f7d56ff6de4263f08555767846f875b600b13d291902561392b1c2747
+  โมเดล       : BAGGING  (ตัวจำแนกจริง = BaggingClassifier, ฐาน = SVC)
+  best_params : {'base': 'SVM', 'n_estimators': 25}
+  ชุดฟีเจอร์   : 'selected'  1 categorical + 3 numeric
+    cat : ['prev_car']
+    num : ['tech_env_concern', 'tech_cost_balance', 'prio_price']
+  CV (ภายใน, balanced_accuracy) ทุกผู้สมัคร:
+      selected/SVM           0.3942
+      selected/BAGGING       0.3681
+      selected/ET            0.3645
+      all/GB                 0.3515
+      selected/ANN           0.3511
+      all/ANN                0.3507
+      all/XGB                0.3490
+      selected/GB            0.3356
+      selected/RF            0.3307
+      selected/XGB           0.3280
+      selected/ENSEMBLE      0.3240
+      all/RF                 0.3181
+      selected/STACK         0.3139
+      all/ET                 0.3096
+      all/SVM                0.2975
+
+  [เงื่อนไข 1] model_name == BAGGING           : ผ่าน
+  [เงื่อนไข 2] feature_cols ตรง feature_encoding : ผ่าน
+
+  ข้อมูล n=235  สัดส่วนคลาส: {'Hybrid': np.int64(134), 'EV': np.int64(51), 'ICE': np.int64(50)}
+  baseline (ทายคลาสใหญ่สุด 'Hybrid' เสมอ) = 0.5702
+    split  1/20  accuracy = 0.2979  kappa = +0.0812
+    split  2/20  accuracy = 0.3617  kappa = -0.0594
+    split  3/20  accuracy = 0.2340  kappa = -0.1023
+    split  4/20  accuracy = 0.5319  kappa = +0.1587
+    split  5/20  accuracy = 0.2340  kappa = +0.0174
+    split  6/20  accuracy = 0.5106  kappa = +0.1555
+    split  7/20  accuracy = 0.2128  kappa = -0.0099
+    split  8/20  accuracy = 0.5106  kappa = +0.0954
+    split  9/20  accuracy = 0.5106  kappa = +0.1081
+    split 10/20  accuracy = 0.2553  kappa = -0.0484
+    split 11/20  accuracy = 0.3830  kappa = -0.0240
+    split 12/20  accuracy = 0.4468  kappa = +0.1265
+    split 13/20  accuracy = 0.1915  kappa = -0.0372
+    split 14/20  accuracy = 0.2766  kappa = -0.1021
+    split 15/20  accuracy = 0.2128  kappa = -0.0623
+    split 16/20  accuracy = 0.5106  kappa = +0.1773
+    split 17/20  accuracy = 0.1915  kappa = -0.0475
+    split 18/20  accuracy = 0.4681  kappa = +0.0439
+    split 19/20  accuracy = 0.3617  kappa = +0.0711
+    split 20/20  accuracy = 0.3830  kappa = +0.0709
+
+  ── ผล 20 splits ──
+    accuracy          = 0.3543 ± 0.1212  (0.1915–0.5319)
+    Cohen kappa       = +0.0306 ± 0.0874
+    balanced accuracy = 0.3493 ± 0.0638
+    baseline          = 0.5702
+    lift              = -0.2160
+
+  เลขที่ฝังใน .pkl : 0.3543 ± 0.1212
+  [เงื่อนไข 3] ส่วนต่างกับที่วัดใหม่ < 0.005       : ผ่าน (-0.0000)
+
+  ── รายละเอียดรายคลาส (split สุดท้าย ใช้ดูประกอบเท่านั้น) ──
+              precision    recall  f1-score   support
+
+          EV       0.27      0.40      0.32        10
+      Hybrid       0.62      0.37      0.47        27
+         ICE       0.25      0.40      0.31        10
+
+    accuracy                           0.38        47
+   macro avg       0.38      0.39      0.36        47
+weighted avg       0.47      0.38      0.40        47
+
+
+====================================================================================
+  สรุป (20 random splits, seed 42, test 20%)
+====================================================================================
+  โมเดล     n  accuracy (min–max)                 kappa              baseline     lift
+  BUY     511  0.4995 ± 0.0683 (0.350–0.621)   +0.0193 ± 0.0971    0.5793  -0.0797
+  FUEL    235  0.3543 ± 0.1212 (0.191–0.532)   +0.0306 ± 0.0874    0.5702  -0.2160
+
+  SHA-256 BUY  : 67fa5780751cb01b5d19d3215f0666f4dc01d24e6957cf729465b641cc5ad53a
+  SHA-256 FUEL : 0658fe5f7d56ff6de4263f08555767846f875b600b13d291902561392b1c2747
+
+  ทำซ้ำได้ด้วย: python analysis/verify_newdata_2026-09-26.py

@@ -14,6 +14,7 @@ QA Edge-case tests for predict_fuel (Task Board: 🔴 High Priority)
 import os
 import sys
 import unittest
+from urllib.parse import urlsplit
 
 # เพิ่ม car-dss/ เข้า sys.path เพื่อ import โมดูล
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -24,14 +25,15 @@ from models.predictor import predict_fuel  # noqa: E402
 import app as flask_app_module  # noqa: E402
 
 
+# 27 ก.ย. 2569: ช่องที่ fuel_model.pkl ชุดข้อมูล n=514 ใช้จริง
+# prev_car / priority เลือกได้หลายข้อ (multi-hot) · resale_maintenance_concern เลิกถามแล้ว
 VALID_INPUT_FUEL = {
     'usage_type': 'city',
     'frequency': 'everyday',
     'distance': '31-50',
-    'prev_car': 'ice',
+    'prev_car': ['ice', 'hybrid'],
     'priority': ['price', 'fuel_cost', 'performance'],
     'tech_env_concern': '5',
-    'resale_maintenance_concern': '3',
 }
 
 
@@ -125,6 +127,7 @@ class ApiPredictFuelTests(unittest.TestCase):
         self.assertEqual(resp.status_code, 302)
 
     def test_whitespace_only_selects_rejected(self):
+        # 27 ก.ย. 2569: usage_type กลับมาเป็นช่องบังคับ (โมเดลชุด n=514 ใช้)
         data = dict(VALID_INPUT_FUEL)
         data['usage_type'] = '   '
         resp = self.client.post('/api/predict/fuel', data=data, follow_redirects=False)
@@ -148,14 +151,37 @@ class ApiPredictFuelTests(unittest.TestCase):
         self.assertEqual(resp.status_code, 302)
         self.assertIn('/predict/fuel', resp.headers.get('Location', ''))
 
+    # --- 2.4 prev_car เลือกได้หลายข้อ (27 ก.ย. 2569) ---
+    def test_prev_car_multi_select_accepted_and_empty_allowed(self):
+        from validators import validate_fuel
+        self.assertEqual(validate_fuel(dict(VALID_INPUT_FUEL)), (True, None))
+        self.assertEqual(validate_fuel(dict(VALID_INPUT_FUEL, prev_car=[])), (True, None))
+        self.assertFalse(validate_fuel(dict(VALID_INPUT_FUEL, prev_car=['ice', 'rocket']))[0])
+
+    def test_prev_car_multi_hot_not_collapsed(self):
+        """คนที่เคยใช้ทั้งสันดาปและไฮบริด ต้องได้ธงทั้งสองตัว ไม่ถูกยุบเหลือ ice"""
+        from models import feature_encoding as fe
+        feat = fe.fuel_features_from_web(dict(VALID_INPUT_FUEL))
+        self.assertEqual((feat['prev_ice'], feat['prev_hybrid'], feat['prev_ev']), (1, 1, 0))
+
     # --- 2.4 Security Decorators ---
-    def test_guest_not_sent_to_login_but_must_pass_buy_step(self):
-        """guest ไม่ถูกเด้งไป login แล้ว แต่ยังต้องผ่านขั้น 'ซื้อ' ก่อนเข้าหน้าเชื้อเพลิง"""
+    def test_not_logged_in_redirected_to_login_before_buy_check(self):
+        """ไม่ล็อกอิน -> เด้งไป /login ก่อน (login_required อยู่นอก buy_result_required)
+
+        เดิม (23 ก.ย.) guest ไม่ถูกเด้งไป login — กลับด้านตามที่อาจารย์เคาะ 25 ก.ย. 2569
+        """
         client = flask_app_module.app.test_client()
         resp = client.post('/api/predict/fuel', data=VALID_INPUT_FUEL, follow_redirects=False)
         self.assertEqual(resp.status_code, 302)
-        self.assertNotIn('/login', resp.headers.get('Location', ''))
-        self.assertIn('/predict/buy', resp.headers.get('Location', ''))
+        self.assertEqual(urlsplit(resp.headers.get('Location', '')).path, '/login')
+
+    def test_logged_in_must_pass_buy_step(self):
+        """ล็อกอินแล้วแต่ยังไม่ผ่านขั้น 'ซื้อ' -> เด้งกลับไปแบบประเมินซื้อ"""
+        with self.client.session_transaction() as sess:
+            sess.pop('buy_result', None)
+        resp = self.client.post('/api/predict/fuel', data=VALID_INPUT_FUEL, follow_redirects=False)
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(urlsplit(resp.headers.get('Location', '')).path, '/predict/buy')
 
     def test_buy_result_not_buy_blocked(self):
         with self.client.session_transaction() as sess:

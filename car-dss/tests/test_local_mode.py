@@ -4,10 +4,12 @@ simulate Firebase down โดย patch app.db = None และ app.firebase_auth
 
 Scenarios:
   1. save_prediction_to_firebase คืน None โดยไม่ crash เมื่อ db=None
-  2. get_dashboard_data_from_firebase คืน None โดยไม่ crash เมื่อ db=None
-  3. /api/dashboard fallback ไป mock data เมื่อ Firebase ไม่ตอบ
-  4. Login ด้วย local users (USE_MOCK_AUTH=True) ทำงานได้
-  5. Full flow: predict_buy → predict_fuel → dashboard ไม่ crash เมื่อ db=None
+  2. /api/dashboard คืนภาพรวมข้อมูลงานวิจัย (สาธารณะ) ไม่ใช่ผลส่วนตัว ไม่มีตัวเลขฝังตายตัว
+  3. Login ด้วย local users (USE_MOCK_AUTH=True) ทำงานได้
+  4. Full flow: login → predict_buy → predict_fuel ด้วยบัญชีจริง บันทึกด้วย uid ของบัญชีนั้น
+
+แก้ 25 ก.ย. 2569: ตัด get_dashboard_data_from_firebase ออกจาก app.py แล้ว
+(dashboard เป็นหน้าสาธารณะ ไม่ดึงผลรายคนอีก) จึงตัดเทสต์ของ helper ตัวนั้นด้วย
 
 รันด้วย:
     cd car-dss
@@ -19,6 +21,7 @@ import sys
 import json
 import unittest
 from unittest.mock import patch
+from urllib.parse import urlsplit
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BASE_DIR not in sys.path:
@@ -27,27 +30,16 @@ if BASE_DIR not in sys.path:
 import app as flask_app_module
 import config
 
+# 27 ก.ย. 2569: ฟอร์มถามเฉพาะช่องที่โมเดลชุดข้อมูล n=514 ใช้จริง
+# ไม่มีคำถาม TPB / กลุ่ม EV / NEP · purpose / prev_car / priority เลือกได้หลายข้อ
 VALID_BUY = {
-    'gender': 'male', 'age': '27-30', 'children': '0',
-    'education': 'bachelor', 'occupation': 'private', 'family_size': '1-2',
-    'housing_type': 'condo', 'housing_status': 'rent', 'parking': 'private',
-    'income': '25001-35000', 'budget': '500001-800000',
-    'concern': 'fuel_price', 'purpose': 'commute',
-    # คำถามใหม่ที่เพิ่มลงฟอร์มเว็บ 2026-08-09 — validators บังคับครบทุกช่อง
-    # (life_events เป็น multi-select ที่ไม่เลือกเลยได้ จึงไม่ต้องใส่)
-    'charging_access': 'installable', 'tco_awareness': 'slightly_cheaper',
-    'incentive_awareness': 'aware_only',
-    'intention': '5', 'attitude': '5', 'subjective_norm': '4', 'pbc_financial': '4',
+    'education': 'bachelor', 'family_size': '3-4', 'purpose': ['commute', 'travel'],
 }
 
 VALID_FUEL = {
     'usage_type': 'city', 'frequency': 'everyday', 'distance': '31-50',
-    'prev_car': 'ice', 'priority': ['price', 'fuel_cost'],
-    'tech_env_concern': '4', 'resale_maintenance_concern': '3',
-    # คำถามใหม่ 2026-08-09 (charging_access / tco / incentive ดึงจาก session
-    # ของหน้า buy จึงไม่อยู่ในฟอร์มนี้)
-    'ev_exposure': 'none', 'range_anxiety': '4',
-    'nep_1': '4', 'nep_2': '4', 'nep_3': '3', 'nep_4': '4', 'nep_5': '2',
+    'prev_car': ['ice'], 'priority': ['price', 'fuel_cost'],
+    'tech_env_concern': '4',
 }
 
 
@@ -61,61 +53,67 @@ class LocalModeHelperTests(unittest.TestCase):
             )
         self.assertIsNone(result)
 
-    def test_get_dashboard_returns_none_when_no_db(self):
-        with patch.object(flask_app_module, 'db', None):
-            result = flask_app_module.get_dashboard_data_from_firebase('uid_test')
-        self.assertIsNone(result)
-
 
 class LocalModeDashboardTests(unittest.TestCase):
-    """ทดสอบ /api/dashboard fallback เมื่อ Firebase ไม่มีข้อมูล"""
+    """/api/dashboard = ภาพรวมข้อมูลงานวิจัย (สาธารณะ) ตั้งแต่ 25 ก.ย. 2569
+
+    เดิมคืนผลส่วนตัวจาก Firebase/session + cost_comparison ที่เป็นตัวเลขฝังตายตัว
+    ตอนนี้ต้องคืนข้อมูลชุดเดียวกันให้ทุกคน และตัวเลขต้องมาจาก dataset_overview.json เท่านั้น
+    """
 
     @classmethod
     def setUpClass(cls):
         flask_app_module.app.config['TESTING'] = True
         flask_app_module.app.config['SECRET_KEY'] = 'test-secret'
+        with open(config.DATASET_OVERVIEW_PATH, encoding='utf-8') as f:
+            cls.overview = json.load(f)
 
-    def setUp(self):
-        self.client = flask_app_module.app.test_client()
-        with self.client.session_transaction() as sess:
-            sess['user_uid'] = 'test_uid'
-            sess['username'] = 'tester'
-
-    def test_dashboard_api_source_is_never_mock(self):
-        """ห้ามคืนค่าจำลองเป็นผลของผู้ใช้ (บั๊กเดิม 23 ก.ย. 2569: เห็น EV 78% ทั้งที่ยังไม่ได้วิเคราะห์)"""
-        resp = self.client.get('/api/dashboard')
+    def test_dashboard_api_public_and_from_overview_file(self):
+        resp = flask_app_module.app.test_client().get('/api/dashboard')  # ไม่ล็อกอิน
         self.assertEqual(resp.status_code, 200)
         data = json.loads(resp.data)
-        self.assertIn(data['source'], ('firebase', 'session', 'empty'))
-        self.assertNotEqual(data['source'], 'mock')
+        self.assertEqual(data['source'], 'dataset_overview')
+        self.assertEqual(data['overview'], self.overview)
 
-    def test_dashboard_api_returns_empty_when_no_result(self):
-        """ยังไม่เคยวิเคราะห์ = ต้องบอกว่าว่าง ไม่ใช่เติมตัวเลขให้"""
-        with patch.object(flask_app_module, 'db', None):
-            resp = self.client.get('/api/dashboard')
-            self.assertEqual(resp.status_code, 200)
-            data = json.loads(resp.data)
-            self.assertEqual(data['source'], 'empty')
-            self.assertFalse(data['has_result'])
+    def test_dashboard_api_has_no_personal_or_hardcoded_fields(self):
+        """ผลส่วนตัวใน session ต้องไม่รั่วออกมา และ cost_comparison (800/2200/3800) ต้องหายไป"""
+        client = flask_app_module.app.test_client()
+        with client.session_transaction() as sess:
+            sess['user_uid'] = 'local_tester'
+            sess['fuel_prediction'] = {'result': 'สันดาป (ICE)', 'scores': {'EV': 21, 'Hybrid': 35, 'ICE': 44},
+                                       'confidence': 0.44, 'model_used': 'BAGGING'}
+        data = json.loads(client.get('/api/dashboard').data)
+        for key in ('cost_comparison', 'fuel_result', 'fuel_scores', 'buy_result', 'has_result'):
+            self.assertNotIn(key, data)
+        self.assertNotIn('สันดาป (ICE)', json.dumps(data, ensure_ascii=False))
 
-    def test_dashboard_returns_real_session_result(self):
-        """มีผลใน session = ต้องคืนค่าจริงของผู้ใช้คนนั้น"""
-        with self.client.session_transaction() as sess:
-            sess['fuel_prediction'] = {
-                'result': 'สันดาป (ICE)',
-                'scores': {'EV': 21, 'Hybrid': 35, 'ICE': 44},
-                'confidence': 0.44,
-                'model_used': 'BAGGING',
-            }
-        with patch.object(flask_app_module, 'db', None):
-            resp = self.client.get('/api/dashboard')
-            data = json.loads(resp.data)
-            self.assertEqual(data['source'], 'session')
-            self.assertTrue(data['has_result'])
-            self.assertEqual(data['fuel_result'], 'สันดาป (ICE)')
-            self.assertEqual(data['fuel_scores']['ICE'], 44)
-            for key in ('buy_result', 'fuel_result', 'fuel_scores', 'cost_comparison'):
-                self.assertIn(key, data)
+    def test_dashboard_api_same_for_everyone(self):
+        anon = json.loads(flask_app_module.app.test_client().get('/api/dashboard').data)
+        client = flask_app_module.app.test_client()
+        with client.session_transaction() as sess:
+            sess['user_uid'] = 'local_tester'
+            sess['username'] = 'tester'
+        logged_in = json.loads(client.get('/api/dashboard').data)
+        self.assertEqual(anon, logged_in)
+
+    def test_cars_summary_counts_match_cars_json(self):
+        """จำนวนรุ่นรถต้องนับสดจาก cars.json (อ่านอย่างเดียว)"""
+        cars = flask_app_module.load_cars()
+        data = json.loads(flask_app_module.app.test_client().get('/api/dashboard').data)
+        got = {row['fuel']: row['count'] for row in data['cars']}
+        self.assertEqual(got, {k: len(cars.get(k, [])) for k in ('EV', 'Hybrid', 'ICE')})
+
+    def test_missing_overview_file_gives_unavailable_not_numbers(self):
+        """ไม่มีไฟล์สรุป = บอกว่าไม่มีข้อมูล ห้ามเติมตัวเลขแทน"""
+        missing = os.path.join(BASE_DIR, 'data', '__missing__.json')
+        with patch.object(config, 'DATASET_OVERVIEW_PATH', missing):
+            client = flask_app_module.app.test_client()
+            data = json.loads(client.get('/api/dashboard').data)
+            html = client.get('/dashboard').get_data(as_text=True)
+        self.assertEqual(data['source'], 'unavailable')
+        self.assertIsNone(data['overview'])
+        self.assertIn('ยังไม่มีข้อมูลสรุป', html)
+        self.assertNotIn('statRespondents', html)
 
 
 class LocalModeAuthTests(unittest.TestCase):
@@ -169,7 +167,13 @@ class LocalModeAuthTests(unittest.TestCase):
 
 
 class LocalModeFullFlowTests(unittest.TestCase):
-    """ทดสอบ full flow predict_buy → predict_fuel → dashboard เมื่อ db=None"""
+    """full flow ด้วยบัญชีจริงในโหมด local: login → buy → fuel (db=None ไม่แตะ Firebase จริง)
+
+    25 ก.ย. 2569: การพยากรณ์ต้องล็อกอิน และผลต้องบันทึกด้วย uid ของบัญชีนั้น ไม่ใช่ guest
+    """
+
+    USERNAME = 'test_flow_user'
+    PASSWORD = 'testpass123'
 
     @classmethod
     def setUpClass(cls):
@@ -177,38 +181,62 @@ class LocalModeFullFlowTests(unittest.TestCase):
         flask_app_module.app.config['SECRET_KEY'] = 'test-secret'
 
     def setUp(self):
+        users = flask_app_module.load_local_users()
+        users[self.USERNAME] = {'password': self.PASSWORD, 'created_at': '2026-01-01T00:00:00Z'}
+        flask_app_module.save_local_users(users)
         self.client = flask_app_module.app.test_client()
+
+    def tearDown(self):
+        users = flask_app_module.load_local_users()
+        users.pop(self.USERNAME, None)
+        flask_app_module.save_local_users(users)
+
+    def _login(self):
+        with patch.object(config, 'USE_MOCK_AUTH', True):
+            resp = self.client.post('/login', data={'username': self.USERNAME, 'password': self.PASSWORD})
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(urlsplit(resp.headers['Location']).path, '/predict/buy')
+
+    def test_logged_in_user_completes_buy_then_fuel_with_real_uid(self):
+        saved = []
+
+        def fake_save(uid, pred_type, input_data, result):
+            saved.append((uid, pred_type))
+            return None
+
+        with patch.object(flask_app_module, 'db', None), \
+                patch.object(flask_app_module, 'save_prediction_to_firebase', side_effect=fake_save):
+            self._login()
+            self.assertEqual(self.client.get('/predict/buy').status_code, 200)
+
+            resp = self.client.post('/api/predict/buy', data=VALID_BUY)
+            self.assertEqual(urlsplit(resp.headers['Location']).path, '/result/buy')
+            self.assertEqual(self.client.get('/result/buy').status_code, 200)
+
+            # โมเดลอาจทาย "ไม่ซื้อ" ได้ — บังคับผ่านด่าน buy_result_required เพื่อทดสอบขั้น fuel ต่อ
+            with self.client.session_transaction() as sess:
+                sess['buy_result'] = 'ซื้อ'
+            self.assertEqual(self.client.get('/predict/fuel').status_code, 200)
+
+            resp = self.client.post('/api/predict/fuel', data=VALID_FUEL)
+            self.assertEqual(urlsplit(resp.headers['Location']).path, '/result/fuel')
+            self.assertEqual(self.client.get('/result/fuel').status_code, 200)
+            self.assertEqual(self.client.get('/recommend').status_code, 200)
+
+        expected_uid = f'local_{self.USERNAME}'
+        self.assertEqual(saved, [(expected_uid, 'buy'), (expected_uid, 'fuel')])
+        with self.client.session_transaction() as sess:
+            self.assertEqual(sess['user_uid'], expected_uid)
+            self.assertFalse(sess.get('is_guest'))
+
+    def test_predict_buy_works_without_firebase(self):
         with self.client.session_transaction() as sess:
             sess['user_uid'] = 'local_test'
             sess['username'] = 'tester'
-
-    def test_predict_buy_works_without_firebase(self):
         with patch.object(flask_app_module, 'db', None):
-            resp = self.client.post('/api/predict/buy',
-                data=VALID_BUY, follow_redirects=False)
+            resp = self.client.post('/api/predict/buy', data=VALID_BUY, follow_redirects=False)
         self.assertEqual(resp.status_code, 302)
-        self.assertIn('/result/buy', resp.headers.get('Location', ''))
-
-    def test_predict_fuel_works_without_firebase(self):
-        with patch.object(flask_app_module, 'db', None):
-            with self.client.session_transaction() as sess:
-                sess['buy_result'] = 'ซื้อ'
-            resp = self.client.post('/api/predict/fuel',
-                data=VALID_FUEL, follow_redirects=False)
-        self.assertEqual(resp.status_code, 302)
-        self.assertIn('/result/fuel', resp.headers.get('Location', ''))
-
-    def test_result_buy_page_works_without_firebase(self):
-        with patch.object(flask_app_module, 'db', None):
-            # submit buy form ก่อน
-            self.client.post('/api/predict/buy', data=VALID_BUY)
-            resp = self.client.get('/result/buy')
-        self.assertEqual(resp.status_code, 200)
-
-    def test_dashboard_page_works_without_firebase(self):
-        with patch.object(flask_app_module, 'db', None):
-            resp = self.client.get('/api/dashboard')
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(urlsplit(resp.headers['Location']).path, '/result/buy')
 
 
 if __name__ == '__main__':

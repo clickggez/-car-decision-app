@@ -16,7 +16,8 @@ CarDSS — Explainer Module (2026-08-28)
   - ค่าที่ได้ตีความง่ายและตรงกับสิ่งที่ผู้ใช้ทำได้จริง ("ถ้าเปลี่ยน X เป็น Y")
 
 ⚠️ ข้อจำกัดที่ต้องบอกผู้ใช้เสมอ
-  - นี่คือ "โมเดลคิดยังไง" ไม่ใช่ "ความจริงเชิงสาเหตุ" — โมเดล BUY แม่น 69.25% ± 3.91
+  - นี่คือ "โมเดลคิดยังไง" ไม่ใช่ "ความจริงเชิงสาเหตุ" — ความแม่นยำของโมเดล BUY อ่านจาก
+    metrics ใน .pkl ที่โหลดอยู่ (acc_mean/acc_std) ไม่ฝังตัวเลขตายตัวอีก (2026-09-26)
   - อธิบายเฉพาะ BUY เท่านั้น **ห้ามทำกับ FUEL** เพราะ calibration ของ FUEL ชี้ผิดทาง
     (ดู 00-READ-FIRST.md §3.3) การอธิบายจากความน่าจะเป็นที่เชื่อไม่ได้ = หลอกผู้ใช้
 """
@@ -26,34 +27,17 @@ from models import feature_encoding as fe
 
 # ค่าที่เลือกได้ของแต่ละช่อง — คัดลอกโครงจาก validators._BUY_WHITELISTS
 # ใช้ list (ไม่ใช่ set) เพราะต้องการลำดับคงที่ ผลลัพธ์จะได้ทำซ้ำได้
+# 27 ก.ย. 2569: เหลือเฉพาะช่องที่ฟอร์มยังถาม และ buy_model.pkl ชุด n=514 ใช้จริง
+# (education ไม่ใส่ตามหลักเดิม — เสนอให้เปลี่ยนการศึกษาไม่ได้และไม่สุภาพ)
+# purpose เป็นคำถามเลือกได้หลายข้อ — ลองแทนทั้งชุดด้วยตัวเลือกเดียวทีละตัว (what-if แบบง่าย)
 CHOICES = {
-    'budget':              ['lt500000', '500001-800000', '800001-1200000',
-                            '1200001-1500000', '1500000+'],
-    'parking':             ['private', 'common', 'none'],
-    'housing_status':      ['own', 'rent', 'family'],
-    'concern':             ['fuel_price', 'electricity_cost', 'charging_station',
-                            'gas_station', 'service_center', 'battery_life',
-                            'maintenance', 'resale_value'],
     'purpose':             ['commute', 'trade', 'travel', 'convenience', 'avoid_public'],
-    'charging_access':     ['has', 'installable', 'cannot', 'unsure'],
-    'tco_awareness':       ['much_cheaper', 'slightly_cheaper', 'similar', 'unknown'],
-    'incentive_awareness': ['aware_considered', 'aware_only', 'unknown'],
-    'intention':           ['1', '2', '3', '4', '5', '6', '7'],
-    'attitude':            ['1', '2', '3', '4', '5', '6', '7'],
-    'subjective_norm':     ['1', '2', '3', '4', '5', '6', '7'],
-    'pbc_financial':       ['1', '2', '3', '4', '5', '6', '7'],
-    'income':              ['lt15000', '15001-25000', '25001-35000', '35001-50000',
-                            '50001-75000', '75000+'],
-    'housing_type':        ['house', 'townhome', 'condo', 'dormitory'],
     'family_size':         ['1-2', '3-4', '5+'],
-    'children':            ['0', '1', '2', '3', '3+'],
 }
 
 # ช่องที่ผู้ใช้ "เปลี่ยนได้จริง" — ใช้ตอนเสนอข้อแนะนำ
 # (เพศ/อายุ/การศึกษา/อาชีพ ไม่ใส่ เพราะเสนอให้เปลี่ยนไม่ได้และไม่สุภาพ)
-ACTIONABLE = {'budget', 'parking', 'housing_status', 'concern', 'purpose',
-              'charging_access', 'tco_awareness', 'incentive_awareness',
-              'intention', 'attitude', 'subjective_norm', 'pbc_financial'}
+ACTIONABLE = {'purpose'}
 
 FIELD_TH = {
     'budget': 'งบประมาณ', 'parking': 'ที่จอดรถ', 'housing_status': 'สถานะที่พัก',
@@ -92,12 +76,38 @@ VALUE_TH = {
 
 
 def _th(field, value):
-    """แปลงค่าดิบเป็นข้อความไทย — ช่อง Likert 1-7 แสดงเป็นระดับ"""
+    """แปลงค่าดิบเป็นข้อความไทย — ช่อง Likert 1-7 แสดงเป็นระดับ · list (เลือกหลายข้อ) ต่อด้วย ', '"""
+    if isinstance(value, (list, tuple)):
+        return ', '.join(VALUE_TH.get(v, str(v)) for v in value) or '—'
+
     if field in ('intention', 'attitude', 'subjective_norm', 'pbc_financial'):
         return 'ระดับ %s จาก 7' % value
     if field == 'children':
         return '%s คน' % value
     return VALUE_TH.get(value, str(value))
+
+
+def _model_accuracy(bundle):
+    """(accuracy เฉลี่ย, sd, baseline) ของโมเดลที่โหลดอยู่ — ไม่มีข้อมูลคืน None
+
+    accuracy มาจาก metrics ที่ฝังใน .pkl (20 random splits ตอนเทรน ตรวจซ้ำได้ด้วย analysis/)
+    baseline คำนวณจาก data/dataset_overview.json เฉพาะเมื่อ n ตรงกับ n ของ .pkl
+    (กันเอาสัดส่วนคลาสของข้อมูลคนละชุดมาเทียบ)
+    """
+    m = bundle.get('metrics') or {}
+    mean, sd = m.get('test_accuracy_repeated_mean'), m.get('test_accuracy_repeated_std')
+    if mean is None or sd is None:
+        return None, None, None
+    baseline = None
+    try:
+        import json
+        with open(config.DATASET_OVERVIEW_PATH, encoding='utf-8') as fh:
+            buy = json.load(fh)['buy']
+        if buy['n'] == m.get('n_samples'):
+            baseline = max(buy['counts']) / buy['n']
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    return float(mean), float(sd), baseline
 
 
 def explain_buy(input_data, top_n=3):
@@ -115,7 +125,8 @@ def explain_buy(input_data, top_n=3):
     """
     if config.USE_MOCK:
         return {'available': False, 'reasons': [], 'suggestions': [],
-                'can_flip': False, 'base_result': None, 'base_percent': None}
+                'can_flip': False, 'base_result': None, 'base_percent': None,
+                'acc_mean': None, 'acc_std': None, 'baseline': None}
 
     import pandas as pd
     from models import predictor as pr
@@ -127,9 +138,10 @@ def explain_buy(input_data, top_n=3):
 
     rows, tags = [fe.buy_features_from_web(input_data)], [None]
     for field, options in CHOICES.items():
-        cur = str(input_data.get(field, ''))
+        raw = input_data.get(field, '')
+        cur = raw if isinstance(raw, (list, tuple)) else str(raw)
         for opt in options:
-            if opt == cur:
+            if opt == cur or (isinstance(cur, (list, tuple)) and list(cur) == [opt]):
                 continue
             variant = dict(input_data)
             variant[field] = opt
@@ -167,8 +179,12 @@ def explain_buy(input_data, top_n=3):
             'flips': (p_new >= 0.5) != (base_p >= 0.5),
         })
 
+    acc_mean, acc_std, baseline = _model_accuracy(bundle)
     return {
         'available': True,
+        'acc_mean': acc_mean,
+        'acc_std': acc_std,
+        'baseline': baseline,
         'base_result': base_result,
         'base_percent': int(round(base_p * 100)),
         'reasons': reasons[:top_n],

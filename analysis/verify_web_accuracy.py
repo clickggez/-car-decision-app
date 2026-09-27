@@ -18,6 +18,10 @@
 
 ผลลัพธ์เป็นไฟล์ .txt ที่แนบภาคผนวกได้ และใครก็รันซ้ำได้ด้วยคำสั่งเดียว
 
+⚠️ ข้อจำกัด (Codex ทักในห้องประชุม #40, 28 ก.ย. 2569): train_models เติมค่าหาย/ค่าผิดปกติและคัดฟีเจอร์
+   จากข้อมูลทั้งชุดก่อนแบ่ง 20 splits — เลขนี้จึงอาจสูงกว่าความจริงเล็กน้อย (ไม่ใช่ holdout อิสระ)
+   ใช้บอกว่า "ไฟล์โมเดลบนเว็บได้เลขตามที่อ้างจริง" ได้ แต่ห้ามอ้างว่าเป็นการยืนยันแบบไร้อคติ
+
 **อ่านอย่างเดียว — ไม่เขียนทับ .pkl ใด ๆ**
 """
 import sys, os, hashlib, platform, warnings
@@ -38,9 +42,17 @@ from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.metrics import accuracy_score, cohen_kappa_score, classification_report
 
 import train_models as tm
-from ablation import build_buy, build_fuel
+# 2026-09-26: เลิกพึ่ง ablation.py (ผูกกับคอลัมน์ข้อมูลชุดเดิม n=500) ใช้ตัวสร้างชุดข้อมูลใน train_models
+# ที่ดึงคอลัมน์ด้วยชื่อหัวคอลัมน์ — ผลไฟล์ verify_web_accuracy_2026-09-16.txt เป็นของข้อมูลชุดเดิม
+build_buy, build_fuel = tm.build_buy_xy, tm.build_fuel_xy
 
 MODEL_DIR = os.path.join(CAR, "models")
+
+# 2026-09-28: โมเดลบนเว็บเทรนจากข้อมูลคนละชุด (ผู้ใช้เลือกแบบ ก)
+#   BUY  = ชุด n=514 (ไฟล์ที่เพิ่มมามีแต่คนมีรถ จึงไม่ช่วย BUY)  FUEL = ชุด n=630 (n514 + EV 73 + ไฮบริด 43)
+# จึงต้องวัดแต่ละเป้าด้วยข้อมูลชุดที่มันเทรนจริง ไม่งั้นเลขไม่ตรงกับที่ฝังใน .pkl
+BUY_CSV = os.path.join(_HERE, "..", "files", "archive_2026-09-28", "survey_2026-09-27_n514.csv")
+FUEL_CSV = None   # None = ไฟล์เดียวใน files/user_from/ (ชุด n=630)
 N_SPLITS = 20
 TEST_SIZE = 0.2
 SEED = 42
@@ -54,7 +66,15 @@ def sha256(path):
     return h.hexdigest()
 
 
-def verify(target, pkl_name, builder):
+def load_csv(csv_path):
+    """โหลดแบบเดียวกับ tm.load_survey() แต่ระบุไฟล์ได้"""
+    import pandas as pd
+    df = pd.read_csv(csv_path or tm.survey_path(), encoding="utf-8")
+    empty = [c for c in df.columns if str(c).strip().startswith("คอลัมน์") and df[c].isna().all()]
+    return df.drop(columns=empty)
+
+
+def verify(target, pkl_name, builder, csv_path=None):
     path = os.path.join(MODEL_DIR, pkl_name)
     bundle = joblib.load(path)
     pipe = bundle["pipeline"]
@@ -73,7 +93,10 @@ def verify(target, pkl_name, builder):
           f"(ตัวจำแนกจริง = {type(pipe.named_steps.get('clf')).__name__})")
     print(f"  ฟีเจอร์ที่ใช้: {len(cat_cols)} categorical + {len(num_cols)} numeric")
 
-    df = tm.load_survey()
+    csv_path = os.path.normpath(csv_path or tm.survey_path())
+    df = load_csv(csv_path)
+    print(f"  ข้อมูลที่ใช้ : {os.path.relpath(csv_path, os.path.join(_HERE, '..'))}")
+    print(f"  SHA-256 ข้อมูล: {sha256(csv_path)}")
     X, y = builder(df)
     X = X[cat_cols + num_cols].copy()
     base = float(y.value_counts(normalize=True).max())
@@ -124,8 +147,8 @@ if __name__ == "__main__":
     print(f"  joblib       : {joblib.__version__}")
     print("=" * 84)
 
-    b = verify("BUY  (ซื้อ / ไม่ซื้อ)", "buy_model.pkl", build_buy)
-    f = verify("FUEL (EV / Hybrid / ICE)", "fuel_model.pkl", build_fuel)
+    b = verify("BUY  (ซื้อ / ไม่ซื้อ)", "buy_model.pkl", build_buy, BUY_CSV)
+    f = verify("FUEL (EV / Hybrid / ICE)", "fuel_model.pkl", build_fuel, FUEL_CSV)
 
     print("\n" + "=" * 84)
     print("  สรุปตัวเลขที่อ้างอิงได้ — วัดจากโมเดลที่เว็บใช้อยู่จริง")

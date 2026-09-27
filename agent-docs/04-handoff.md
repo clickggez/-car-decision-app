@@ -5,6 +5,227 @@
 
 ---
 
+**วันที่:** 2026-09-28
+**จาก:** Claude Code (Opus 5.5)
+**ถึง:** ผู้ใช้ / Agent ถัดไป
+
+# 📋 รวมข้อมูล n=630 (n514 + ไฟล์ EV 73 + ไฟล์ไฮบริด 43) แล้วเทรนใหม่ลงโฟลเดอร์แยก — ยังไม่ deploy
+
+- ผู้ใช้สั่ง 2026-09-28 · ข้อมูล `files/user_from/survey_2026-09-28_n630.csv` SHA-256 `e7cb114cf01512342f3a6349dcabdf0d5da75f83e3da63689a0cacb8bc00b668`
+  คอลัมน์ 44 ตรงกันทุกไฟล์ · ไม่มีแถวซ้ำ · n514 ย้ายไป `files/archive_2026-09-28/`
+  ⚠️ ไฟล์ EV/ไฮบริด เป็นการเก็บเพิ่มแบบเจาะกลุ่ม (oversampling) ผู้มีรถทุกคน — ต้องระบุในเล่ม
+  ไฟล์ "สำเนาของ...ev" ขนาด 535169 = n514 เดิม (md5 ตรง) ไม่ได้รวมซ้ำ
+- โมเดล `car-dss/_models_2026-09-28_n630/` · log `analysis/train_n630_2026-09-28.log` · `models/*.pkl` ไม่ถูกแตะ (f6d7eefd…/7eaeadeb…)
+  - BUY n=630 (325/305): **0.534 ± 0.030** baseline 0.516 lift ≈ +0.02 · Bagging×25 ฐาน XGB · ใช้แค่ education + purpose_avoid_public
+  - FUEL n=457 (ICE 160/Hybrid 150/EV 147): **0.657 ± 0.039** baseline 0.350 lift ≈ +0.31 · Bagging×25 ฐาน ET
+- 🐞 ต้องเทรนผ่าน `import train_models` ห้าม `python train_models.py` ถ้าเลือก XGB → pkl อ้าง `__main__.XGBClassifierStr` เว็บโหลดไม่ได้
+- เทสต์ (CARDSS_MODEL_DIR=n630): 76 passed / 1 failed `test_buy_form_fields_equal_model_fields` — ฟอร์ม BUY ยังถาม family_size ที่โมเดลไม่ใช้แล้ว **รอผู้ใช้ตัดสินใจ**
+
+## อัปเดต 2026-09-28 (ต่อ) — ผู้ใช้เลือกแบบ ก: BUY n514 + FUEL n630
+- โฟลเดอร์ทดสอบ `car-dss/_models_2026-09-28_mixed/` (BUY = copy จาก n514 SHA c4335384… · FUEL = copy จาก n630 SHA d9fed1c8…)
+- ฟอร์มไม่ต้องแก้ (BUY n514 ยังใช้ family_size) · pytest 77 passed + unittest OK · ทดลองพยากรณ์จริง 7 โปรไฟล์ไม่มี error
+- ยังไม่ deploy · `models/*.pkl` ไม่ถูกแตะ · ต่อมาทำครบแล้ว: dashboard = n630, คอมเมนต์ FUEL แก้เป็น n630, verify_web_accuracy วัดแยกชุด (`verify_web_accuracy_2026-09-28.txt`), copy .pkl เข้า `models/` แล้ว
+
+---
+
+**วันที่:** 2026-09-27
+**จาก:** Claude Code (Opus 5.5 — subagent ที่ Claude เซสชันหลักเรียก)
+**ถึง:** ผู้ใช้ / Claude เซสชันหลัก (ผู้ตรวจ) / Agent ถัดไป
+
+# 📋 เปลี่ยนข้อมูลหลักเป็นชุด n=514 (แทนชุด n=511) + multi-hot คำถามเลือกหลายข้อ + เทรนใหม่ลงโฟลเดอร์แยก
+
+> ⛔ **บันทึกนี้แทนที่ (supersede) บันทึก 2026-09-26 ข้างล่าง** — ชุด n=511 และผลของมันเป็นประวัติ ห้ามอ้างอิงต่อ
+> บันทึก 09-26 ไม่ได้ลบ เก็บไว้ให้เห็นเส้นทางการตัดสินใจ
+
+## ⚠️ ที่มา — คำสั่งผู้ใช้ ไม่ใช่การข้ามโซนเอง
+**ผู้ใช้อนุมัติ 2026-09-27** (ส่งผ่าน coordinator) ให้เทรนใหม่บนชุด n=514 กติกาเดิม: ไม่ commit/push · **ไม่แตะ `car-dss/models/*.pkl`**
+(SHA-256 ก่อน/หลังเท่าเดิม f6d7eefd… / 7eaeadeb…) · เทรนลงโฟลเดอร์แยก
+
+## ข้อมูล
+- ใหม่: `files/user_from/survey_2026-09-27_n514.csv` SHA-256 `7d6196f2fbec3bb818335723e2b589fd72cd9be8520d9992665e8f34912eff02`
+  (ต้นฉบับ `files/user_from_archive/แบบสอบถาม ... (การตอบกลับ 27_9_2569 ) - การตอบแบบฟอร์ม 1.csv`)
+  514 แถว ไม่มี timestamp · คอลัมน์สุดท้าย "คอลัมน์ 1" ว่าง → `load_survey()` ทิ้งคอลัมน์ว่างที่ชื่อขึ้นต้น "คอลัมน์"
+- **ถอดชุด n=511** → `files/archive_2026-09-26/survey_2026-09-26_n511.csv` (ไม่ได้ลบ)
+  **เหตุผล:** Likert 21 ข้อแจกแจงเท่ากันทุกข้อ (302/126/52/22/9) ซึ่งข้อมูลตอบจริงแทบเป็นไปไม่ได้ — ห้องประชุม #32–#36
+- BUY n=514: ซื้อ 261 / ไม่ซื้อ 253 · FUEL (ผู้มีรถ) n=341: ICE 146 / Hybrid 109 / EV 86 (ผู้มีรถ "มี" = 341 ตรงกัน)
+
+## การเข้ารหัสที่เปลี่ยน (ล็อกในหัว `analysis/verify_newdata_2026-09-27.py` ก่อนแก้โค้ดและก่อนเทรน)
+- คำถามเลือกได้หลายข้อ → **multi-hot** ไม่ยุบเหลือตัวเลือกแรกอีก: `prev_car` → `prev_ice/prev_hybrid/prev_ev` ·
+  `concern` → `concern_*` 7 ตัว (ผู้ไม่มีรถ = 0 ทุกตัว **เลิก mode-fill**) · `purpose` → `purpose_*` 5 ตัว
+- ตัด `purpose_housing` (ต้องใช้ purpose ค่าเดียว) · FUEL บังคับเก็บ prev_* ทั้งสาม (แทน force_keep prev_car เดิม)
+  `build_and_select` ให้ force_keep ที่เป็นคอลัมน์ตัวเลขถูกเติมในชุด MI ด้วย (เดิมเติมเฉพาะ categorical)
+- Bagging เท่านั้น (`META_MODEL_NAMES = ("BAGGING",)`) · กลไกเลือก base เดิม
+
+## ผล (`analysis/verify_newdata_2026-09-27.txt`, 20 splits seed 42 test 20%)
+| โมเดล | n | Accuracy (min–max) | kappa | balanced acc | Baseline | Lift |
+|---|---|---|---|---|---|---|
+| BUY | 514 | 0.5583 ± 0.0377 (0.476–0.641) | +0.1148 ± 0.0747 | 0.5572 ± 0.0373 | 0.5078 | +0.0505 |
+| FUEL | 341 (ผู้มีรถ) | 0.6804 ± 0.0390 (0.580–0.739) | +0.5007 ± 0.0607 | 0.6568 ± 0.0395 | 0.4282 | +0.2523 |
+
+BUY = Bagging×25 ฐาน HistGradientBoosting · FUEL = Bagging×25 ฐาน ExtraTrees · เงื่อนไขทางเทคนิค 1–3 ผ่าน
+SHA-256 BUY `c433538468e3c8af9da0a541e9d11ac5c67e593df0693ebc2ac94f2162a37f84` · FUEL `f74c9f871a022d7b4529b3ec1480818a28d83b4e415081002452ac97f5baa325`
+log การเทรน `analysis/train_n514_2026-09-27.log` · inference ทุกโปรไฟล์ `analysis/verify_newdata_2026-09-27_inference.txt`
+
+## ฟีเจอร์ที่โมเดลใช้จริง → ฟอร์ม
+- **BUY:** `education`, `family_size`, `purpose_avoid_public` → ฟอร์มถาม **3 ข้อ** (education, family_size, purpose แบบ checkbox) ⚠️ น้อยมาก
+- **FUEL:** `usage_type`, `frequency`, `distance`, `tech_env_concern`, `mileage_intensity`, `prev_ice/hybrid/ev`,
+  `prio_fuel_cost/electricity_cost/maintenance_cost/performance/technology` → ฟอร์มถาม usage_type, frequency, distance,
+  prev_car (checkbox, ว่างได้), priority, tech_env_concern · ตัด resale_maintenance_concern
+- แก้: `feature_encoding.py` `train_models.py` `validators.py` `app.py` `predictor.py` (docstring) `explainer.py` (CHOICES purpose/family_size + รองรับ list)
+  `predict_buy.html` `predict_fuel.html` · tests 4 ไฟล์ · `analysis/dashboard_overview.py` → `dataset_overview.json` + `dashboard_overview_2026-09-27.txt`
+
+## เทสต์
+`CARDSS_MODEL_DIR=<abs>/car-dss/_models_2026-09-27_n514` → **pytest 77 passed, 82 subtests** · unittest Ran 77 OK
+กับ `models/*.pkl` เดิม → 20 failed (ตั้งใจ — โมเดลคนละรุ่นกับโค้ด)
+
+## ⚠️ ของค้าง / ข้อสังเกต
+1. **ห้าม push ก่อน copy .pkl ใหม่เข้า `models/`** (โค้ดใหม่ + pkl เก่า = พังทุกการพยากรณ์)
+2. `tech_cost_balance` กลายเป็นค่าคงที่ (ANOVA p=nan) — ขั้น IQR outlier เดิมแทนค่าที่ไม่ใช่ 0 ด้วยมัธยฐานเพราะ IQR=0
+   (197/341 คนตอบสองข้อเท่ากัน) กลไกเดิม ไม่ได้แก้เพราะล็อกโปรโตคอลแล้ว — ควรทบทวนแยก
+3. `priority` คำตอบ "แบรนด์" (70 ครั้ง) ไม่มีในฟอร์มเว็บ ถูกทิ้งเหมือนเดิม → 22 คนมี priority ว่าง
+4. FUEL ชุดฟีเจอร์ 'selected' เก็บ usage/frequency/distance ไว้เพราะกลไก "ไม่มี cat ผ่านเลยให้เก็บทั้งหมด" ไม่ใช่เพราะผ่านเกณฑ์
+5. prev_car ว่าง (ยังไม่เคยใช้รถ) ไม่มีในข้อมูลเทรน (ผู้มีรถทุกคนตอบ ≥1) — ผลของกรณีนี้เป็นการเดานอกข้อมูล
+6. `00-READ-FIRST.md` §1 ยังเป็นเลขชุดเดิม — รอผู้ใช้เคาะ · ยังไม่เปิดดูในเบราว์เซอร์ · ยังไม่ผ่านด่าน Codex
+
+---
+
+**วันที่:** 2026-09-26 ⛔ **ถูกแทนที่ด้วยบันทึก 2026-09-27 ข้างบน (ชุด n=511 ถูกถอด)**
+**จาก:** Claude Code (Opus 5.5 — subagent ที่ Claude เซสชันหลักเรียก)
+**ถึง:** ผู้ใช้ / Claude เซสชันหลัก (ผู้ตรวจ) / Agent ถัดไป
+
+# 📋 เปลี่ยนข้อมูลหลักเป็นแบบสอบถามชุดใหม่ (n=511) + เทรนโมเดลใหม่ลงโฟลเดอร์แยก + ปรับฟอร์มเว็บ
+
+## ⚠️ ที่มา — คำสั่งผู้ใช้โดยตรง ไม่ใช่การข้ามโซนเอง
+
+**ผู้ใช้สั่งและอนุมัติชัดเจน 2026-09-26** ให้ใช้ข้อมูลชุดใหม่แทนชุด 500 แถวเป็นข้อมูลหลัก
+และ**ปลดล็อก 🔴 `train_models.py` สำหรับงานนี้** (อาจารย์ไม่ต้องการคำถามกลุ่ม EV แล้ว)
+**ไม่แตะ `car-dss/models/*.pkl`** — SHA-256 ก่อน/หลังเท่าเดิม (f6d7eefd… / 7eaeadeb…) · ยังไม่ commit / ยังไม่ push
+งานนี้ต่อยอดบน working tree ที่ค้างจากรอบ 2026-09-25 (login + dashboard สาธารณะ) ไม่ได้ย้อนของเดิม
+
+## ข้อมูล
+- ใหม่: `files/user_from/survey_2026-09-26_n511.csv` (ชื่อสั้น ASCII — กันปัญหาชื่อเกิน 255 ไบต์บน PythonAnywhere)
+  SHA-256 `3a62c4976baf75fd970fc5096055735dbb3c09ddb27fc0e000946f7672c45fe4` · 511 แถว 44 คอลัมน์ (คอลัมน์ 0 ว่าง ไม่มี timestamp)
+- เดิม (500 แถว "เน้น ice(500)") ย้ายไป `files/archive_2026-09-26/` ไม่ได้ลบ
+- ไม่มีคำถามที่เพิ่มทีหลัง 15 ข้อ → ตัด TPB 4 / life_events / charging / tco / incentive / ev_exposure / range_anxiety / NEP 5 / financial_readiness_gap / ev_readiness_index
+- ⚠️ **สิ่งผิดปกติในข้อมูล:** 21 ข้อ Likert (7P) **ทุกข้อมีการแจกแจงเท่ากันเป๊ะ** 5/4/3/2/1 = 302/126/52/22/9 แต่รายแถวไม่เหมือนกัน (มีแค่ 5 แถวที่ตอบเท่ากันทุกข้อ) — ข้อมูลตอบจริงแทบไม่มีทางออกมาแบบนี้ ควรถามผู้ใช้ถึงที่มาของไฟล์
+
+## สิ่งที่ทำ
+1. `train_models.py` — ดึงคอลัมน์ด้วย**ชื่อหัวคอลัมน์** (`SURVEY_HEADERS` + `resolve_columns`) แทน `r.iloc[i]` · `survey_path()` หยุดถ้า `user_from/` มี CSV มากกว่า 1 ไฟล์ ·
+   แยก `build_buy_xy()` / `build_fuel_xy()` ให้ analysis ใช้ร่วม · ลบ COL_* และตาราง map คำถามใหม่ ·
+   **`META_MODEL_NAMES = ("BAGGING",)`** บังคับ Bagging (ตัดสินก่อนเทรน ตามที่อาจารย์เลือกไว้ 2026-08-09) — ENSEMBLE/STACK ยังถูกวัดใน cv_all · กลไกเลือก base เดิม (ดีสุดที่ไม่ใช่ ANN)
+2. เทรนด้วย `CARDSS_MODEL_DIR=car-dss/_models_2026-09-26_newdata` → log `analysis/train_newdata_2026-09-26.log`
+3. `feature_encoding.py` ตัดฟีเจอร์ที่ไม่มีคำถามแล้ว + `form_fields_used()` (ฟีเจอร์ → ช่องในฟอร์ม)
+4. `predictor.py` เพิ่ม `_check_bundle` — .pkl คนละรุ่นกับโค้ด = **หยุดพร้อมข้อความ** แทนการเติม NaN เงียบ ๆ · `config.py` อ่าน `CARDSS_MODEL_DIR` ได้ (ไว้เทสต์)
+5. ฟอร์มถาม**เฉพาะช่องที่ .pkl ชุดใหม่ใช้จริง** (remainder='drop'):
+   BUY = `occupation, income, budget` (จาก 21 ช่องเหลือ 3) · FUEL = `prev_car, priority, tech_env_concern, resale_maintenance_concern`
+   ข้อ Likert 2 ข้อของ FUEL เปลี่ยนถ้อยคำให้ตรงข้อ 7P ในแบบสอบถาม — **เดิมเว็บถามเป็น "ความกังวล" (5 = กังวลมาก) ซึ่งกลับทิศกับข้อมูลที่เทรน**
+   `app.py` เลิกคำนวณ nep_score และเลิก carry-over คำถาม EV จาก session buy · `validators.py` ช่องที่เลิกถามเป็น optional whitelist
+6. `explainer.py` CHOICES เหลือ budget/income · `admin/explain.html` เลิกฝัง "69.25% ± 3.91" อ่านจาก metrics ใน .pkl แทน
+7. `analysis/dashboard_overview.py` ใช้ builder ใหม่ → `car-dss/data/dataset_overview.json` + `dashboard_overview_2026-09-26.txt` · `verify_web_accuracy.py` ใช้ builder ใหม่
+
+## ผล (โปรโตคอลล็อกไว้ก่อนเทรนที่หัว `analysis/verify_newdata_2026-09-26.py` → `.txt`)
+| โมเดล | n | Accuracy (min–max) | kappa | Baseline | Lift |
+|---|---|---|---|---|---|
+| BUY | 511 | 0.4995 ± 0.0683 (0.350–0.621) | +0.0193 ± 0.0971 | 0.5793 | −0.0797 |
+| FUEL | 235 (ผู้มีรถ) | 0.3543 ± 0.1212 (0.191–0.532) | +0.0306 ± 0.0874 | 0.5702 | −0.2160 |
+
+ทั้งสองโมเดล Bagging ฐาน SVC · **แย่กว่าการทายคลาสใหญ่สุดทั้งคู่ kappa ≈ 0** · เงื่อนไขทางเทคนิค 1–3 ผ่าน (เลขฝังใน .pkl ตรงที่วัดใหม่ 0.0000)
+SHA-256 BUY `67fa5780751cb01b5d19d3215f0666f4dc01d24e6957cf729465b641cc5ad53a` · FUEL `0658fe5f7d56ff6de4263f08555767846f875b600b13d291902561392b1c2747`
+inference ทุกชุดคำตอบ: `analysis/verify_newdata_2026-09-26_inference.txt`
+
+## เทสต์
+`CARDSS_MODEL_DIR=<abs>/car-dss/_models_2026-09-26_newdata python -m pytest tests -q` → **73 passed, 82 subtests** · unittest OK
+กับ `models/*.pkl` เดิม → 20 failed (ตั้งใจ — โมเดลคนละรุ่นกับโค้ด) · เพิ่ม `FormMatchesLoadedModelTests` เทียบฟอร์มกับ .pkl ที่โหลดอยู่
+เทสต์ที่พฤติกรรมกลับด้านถูกเขียนใหม่พร้อมคอมเมนต์ (`test_buy_form_untouched` → `test_buy_form_asks_only_used_questions`)
+
+## ⚠️ ของค้าง
+1. **ห้าม push ก่อน copy .pkl ใหม่เข้า `models/`** — ไม่งั้นเว็บจริงพังทุกการพยากรณ์ (โค้ดใหม่ + pkl เก่า)
+2. `00-READ-FIRST.md` §1 ยังเป็นเลขชุดเดิม — ร่างเลขชุดใหม่อยู่ในรายงานถึงผู้ใช้ รอผู้ใช้เคาะ
+3. สคริปต์เก่าใน `analysis/` ที่ import `ablation` (ผูก COL_* ข้อมูลชุดเดิม) รันไม่ได้แล้ว — เป็นหลักฐานของข้อมูลชุดเดิม
+4. `concern` ถามเฉพาะผู้มีรถ — ผู้ไม่มีรถ 276 คนถูกเติมด้วย mode (charging_station) ตามกลไกเดิม · `prev_car='none'` และอาชีพ `farmer_fisher/other` ไม่มีในข้อมูลเทรน
+5. ยังไม่เปิดดูหน้าเว็บในเบราว์เซอร์จริง · ยังไม่ผ่านด่าน Codex
+
+---
+
+**วันที่:** 2026-09-25
+**จาก:** Claude Code (Opus 5.5 — subagent ที่ Claude เซสชันหลักเรียก)
+**ถึง:** ผู้ใช้ / Claude เซสชันหลัก (ผู้ตรวจ) / Agent ถัดไป
+
+# 🔐 กลับมาบังคับล็อกอินฝั่งพยากรณ์ + dashboard เป็นหน้าภาพรวมข้อมูลงานวิจัยสาธารณะ
+
+## ⚠️ ที่มา — คำสั่งผู้ใช้/อาจารย์ ไม่ใช่การข้ามโซนเอง
+
+โซนเว็บ (`app.py`, `templates/`) ปกติเป็นของ **Antigravity** แต่รอบนี้ **ผู้ใช้สั่งตรงให้ Claude ทำ**
+ตามที่**อาจารย์ที่ปรึกษาเคาะ 2026-09-25**:
+- ระบบล็อกอิน**อยู่ในขอบเขตปริญญานิพนธ์**ที่กรรมการจะตรวจ → ต้องคงไว้
+- การพยากรณ์ (BUY → FUEL) **ต้องล็อกอิน** เพื่อให้ผลผูกกับบัญชีผู้ใช้
+- `/dashboard` **ห้ามบังคับล็อกอิน** และผู้ใช้เคาะให้เป็น**หน้าสถิติภาพรวม** (ทุกคนเห็นเหมือนกัน) ไม่ใช่หน้าผลส่วนตัว
+
+➡️ **ย้อนการตัดสินใจข้อ 4 ของรอบ 2026-09-23** (guest session) — `session_required` ถูกลบออกแล้ว
+**ยังไม่ commit / ยังไม่ push** — ทิ้งไว้ใน working tree ให้ Claude เซสชันหลักตรวจ แล้วต้องผ่านด่าน Codex ก่อน push
+
+## สิ่งที่ทำ
+
+**1. `car-dss/app.py`**
+- 7 route เปลี่ยน `@session_required` → `@login_required`: `/predict/buy` `/predict/fuel` (ยังมี `@buy_result_required` ต่อท้าย)
+  `/result/buy` `/result/fuel` `/api/predict/buy` `/api/predict/fuel` `/recommend` · **admin route ไม่แตะ**
+- ลบ `session_required` ทิ้ง (ไม่มีใครใช้แล้ว) · `import uuid` **ยังต้องอยู่** เพราะ admin cars ใช้สร้าง id
+- เพิ่ม `@app.before_request _drop_legacy_guest_session` (`:128`) — ล้างคุกกี้ `guest_...` ที่ค้างในเครื่องผู้ใช้ช่วง 23–25 ก.ย.
+  ถ้าไม่ล้าง guest uid จะ**ผ่าน login_required ได้** และ `/login` จะเด้งวนไป `/predict/buy`
+- `/dashboard` (`:474`) ไม่มี decorator แล้ว ส่ง `overview` (จาก `data/dataset_overview.json`) + `car_summary` (นับสดจาก `cars.json`)
+- `/api/dashboard` (`:567`) สาธารณะ คืนข้อมูลชุดเดียวกับหน้า · **ตัด `cost_comparison` ที่ฝังตายตัว (800/2200/3800…) ออก** — ไม่มีแหล่งที่มา
+- ลบ `get_dashboard_data_from_firebase` (ไม่มีใครเรียกแล้ว) · `save_prediction_to_firebase` ใช้ `session['user_uid']` ของบัญชีจริงเหมือนเดิม
+
+**2. ข้อมูลของ dashboard — ไม่มีตัวเลขฝังใน template เลย**
+- สคริปต์ใหม่ `analysis/dashboard_overview.py` นับจาก `ablation.build_buy/build_fuel` (ชุดเดียวกับที่เทรนโมเดล)
+  → เขียน `car-dss/data/dataset_overview.json` (ตัวเลขนับรวมเท่านั้น ไม่มีข้อมูลรายคน) + ผลรัน `analysis/dashboard_overview_2026-09-25.txt`
+- **ทำไมต้องคำนวณล่วงหน้า:** CSV ใน `files/user_from/` ชื่อยาวเกิน 255 ไบต์ **ไม่มีบน PythonAnywhere** (00-READ-FIRST §1)
+  ⚠️ **`dataset_overview.json` เป็นไฟล์ใหม่ (untracked) ต้อง `git add` ด้วย** ไม่งั้นเว็บจริงจะขึ้น "ยังไม่มีข้อมูลสรุป"
+- ตัวเลขที่แสดง (ตรง baseline ใน 00-READ-FIRST §1 ทั้งคู่):
+  BUY n=500 → ซื้อ 292 (58.4%) / ไม่ซื้อ 208 (41.6%) · FUEL n=316 → EV 68 (21.5%) / Hybrid 80 (25.3%) / ICE 168 (53.2%)
+  FUEL 316 = ผู้ที่มีรถยนต์อยู่แล้ว (คอลัมน์ 11 ตอบ "มี" = 316 ตรงกัน) · ช่วงอายุ + รายได้ของผู้ตอบ 500 คน
+  รถแนะนำจาก `cars.json` (อ่านอย่างเดียว): EV 8 / Hybrid 12 / ICE 5 รุ่น + ช่วงราคาต่ำสุด–สูงสุด
+- **ไม่แสดง accuracy เลย** (เลี่ยงการหยิบเลขผิดชุด) · ตัดกราฟค่าใช้จ่าย/เบี้ยประกัน + กล่อง "Loss Ratio 120%" ที่ไม่มีแหล่งที่มาในโปรเจกต์
+
+**3. หน้าเว็บ**
+- `dashboard.html` เขียนใหม่ทั้งไฟล์: CTA (ไม่ล็อกอิน → "เข้าสู่ระบบเพื่อเริ่มวิเคราะห์" + "สมัครสมาชิก" / ล็อกอินแล้ว → "เริ่มวิเคราะห์")
+  การ์ดตัวเลข 3 ใบ · โดนัท BUY/FUEL + ตารางตัวเลข · แท่งอายุ/รายได้ · ตารางรถแนะนำ · ที่มาของข้อมูล
+  Chart.js อ่านสีจาก CSS variable + ฟัง `cardss:themechange` · ไม่มีเงา ไม่มีไล่สี · CDN โหลดไม่ได้ยังเหลือตารางตัวเลข
+- `base.html` เมนู "ภาพรวมข้อมูล" แสดงทั้งตอนล็อกอินและไม่ล็อกอิน · ปุ่มเมนูมือถือแสดงเสมอ (มีลิงก์อย่างน้อย 1 อันแล้ว)
+  เมนูพยากรณ์ยังโชว์เฉพาะตอนล็อกอิน
+- ป้ายปุ่ม "ดู Dashboard (สรุปผล)" → "ดูภาพรวมข้อมูลงานวิจัย" ใน `result_buy.html`, `result_fuel.html`, `recommend.html`
+- `home.html` **ไม่แตะ** — ปุ่ม "เริ่มวิเคราะห์" ชี้ `/predict/buy` ซึ่งเด้งไป `/login` พร้อมข้อความ "กรุณาเข้าสู่ระบบก่อน" (มีเทสต์ครอบแล้ว)
+- `tools/check_deploy.py` ปรับด่าน 4–6 ให้ตรงพฤติกรรมใหม่ + รับ href ทั้ง `"` และ `'` (ข้อค้าน codex #31)
+
+## ผลทดสอบ
+
+**`cd car-dss && python -m pytest tests -q` → 67 passed, 68 subtests passed** · `python -m unittest discover -s tests` → OK
+เทสต์ที่ยืนยันพฤติกรรม guest **ถูกเขียนใหม่ให้ยืนยันพฤติกรรมตรงข้าม** (ไม่ได้ลบเงียบ):
+- `test_predict_buy_edge_cases`: `test_guest_not_redirected_to_login` → `test_not_logged_in_redirected_to_login` · `test_guest_gets_own_uid…` → `test_no_guest_uid_created_and_no_admin_rights`
+- `test_predict_fuel_edge_cases`: `test_guest_not_sent_to_login…` → `test_not_logged_in_redirected_to_login_before_buy_check` + `test_logged_in_must_pass_buy_step`
+- `test_local_mode`: เทสต์ dashboard ส่วนตัว → เทสต์ภาพรวมสาธารณะ (ตรงไฟล์ JSON, ไม่รั่วผลส่วนตัว, ไม่มี cost_comparison, ไม่มีไฟล์ = "ยังไม่มีข้อมูลสรุป")
+  + **flow จริง: login (local) → buy → fuel → recommend** ยืนยันว่า Firebase ถูกเรียกด้วย `local_<username>` ทั้ง 2 ครั้ง (patch `db=None` ไม่แตะ Firebase จริง)
+- `test_user_facing`: 7 route ไม่ล็อกอิน → `Location` path == `/login` พอดี · ไม่มี guest uid ถูกสร้าง · คุกกี้ guest เก่าไม่ผ่าน
+  admin ยอมเฉพาะ 302→`/admin/login` หรือ 403 (**ไม่รับ 404**) · CTA เช็คตัวปุ่มจริงด้วย id/ข้อความ ไม่นับจำนวน `/login` (codex #31)
+  dashboard: ตัวเลขตรง JSON, คนล็อกอิน/ไม่ล็อกอินเห็นตัวเลขเหมือนกัน, ไม่มีผลส่วนตัว, ไม่มี accuracy, template ไม่มีตัวเลข ≥3 หลักฝังอยู่
+
+**รันเซิร์ฟเวอร์จริง** (port 5057) + `python tools/check_deploy.py --url http://127.0.0.1:5057` → **ผ่านทุกข้อ**
+`/dashboard` ไม่ล็อกอินได้ 200 แสดง 500 / 316 / 25 ตรงไฟล์
+
+## ⚠️ ของค้างที่ต้องรู้
+
+1. **ยังไม่ได้เปิดดูในเบราว์เซอร์จริง** (กราฟ Chart.js / โหมดมืด / มือถือ) — ตรวจแค่ HTML ที่เรนเดอร์ ควรให้ Antigravity ตรวจ UI ตามกติกา
+2. `.cursorrules` หัวข้อ "เทสต์ที่ต้องมีติดไว้เสมอ" ยังเขียนว่า "เข้าทุกหน้าได้โดยไม่ล็อกอิน · ไม่มีปุ่มพาไป login" — **ล้าสมัยแล้ว ยังไม่ได้แก้** (ไม่อยู่ในคำสั่งรอบนี้)
+3. `วิธีเอาโค้ดขึ้นเว็บ.txt:91` ยังพูดถึงข้อมูลทดสอบ uid `guest_` ใน Firebase — ข้อมูลเก่าที่เคยบันทึกด้วย guest uid ยังอยู่ใน Firestore ไม่ได้ลบ
+4. ถ้าแก้แบบสอบถาม/CSV ต้องรัน `python analysis/dashboard_overview.py` ใหม่ ไม่งั้น dashboard ค้างเลขเดิม
+5. เทสต์ `test_home_template_has_no_auth_conditional_on_cta` ถูกเอาออก (หลักการ "ระบบเปิดให้ guest" ไม่จริงแล้ว) — ปุ่มหน้าแรกยังถูกเช็คโดย `test_home_cta_goes_to_prediction_form`
+
+## ไม่ได้แตะ
+
+`train_models.py` · `models/*.pkl` · `data/cars.json` (อ่านอย่างเดียว) · `firebase*` · `admin_credentials.json` · `home.html` · admin route ทั้งหมด
+
+---
+
 **วันที่:** 2026-09-23
 **จาก:** Claude Code (Opus 5)
 **ถึง:** ผู้ใช้ / Agent ถัดไป

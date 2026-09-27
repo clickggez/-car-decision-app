@@ -63,13 +63,14 @@
           <i class="bi bi-car-front me-1"></i> รถแนะนำ
         </a>
       </li>
+      {% endif %}
+      {# ภาพรวมข้อมูลเป็นหน้าสาธารณะ (25 ก.ย. 2569) — แสดงทั้งตอนล็อกอินและไม่ล็อกอิน #}
       <li>
         <a href="{{ url_for('dashboard') }}"
            class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
-          <i class="bi bi-bar-chart-line me-1"></i> Dashboard
+          <i class="bi bi-bar-chart-line me-1"></i> ภาพรวมข้อมูล
         </a>
       </li>
-      {% endif %}
       {# เมนูนี้ขึ้นเฉพาะบัญชีที่ตั้ง role = admin ไว้ (ดู app._user_is_admin) #}
       {% if is_admin %}
       <li>
@@ -111,13 +112,11 @@
       {% endif %}
     </div>
 
-    {# ปุ่มเมนูมือถือ: ขึ้นเฉพาะตอนที่ #mainNav มีลิงก์จริง ไม่งั้นกดแล้วเจอแผงว่าง #}
-    {% if (current_user and current_user.is_authenticated) or is_admin %}
+    {# ปุ่มเมนูมือถือ: #mainNav มีลิงก์ "ภาพรวมข้อมูล" เสมอแล้ว (25 ก.ย. 2569) จึงแสดงทุกกรณี #}
     <!-- Mobile toggle -->
     <button class="navbar-toggler-cardss ms-2" id="navToggle" aria-label="Toggle navigation">
       <i class="bi bi-list"></i>
     </button>
-    {% endif %}
   </nav>
 
   <!-- Flash Messages -->
@@ -161,7 +160,7 @@
           <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;">
             <li><a href="{{ url_for('predict_buy_page') }}" style="color:rgba(255,255,255,0.35);font-size:13px;text-decoration:none;">พยากรณ์ซื้อ/ไม่ซื้อ</a></li>
             <li><a href="{{ url_for('predict_fuel_page') }}" style="color:rgba(255,255,255,0.35);font-size:13px;text-decoration:none;">พยากรณ์ประเภทเชื้อเพลิง</a></li>
-            <li><a href="{{ url_for('dashboard') }}" style="color:rgba(255,255,255,0.35);font-size:13px;text-decoration:none;">Dashboard</a></li>
+            <li><a href="{{ url_for('dashboard') }}" style="color:rgba(255,255,255,0.35);font-size:13px;text-decoration:none;">ภาพรวมข้อมูล</a></li>
           </ul>
         </div>
       </div>

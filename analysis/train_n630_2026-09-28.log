@@ -1,0 +1,190 @@
+โหลดข้อมูล: 630 แถว จาก C:\Users\click\Desktop\car-decision-app\car-dss\..\files\user_from\survey_2026-09-28_n630.csv
+บันทึกโมเดลลง: C:/Users/click/Desktop/car-decision-app/car-dss/_models_2026-09-28_n630
+
+[predict_buy] เตรียมข้อมูล...
+    การจัดการค่าขาดหาย/ผิดปกติ (เชิงปริมาณ):
+      [Outlier] income_budget_gap    แทนที่ 10 ค่าผิดปกติด้วยค่ามัธยฐาน (0.0)
+    ตัวอย่าง: 630 | label: {'ซื้อ': np.int64(325), 'ไม่ซื้อ': np.int64(305)}
+    การคัดเลือกคุณลักษณะ (feature selection, alpha=0.1):
+      [Chi-square] gender               p=0.5295 -> ตัดทิ้ง
+      [Chi-square] age                  p=0.7211 -> ตัดทิ้ง
+      [Chi-square] children             p=0.1288 -> ตัดทิ้ง
+      [Chi-square] education            p=0.0344 -> เก็บ
+      [Chi-square] occupation           p=0.2195 -> ตัดทิ้ง
+      [Chi-square] family_size          p=0.1866 -> ตัดทิ้ง
+      [Chi-square] housing_type         p=0.8478 -> ตัดทิ้ง
+      [Chi-square] housing_status       p=0.9289 -> ตัดทิ้ง
+      [Chi-square] parking              p=0.2760 -> ตัดทิ้ง
+      [Chi-square] income               p=0.6091 -> ตัดทิ้ง
+      [Chi-square] budget               p=0.7664 -> ตัดทิ้ง
+      [ANOVA F]   income_budget_gap    p=0.5972 -> ตัดทิ้ง
+      [ANOVA F]   concern_fuel_price   p=0.6951 -> ตัดทิ้ง
+      [ANOVA F]   concern_electricity_cost p=0.8797 -> ตัดทิ้ง
+      [ANOVA F]   concern_charging_station p=0.2501 -> ตัดทิ้ง
+      [ANOVA F]   concern_service_center p=0.7287 -> ตัดทิ้ง
+      [ANOVA F]   concern_battery_life p=0.3531 -> ตัดทิ้ง
+      [ANOVA F]   concern_maintenance  p=0.3731 -> ตัดทิ้ง
+      [ANOVA F]   concern_resale_value p=0.7963 -> ตัดทิ้ง
+      [ANOVA F]   purpose_commute      p=0.8431 -> ตัดทิ้ง
+      [ANOVA F]   purpose_trade        p=0.3585 -> ตัดทิ้ง
+      [ANOVA F]   purpose_travel       p=0.6621 -> ตัดทิ้ง
+      [ANOVA F]   purpose_convenience  p=0.8236 -> ตัดทิ้ง
+      [ANOVA F]   purpose_avoid_public p=0.0746 -> เก็บ
+    Mutual Information selection (permutation threshold @95th pct = 0.0484, n_perm=20):
+      [MI] gender               score=0.0004 -> ตัดทิ้ง
+      [MI] age                  score=0.0029 -> ตัดทิ้ง
+      [MI] children             score=0.0057 -> ตัดทิ้ง
+      [MI] education            score=0.0112 -> ตัดทิ้ง
+      [MI] occupation           score=0.0066 -> ตัดทิ้ง
+      [MI] family_size          score=0.0027 -> ตัดทิ้ง
+      [MI] housing_type         score=0.0003 -> ตัดทิ้ง
+      [MI] housing_status       score=0.0001 -> ตัดทิ้ง
+      [MI] parking              score=0.0020 -> ตัดทิ้ง
+      [MI] income               score=0.0029 -> ตัดทิ้ง
+      [MI] budget               score=0.0015 -> ตัดทิ้ง
+      [MI] income_budget_gap    score=0.0210 -> ตัดทิ้ง
+      [MI] concern_fuel_price   score=0.0000 -> ตัดทิ้ง
+      [MI] concern_electricity_cost score=0.0000 -> ตัดทิ้ง
+      [MI] concern_charging_station score=0.0000 -> ตัดทิ้ง
+      [MI] concern_service_center score=0.0000 -> ตัดทิ้ง
+      [MI] concern_battery_life score=0.0072 -> ตัดทิ้ง
+      [MI] concern_maintenance  score=0.0224 -> ตัดทิ้ง
+      [MI] concern_resale_value score=0.0062 -> ตัดทิ้ง
+      [MI] purpose_commute      score=0.0000 -> ตัดทิ้ง
+      [MI] purpose_trade        score=0.0000 -> ตัดทิ้ง
+      [MI] purpose_travel       score=0.0103 -> ตัดทิ้ง
+      [MI] purpose_convenience  score=0.0000 -> ตัดทิ้ง
+      [MI] purpose_avoid_public score=0.0205 -> ตัดทิ้ง
+      (ไม่มีฟีเจอร์ผ่าน threshold เลย — เก็บทั้งหมดไว้กันโมเดลไม่มีข้อมูลเข้าเลย)
+      [SMOTE] เปิดใช้งาน BorderlineSMOTE k_neighbors=5 (class น้อยสุด=305 ตัวอย่าง)
+    == ชุดฟีเจอร์ 'selected' (cat=1, num=1) ==
+    SVM  CV balanced_accuracy = 0.525 (grid search, best params: {'C': 0.5, 'gamma': 0.01})
+    ET   CV balanced_accuracy = 0.516 (grid search, best params: {'max_depth': None, 'max_features': 'sqrt', 'min_samples_leaf': 2, 'n_estimators': 100})
+    ANN  CV balanced_accuracy = 0.526 (grid search, best params: {'hidden_layer_sizes': (32,), 'learning_rate_init': 0.001})
+    RF   CV balanced_accuracy = 0.516 (grid search, best params: {'max_depth': None, 'max_features': 'sqrt', 'min_samples_leaf': 4, 'n_estimators': 200})
+    GB   CV balanced_accuracy = 0.520 (grid search, best params: {'learning_rate': 0.1, 'max_depth': 3, 'max_iter': 100, 'min_samples_leaf': 20})
+    XGB  CV balanced_accuracy = 0.528 (grid search, best params: {'colsample_bytree': 0.8, 'learning_rate': 0.05, 'max_depth': 3, 'n_estimators': 200, 'subsample': 1.0})
+    == ชุดฟีเจอร์ 'all' (cat=11, num=13) ==
+    SVM  CV balanced_accuracy = 0.498 (grid search, best params: {'C': 10, 'gamma': 0.01})
+    ET   CV balanced_accuracy = 0.507 (grid search, best params: {'max_depth': 10, 'max_features': 'sqrt', 'min_samples_leaf': 4, 'n_estimators': 100})
+    ANN  CV balanced_accuracy = 0.503 (grid search, best params: {'hidden_layer_sizes': (32,), 'learning_rate_init': 0.001})
+    RF   CV balanced_accuracy = 0.520 (grid search, best params: {'max_depth': 12, 'max_features': 'sqrt', 'min_samples_leaf': 1, 'n_estimators': 200})
+    GB   CV balanced_accuracy = 0.523 (grid search, best params: {'learning_rate': 0.2, 'max_depth': 6, 'max_iter': 100, 'min_samples_leaf': 10})
+    XGB  CV balanced_accuracy = 0.521 (grid search, best params: {'colsample_bytree': 1.0, 'learning_rate': 0.05, 'max_depth': 3, 'n_estimators': 200, 'subsample': 0.8})
+    ENSEMBLE(soft-vote: ['SVM', 'ET', 'ANN', 'RF', 'GB', 'XGB']) CV balanced_accuracy = 0.514 (ชุดฟีเจอร์ 'selected')
+    ENSEMBLE(stacking: ['SVM', 'ET', 'ANN', 'RF', 'GB', 'XGB']) CV balanced_accuracy = 0.484 (ชุดฟีเจอร์ 'selected')
+    ENSEMBLE(bagging x25 ของ XGB) CV balanced_accuracy = 0.524 (ชุดฟีเจอร์ 'selected')
+    [meta] โมเดลที่คะแนนสูงสุดคือ XGB (0.528) แต่ไม่ใช่ meta-classifier
+    [meta] เลือก BAGGING (0.524) ตามข้อกำหนดของอาจารย์ — ส่วนต่าง +0.004
+    -> เลือก BAGGING (ชุดฟีเจอร์ 'selected')
+      [SMOTE] เปิดใช้งาน BorderlineSMOTE k_neighbors=5 (class น้อยสุด=244 ตัวอย่าง)
+    held-out test accuracy (1 split, random_state=42) = 0.563
+              precision    recall  f1-score   support
+
+        ซื้อ       0.63      0.37      0.47        65
+     ไม่ซื้อ       0.53      0.77      0.63        61
+
+    accuracy                           0.56       126
+   macro avg       0.58      0.57      0.55       126
+weighted avg       0.58      0.56      0.55       126
+
+    held-out test accuracy (20 random splits) = 0.534 +/- 0.030 (min=0.468, max=0.571)
+      [SMOTE] เปิดใช้งาน BorderlineSMOTE k_neighbors=5 (class น้อยสุด=305 ตัวอย่าง)
+    บันทึก C:/Users/click/Desktop/car-decision-app/car-dss/_models_2026-09-28_n630\buy_model.pkl
+
+[predict_fuel] เตรียมข้อมูล...
+    การจัดการค่าขาดหาย/ผิดปกติ (เชิงปริมาณ):
+      [Outlier] tech_env_concern     แทนที่ 17 ค่าผิดปกติด้วยค่ามัธยฐาน (5.0)
+      [Outlier] resale_maintenance_concern แทนที่ 17 ค่าผิดปกติด้วยค่ามัธยฐาน (5.0)
+      [Outlier] priority_count       แทนที่ 12 ค่าผิดปกติด้วยค่ามัธยฐาน (1.0)
+      [Outlier] mileage_intensity    แทนที่ 26 ค่าผิดปกติด้วยค่ามัธยฐาน (0.2)
+      [Outlier] tech_cost_balance    แทนที่ 196 ค่าผิดปกติด้วยค่ามัธยฐาน (0.0)
+    ตัวอย่าง: 457 | label: {'ICE': np.int64(160), 'Hybrid': np.int64(150), 'EV': np.int64(147)}
+    การคัดเลือกคุณลักษณะ (feature selection, alpha=0.15):
+      [Chi-square] usage_type           p=0.7673 -> ตัดทิ้ง
+      [Chi-square] frequency            p=0.5912 -> ตัดทิ้ง
+      [Chi-square] distance             p=0.7735 -> ตัดทิ้ง
+      [ANOVA F]   tech_env_concern     p=0.0187 -> เก็บ
+      [ANOVA F]   resale_maintenance_concern p=0.7186 -> ตัดทิ้ง
+      [ANOVA F]   priority_count       p=0.1780 -> ตัดทิ้ง
+      [ANOVA F]   mileage_intensity    p=0.8643 -> ตัดทิ้ง
+      [ANOVA F]   tech_cost_balance    p=nan -> ตัดทิ้ง
+      [ANOVA F]   prev_ice             p=0.0000 -> เก็บ
+      [ANOVA F]   prev_hybrid          p=0.0000 -> เก็บ
+      [ANOVA F]   prev_ev              p=0.0000 -> เก็บ
+      [ANOVA F]   prio_price           p=0.1973 -> ตัดทิ้ง
+      [ANOVA F]   prio_installment     p=0.9436 -> ตัดทิ้ง
+      [ANOVA F]   prio_fuel_cost       p=0.0000 -> เก็บ
+      [ANOVA F]   prio_electricity_cost p=0.0000 -> เก็บ
+      [ANOVA F]   prio_maintenance_cost p=0.2320 -> ตัดทิ้ง
+      [ANOVA F]   prio_performance     p=0.1134 -> เก็บ
+      [ANOVA F]   prio_design          p=0.7860 -> ตัดทิ้ง
+      [ANOVA F]   prio_technology      p=0.0000 -> เก็บ
+      [ANOVA F]   prio_value           p=0.1561 -> ตัดทิ้ง
+      [ANOVA F]   prio_warranty        p=0.9264 -> ตัดทิ้ง
+      (ไม่มีฟีเจอร์ผ่านเกณฑ์นัยสำคัญเลย — เก็บทั้งหมดไว้กันโมเดลไม่มีข้อมูลเข้าเลย เหมาะสมกับ n ตัวอย่างน้อยของชุดข้อมูลทดสอบนี้)
+    Mutual Information selection (permutation threshold @95th pct = 0.0734, n_perm=20):
+      [MI] usage_type           score=0.0020 -> ตัดทิ้ง
+      [MI] frequency            score=0.0072 -> ตัดทิ้ง
+      [MI] distance             score=0.0071 -> ตัดทิ้ง
+      [MI] tech_env_concern     score=0.0182 -> ตัดทิ้ง
+      [MI] resale_maintenance_concern score=0.0000 -> ตัดทิ้ง
+      [MI] priority_count       score=0.0000 -> ตัดทิ้ง
+      [MI] mileage_intensity    score=0.0351 -> ตัดทิ้ง
+      [MI] tech_cost_balance    score=0.0000 -> ตัดทิ้ง
+      [MI] prev_ice             score=0.0000 -> ตัดทิ้ง
+      [MI] prev_hybrid          score=0.1327 -> เก็บ
+      [MI] prev_ev              score=0.1332 -> เก็บ
+      [MI] prio_price           score=0.0000 -> ตัดทิ้ง
+      [MI] prio_installment     score=0.0000 -> ตัดทิ้ง
+      [MI] prio_fuel_cost       score=0.0119 -> ตัดทิ้ง
+      [MI] prio_electricity_cost score=0.0780 -> เก็บ
+      [MI] prio_maintenance_cost score=0.0210 -> ตัดทิ้ง
+      [MI] prio_performance     score=0.0185 -> ตัดทิ้ง
+      [MI] prio_design          score=0.0244 -> ตัดทิ้ง
+      [MI] prio_technology      score=0.0507 -> ตัดทิ้ง
+      [MI] prio_value           score=0.0330 -> ตัดทิ้ง
+      [MI] prio_warranty        score=0.0178 -> ตัดทิ้ง
+      [SMOTE] เปิดใช้งาน BorderlineSMOTE k_neighbors=5 (class น้อยสุด=147 ตัวอย่าง)
+    == ชุดฟีเจอร์ 'selected' (cat=3, num=8) ==
+    SVM  CV balanced_accuracy = 0.672 (grid search, best params: {'C': 1, 'gamma': 'auto'})
+    ET   CV balanced_accuracy = 0.675 (grid search, best params: {'max_depth': 5, 'max_features': 'sqrt', 'min_samples_leaf': 4, 'n_estimators': 200})
+    ANN  CV balanced_accuracy = 0.580 (grid search, best params: {'hidden_layer_sizes': (32,), 'learning_rate_init': 0.001})
+    RF   CV balanced_accuracy = 0.670 (grid search, best params: {'max_depth': 6, 'max_features': 'sqrt', 'min_samples_leaf': 1, 'n_estimators': 200})
+    GB   CV balanced_accuracy = 0.662 (grid search, best params: {'learning_rate': 0.03, 'max_depth': 3, 'max_iter': 100, 'min_samples_leaf': 20})
+    XGB  CV balanced_accuracy = 0.660 (grid search, best params: {'colsample_bytree': 1.0, 'learning_rate': 0.05, 'max_depth': 3, 'n_estimators': 100, 'subsample': 0.8})
+    == ชุดฟีเจอร์ 'all' (cat=3, num=18) ==
+    SVM  CV balanced_accuracy = 0.661 (grid search, best params: {'C': 1, 'gamma': 0.1})
+    ET   CV balanced_accuracy = 0.673 (grid search, best params: {'max_depth': 10, 'max_features': 'sqrt', 'min_samples_leaf': 4, 'n_estimators': 100})
+    ANN  CV balanced_accuracy = 0.546 (grid search, best params: {'hidden_layer_sizes': (64, 32, 16), 'learning_rate_init': 0.001})
+    RF   CV balanced_accuracy = 0.673 (grid search, best params: {'max_depth': 6, 'max_features': 'sqrt', 'min_samples_leaf': 1, 'n_estimators': 400})
+    GB   CV balanced_accuracy = 0.664 (grid search, best params: {'learning_rate': 0.03, 'max_depth': 3, 'max_iter': 100, 'min_samples_leaf': 10})
+    XGB  CV balanced_accuracy = 0.662 (grid search, best params: {'colsample_bytree': 1.0, 'learning_rate': 0.05, 'max_depth': 3, 'n_estimators': 100, 'subsample': 0.8})
+    == ชุดฟีเจอร์ 'mi' (cat=0, num=4) ==
+    SVM  CV balanced_accuracy = 0.672 (grid search, best params: {'C': 0.5, 'gamma': 'scale'})
+    ET   CV balanced_accuracy = 0.670 (grid search, best params: {'max_depth': None, 'max_features': 'sqrt', 'min_samples_leaf': 1, 'n_estimators': 100})
+    ANN  CV balanced_accuracy = 0.672 (grid search, best params: {'hidden_layer_sizes': (32,), 'learning_rate_init': 0.001})
+    RF   CV balanced_accuracy = 0.672 (grid search, best params: {'max_depth': None, 'max_features': 'sqrt', 'min_samples_leaf': 4, 'n_estimators': 200})
+    GB   CV balanced_accuracy = 0.672 (grid search, best params: {'learning_rate': 0.03, 'max_depth': 3, 'max_iter': 100, 'min_samples_leaf': 10})
+    XGB  CV balanced_accuracy = 0.672 (grid search, best params: {'colsample_bytree': 0.8, 'learning_rate': 0.05, 'max_depth': 3, 'n_estimators': 100, 'subsample': 0.8})
+    ENSEMBLE(soft-vote: ['SVM', 'ET', 'ANN', 'RF', 'GB', 'XGB']) CV balanced_accuracy = 0.660 (ชุดฟีเจอร์ 'selected')
+    ENSEMBLE(stacking: ['SVM', 'ET', 'ANN', 'RF', 'GB', 'XGB']) CV balanced_accuracy = 0.669 (ชุดฟีเจอร์ 'selected')
+    ENSEMBLE(bagging x25 ของ ET) CV balanced_accuracy = 0.672 (ชุดฟีเจอร์ 'selected')
+    [meta] โมเดลที่คะแนนสูงสุดคือ ET (0.675) แต่ไม่ใช่ meta-classifier
+    [meta] เลือก BAGGING (0.672) ตามข้อกำหนดของอาจารย์ — ส่วนต่าง +0.003
+    -> เลือก BAGGING (ชุดฟีเจอร์ 'selected')
+      [SMOTE] เปิดใช้งาน BorderlineSMOTE k_neighbors=5 (class น้อยสุด=117 ตัวอย่าง)
+    held-out test accuracy (1 split, random_state=42) = 0.707
+              precision    recall  f1-score   support
+
+          EV       0.63      0.63      0.63        30
+      Hybrid       0.75      0.70      0.72        30
+         ICE       0.74      0.78      0.76        32
+
+    accuracy                           0.71        92
+   macro avg       0.71      0.70      0.71        92
+weighted avg       0.71      0.71      0.71        92
+
+    held-out test accuracy (20 random splits) = 0.657 +/- 0.039 (min=0.587, max=0.717)
+      [SMOTE] เปิดใช้งาน BorderlineSMOTE k_neighbors=5 (class น้อยสุด=147 ตัวอย่าง)
+    บันทึก C:/Users/click/Desktop/car-decision-app/car-dss/_models_2026-09-28_n630\fuel_model.pkl

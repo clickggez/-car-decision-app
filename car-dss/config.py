@@ -44,7 +44,11 @@ FIREBASE_PROJECT_ID = os.environ.get('FIREBASE_PROJECT_ID', 'cardss-e678f')
 # ============================================================
 # Model Paths
 # ============================================================
-MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models')
+# ตั้ง env CARDSS_MODEL_DIR เพื่อโหลดโมเดลจากโฟลเดอร์อื่นได้ (ชื่อเดียวกับที่ train_models.py ใช้)
+# ใช้ตอนทดสอบโมเดลชุดใหม่ก่อน deploy โดยไม่ต้องทับ models/*.pkl (2026-09-26)
+# บนเซิร์ฟเวอร์จริงไม่ต้องตั้ง -> ใช้ models/ เหมือนเดิม
+MODEL_DIR = (os.environ.get('CARDSS_MODEL_DIR')
+             or os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models'))
 BUY_MODEL_PATH = os.path.join(MODEL_DIR, 'buy_model.pkl')
 FUEL_MODEL_PATH = os.path.join(MODEL_DIR, 'fuel_model.pkl')
 
@@ -54,6 +58,9 @@ FUEL_MODEL_PATH = os.path.join(MODEL_DIR, 'fuel_model.pkl')
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
 CARS_JSON_PATH = os.path.join(DATA_DIR, 'cars.json')
 USERS_LOCAL_JSON_PATH = os.path.join(DATA_DIR, 'users_local.json')
+# สรุปข้อมูลงานวิจัยสำหรับหน้า /dashboard สาธารณะ — สร้างด้วย analysis/dashboard_overview.py
+# (git ติดตามไฟล์นี้ เพราะ CSV ต้นฉบับไปไม่ถึง PythonAnywhere)
+DATASET_OVERVIEW_PATH = os.path.join(DATA_DIR, 'dataset_overview.json')
 
 # ============================================================
 # Admin credentials (แยกจากผู้ใช้ทั่วไป)

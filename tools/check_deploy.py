@@ -22,6 +22,7 @@ import subprocess
 import sys
 import urllib.error
 import urllib.request
+from urllib.parse import urlsplit
 
 ONLINE = 'https://r4tt4.pythonanywhere.com'
 LOCAL = 'http://127.0.0.1:5000'
@@ -90,32 +91,31 @@ def main():
     for banned in ('เขตบางขุนเทียน', 'Data Mining', 'SVM & ANN'):
         r.check(f'ไม่มีข้อความ "{banned}" บนหน้าแรก', banned not in html)
 
-    # --- 4. ปุ่มบนหน้าแรกต้องพาไปแบบประเมิน ไม่ใช่หน้าล็อกอิน ---
-    # ไม่นับจำนวนลิงก์เฉย ๆ (codex ค้านไว้ board #31 ว่าหลวมเกิน)
-    # ดูที่ตัวปุ่มจริง: ปุ่ม "เริ่มวิเคราะห์" ต้องชี้ไปแบบประเมิน
-    # และลิงก์ /login ที่เหลือต้องเป็นปุ่ม "เข้าสู่ระบบ" เท่านั้น
-    anchors = re.findall(r'<a\s[^>]*href="([^"]+)"[^>]*>(.*?)</a>', html, re.S)
+    # --- 4. ปุ่มบนหน้าแรกต้องพาไปแบบประเมิน (ถ้ายังไม่ล็อกอิน route นั้นจะพาไป /login เอง) ---
+    # ไม่นับจำนวนลิงก์เฉย ๆ (codex ค้านไว้ board #31 ว่าหลวมเกิน) ดูที่ตัวปุ่มจริง
+    # รับ href ทั้ง "..." และ '...'
+    anchors = [(m.group(2), t) for attrs, t in re.findall(r'<a\s([^>]*)>(.*?)</a>', html, re.S)
+               for m in [re.search(r"""href\s*=\s*(["'])(.*?)\1""", attrs)] if m]
     cta = [href for href, text in anchors if 'เริ่มวิเคราะห์' in text]
-    bad_login = [text.strip()[:30] for href, text in anchors
-                 if href.rstrip('/').endswith('/login') and 'เข้าสู่ระบบ' not in text]
     r.check('ปุ่ม "เริ่มวิเคราะห์" ชี้ไปหน้าแบบประเมิน',
-            bool(cta) and all('/predict/buy' in h for h in cta),
+            bool(cta) and all(urlsplit(h).path == '/predict/buy' for h in cta),
             f'ปุ่มชี้ไป {cta}' if cta else 'หาปุ่มเริ่มวิเคราะห์ไม่เจอ')
-    r.check('ไม่มีลิงก์อื่นพาไปหน้าล็อกอิน', not bad_login,
-            f'เจอ {bad_login}' if bad_login else '')
 
-    # --- 5. ผู้ใช้ทั่วไปต้องเข้าได้ทุกหน้า ---
-    for path in ('/predict/buy', '/dashboard'):
+    # --- 5. การพยากรณ์ต้องล็อกอิน (อาจารย์เคาะ 25 ก.ย. 2569) / dashboard เปิดได้ทุกคน ---
+    for path in ('/predict/buy', '/result/buy', '/recommend'):
         st, _, loc = fetch(base + path)
-        r.check(f'เข้า {path} ได้โดยไม่ล็อกอิน', st == 200,
+        r.check(f'{path} ไม่ล็อกอิน = เด้งไป /login', st == 302 and urlsplit(loc or '').path == '/login',
                 f'status {st}' + (f' -> {loc}' if loc else ''))
+    st, dash, loc = fetch(base + '/dashboard')
+    r.check('เข้า /dashboard ได้โดยไม่ล็อกอิน', st == 200,
+            f'status {st}' + (f' -> {loc}' if loc else ''))
 
-    # --- 6. dashboard ต้องไม่โชว์ผลปลอม ---
-    st, dash, _ = fetch(base + '/dashboard')
+    # --- 6. dashboard ต้องเป็นภาพรวมข้อมูลจริง ไม่มีผลปลอม ---
     if st == 200:
-        r.check('dashboard ไม่มีค่าจำลอง 78%', '78.0%' not in dash)
-        r.check('dashboard แสดงสถานะว่างเมื่อยังไม่วิเคราะห์',
-                'ยังไม่มีผลวิเคราะห์' in dash)
+        r.check('dashboard ไม่มีค่าจำลอง 78% / ค่าใช้จ่ายฝังตายตัว',
+                '78.0%' not in dash and 'mockCosts' not in dash)
+        r.check('dashboard แสดงภาพรวมข้อมูลงานวิจัย (มีไฟล์ dataset_overview.json บนเซิร์ฟเวอร์)',
+                'id="statRespondents"' in dash and 'ยังไม่มีข้อมูลสรุป' not in dash)
 
     # --- 7. หน้าแอดมินต้องยังล็อกอยู่ ---
     st, _, loc = fetch(base + '/admin')

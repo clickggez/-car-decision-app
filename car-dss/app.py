@@ -110,7 +110,12 @@ def get_current_user():
 
 
 def login_required(f):
-    """Decorator: ต้อง login ก่อนเข้าหน้านี้ (ใช้กับหน้าที่ต้องมีบัญชีจริงเท่านั้น)"""
+    """Decorator: ต้อง login ก่อนเข้าหน้านี้
+
+    25 ก.ย. 2569 — อาจารย์ที่ปรึกษาเคาะ: ระบบล็อกอินอยู่ในขอบเขตปริญญานิพนธ์
+    การพยากรณ์ (BUY → FUEL) ต้องล็อกอินก่อน เพื่อให้ผลผูกกับบัญชีผู้ใช้จริง
+    จึงเลิกใช้ guest session (`session_required` ที่เพิ่มเมื่อ 23 ก.ย.) แล้วกลับมาใช้ตัวนี้
+    """
     @wraps(f)
     def decorated(*args, **kwargs):
         if 'user_uid' not in session:
@@ -120,23 +125,16 @@ def login_required(f):
     return decorated
 
 
-def session_required(f):
-    """Decorator: ให้ผู้ใช้ทั่วไปเข้าใช้ระบบได้ทันทีโดยไม่ต้องล็อกอิน (23 ก.ย. 2569)
+@app.before_request
+def _drop_legacy_guest_session():
+    """ล้างตัวตน guest ที่ค้างอยู่ในคุกกี้ของผู้ใช้ตั้งแต่ช่วง 23–25 ก.ย. 2569
 
-    ระบบนี้เป็น DSS แบบใช้ครั้งเดียวจบ การบังคับสมัครสมาชิกสร้าง friction เกินจำเป็น
-    - ยังไม่มีตัวตนในเซสชัน → ออก guest uid ให้อัตโนมัติ (`guest_<random>`)
-    - ผลวิเคราะห์ยังถูกบันทึกเข้า Firebase ด้วย uid นี้ ตามที่ผู้ใช้เคาะไว้ จึงแยกคนได้
-    - guest ไม่มีสิทธิ์แอดมินเด็ดขาด (`is_admin` ไม่ถูกตั้งที่นี่) ฝั่งแอดมินยังใช้ admin_required เหมือนเดิม
-    - ถ้าล็อกอินด้วยบัญชีจริงอยู่แล้ว จะใช้ uid ของบัญชีนั้น ไม่ถูกทับ
+    ถ้าไม่ล้าง `guest_<random>` จะผ่าน login_required ได้ทั้งที่ไม่ได้ล็อกอินจริง
+    และหน้า /login จะเด้งกลับไป /predict/buy วนไม่จบ
     """
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if 'user_uid' not in session:
-            session['user_uid'] = 'guest_' + uuid.uuid4().hex[:12]
-            session['username'] = 'ผู้ใช้ทั่วไป'
-            session['is_guest'] = True
-        return f(*args, **kwargs)
-    return decorated
+    uid = str(session.get('user_uid', ''))
+    if session.get('is_guest') or uid.startswith('guest_'):
+        session.clear()
 
 
 def buy_result_required(f):
@@ -216,22 +214,6 @@ def save_prediction_to_firebase(user_uid, pred_type, input_data, result_data):
         return doc_ref.id
     except Exception as e:
         print(f"[ERROR] Firebase save failed: {e}")
-        return None
-
-
-def get_dashboard_data_from_firebase(user_uid):
-    """ดึงข้อมูล prediction ล่าสุดของ user สำหรับ Dashboard"""
-    if not db:
-        return None
-    try:
-        docs = (db.collection('predictions')
-                .where('user_id', '==', user_uid)
-                .order_by('created_at', direction=firestore.Query.DESCENDING)
-                .limit(10)
-                .stream())
-        return [doc.to_dict() for doc in docs]
-    except Exception as e:
-        print(f"[ERROR] Firebase read failed: {e}")
         return None
 
 
@@ -414,14 +396,14 @@ def logout():
 # ============================================================
 
 @app.route('/predict/buy')
-@session_required
+@login_required
 def predict_buy_page():
     """แสดงฟอร์มพยากรณ์ซื้อ/ไม่ซื้อ"""
     return render_template('predict_buy.html', use_mock=config.USE_MOCK)
 
 
 @app.route('/predict/fuel')
-@session_required
+@login_required
 @buy_result_required
 def predict_fuel_page():
     """แสดงฟอร์มพยากรณ์ประเภทเชื้อเพลิง"""
@@ -429,7 +411,7 @@ def predict_fuel_page():
 
 
 @app.route('/result/buy')
-@session_required
+@login_required
 def result_buy():
     """แสดงผลพยากรณ์ซื้อ/ไม่ซื้อ"""
     result = session.get('buy_prediction')
@@ -440,7 +422,7 @@ def result_buy():
 
 
 @app.route('/result/fuel')
-@session_required
+@login_required
 def result_fuel():
     """แสดงผลพยากรณ์ประเภทเชื้อเพลิง"""
     result = session.get('fuel_prediction')
@@ -450,18 +432,57 @@ def result_fuel():
     return render_template('result_fuel.html', result=result)
 
 
-@app.route('/dashboard')
-@session_required
-def dashboard():
-    """แสดง Dashboard แผนภาพข้อมูล — ใช้ผลวิเคราะห์ล่าสุดของผู้ใช้จาก session
+def load_dataset_overview():
+    """อ่านสรุปข้อมูลงานวิจัยที่คำนวณไว้แล้ว (data/dataset_overview.json)
 
-    ถ้ายังไม่เคยวิเคราะห์ ให้หน้าเว็บแสดงสถานะว่าง ห้ามแสดงค่าจำลองเป็นผลลัพธ์
-    (บั๊กเดิม: dashboard.html ฝังค่า EV 78% ANN ไว้ตรง ๆ จนผู้ใช้เห็นผลของคนอื่น)
+    ไฟล์นี้สร้างโดย `analysis/dashboard_overview.py` จากแบบสอบถามทั้งชุดใน files/user_from/
+    (28 ก.ย. 2569: ชุด n=630 — ภาพรวมข้อมูล ไม่ใช่ชุดเทรน BUY ซึ่งเป็น n=514) เก็บเฉพาะตัวเลขนับรวม ไม่มีข้อมูลรายบุคคล
+    ที่ต้องคำนวณล่วงหน้าเพราะ CSV ต้นฉบับชื่อไฟล์ยาวเกินจนไม่มีบน PythonAnywhere
+    ไม่มีไฟล์หรืออ่านไม่ได้ = คืน None ให้หน้าเว็บบอกว่าไม่มีข้อมูล (ห้ามเติมตัวเลขแทน)
+    """
+    data = _load_json(config.DATASET_OVERVIEW_PATH, None)
+    if not isinstance(data, dict):
+        return None
+    for key in ('buy', 'fuel', 'age', 'income'):
+        block = data.get(key)
+        if not isinstance(block, dict) or sum(block.get('counts', [])) != block.get('n'):
+            return None
+    return data
+
+
+def _price_to_int(text):
+    digits = ''.join(ch for ch in str(text) if ch.isdigit())
+    return int(digits) if digits else None
+
+
+def summarize_cars():
+    """สรุปรถที่ระบบใช้แนะนำจาก data/cars.json (อ่านอย่างเดียว) — นับสด ณ ตอนเปิดหน้า"""
+    cars = load_cars()
+    summary = []
+    for fuel_key in ('EV', 'Hybrid', 'ICE'):
+        bucket = cars.get(fuel_key, []) or []
+        prices = [p for p in (_price_to_int(c.get('price')) for c in bucket) if p]
+        summary.append({
+            'fuel': fuel_key,
+            'count': len(bucket),
+            'price_min': min(prices) if prices else None,
+            'price_max': max(prices) if prices else None,
+        })
+    return summary
+
+
+@app.route('/dashboard')
+def dashboard():
+    """ภาพรวมข้อมูลงานวิจัย — หน้าสาธารณะ ทุกคนเห็นเหมือนกัน ไม่ต้องล็อกอิน (25 ก.ย. 2569)
+
+    อาจารย์ที่ปรึกษาเคาะให้ dashboard ไม่บังคับล็อกอิน และผู้ใช้เคาะให้เป็นหน้าสถิติทั่วไป
+    แทนหน้าผลส่วนตัว (ผลส่วนตัวดูได้ที่ /result/buy, /result/fuel หลังล็อกอิน)
+    ตัวเลขทุกตัวมาจาก dataset_overview.json + cars.json เท่านั้น ห้ามฝังตัวเลขใน template
     """
     return render_template(
         'dashboard.html',
-        fuel=session.get('fuel_prediction'),
-        buy=session.get('buy_prediction'),
+        overview=load_dataset_overview(),
+        car_summary=summarize_cars(),
     )
 
 
@@ -478,19 +499,13 @@ def _form_fields(keys):
 
 
 @app.route('/api/predict/buy', methods=['POST'])
-@session_required
+@login_required
 def api_predict_buy():
     """รับข้อมูลฟอร์ม → ส่งเข้าโมเดล → redirect ไปหน้าผลลัพธ์"""
-    input_data = _form_fields([
-        'gender', 'age', 'children', 'education', 'occupation', 'family_size',
-        'housing_type', 'housing_status', 'parking', 'income', 'budget', 'concern', 'purpose',
-        # คำถามใหม่ 2026-08-01 (ต่อสายเข้าฟอร์มเว็บ 2026-08-09)
-        # 3 ตัวแรกเป็นคำถามกลุ่ม EV ที่ predict_fuel ต้องใช้ด้วย — ถามที่นี่ครั้งเดียว
-        # แล้วส่งต่อผ่าน session ไปหน้า fuel (ผู้ใช้ไม่ต้องตอบซ้ำ)
-        'charging_access', 'tco_awareness', 'incentive_awareness',
-        'intention', 'attitude', 'subjective_norm', 'pbc_financial',
-    ])
-    input_data['life_events'] = request.form.getlist('life_events')
+    # 27 ก.ย. 2569: ถามเฉพาะช่องที่ buy_model.pkl (ข้อมูลชุด n=514) ใช้จริง
+    # purpose เลือกได้หลายข้อ (multi-hot) · ไม่มีคำถาม TPB / กลุ่ม EV / life_events
+    input_data = _form_fields(['education', 'family_size'])
+    input_data['purpose'] = request.form.getlist('purpose')
 
     valid, err = validate_buy(input_data)
     if not valid:
@@ -506,35 +521,21 @@ def api_predict_buy():
 
 
 @app.route('/api/predict/fuel', methods=['POST'])
-@session_required
+@login_required
 @buy_result_required
 def api_predict_fuel():
     """รับข้อมูลฟอร์ม → ส่งเข้าโมเดล → redirect ไปหน้าผลลัพธ์"""
-    input_data = _form_fields([
-        'usage_type', 'frequency', 'distance', 'prev_car',
-        'tech_env_concern', 'resale_maintenance_concern',
-        # คำถามใหม่ 2026-08-01 (ต่อสายเข้าฟอร์มเว็บ 2026-08-09)
-        'ev_exposure', 'range_anxiety',
-        'nep_1', 'nep_2', 'nep_3', 'nep_4', 'nep_5',
-    ])
+    # 27 ก.ย. 2569: ถามเฉพาะช่องที่ fuel_model.pkl (ข้อมูลชุด n=630 ตั้งแต่ 28 ก.ย.) ใช้จริง
+    # prev_car / priority เลือกได้หลายข้อ (multi-hot) · ไม่คำนวณ nep_score และไม่ดึงคำตอบกลุ่ม EV
+    # จากหน้า buy อีกแล้ว (แบบสอบถามไม่มีคำถาม NEP / จุดชาร์จ / ต้นทุนรวม / สิทธิประโยชน์)
+    input_data = _form_fields(['usage_type', 'frequency', 'distance', 'tech_env_concern'])
+    input_data['prev_car'] = request.form.getlist('prev_car')
     input_data['priority'] = request.form.getlist('priority')
 
     valid, err = validate_fuel(input_data)
     if not valid:
         flash(err, 'danger')
         return redirect(url_for('predict_fuel_page'))
-
-    # NEP 5 ข้อ -> คะแนนเฉลี่ย (ข้อที่ 5 เป็น reverse-worded ต้องกลับคะแนนก่อน)
-    # ตรรกะเดียวกับ train_models._nep_score เป๊ะ — ถ้าแก้ที่ใดที่หนึ่งต้องแก้ทั้งคู่
-    nep_vals = [int(input_data['nep_' + str(i)]) for i in range(1, 6)]
-    nep_vals[4] = 6 - nep_vals[4]
-    input_data['nep_score'] = sum(nep_vals) / 5.0
-
-    # 3 คำถามกลุ่ม EV ถามไปแล้วในหน้า buy — ดึงกลับมาใช้ ไม่ถามผู้ใช้ซ้ำ
-    # (ผ่าน validate_buy มาแล้ว จึงไม่ต้อง validate ซ้ำ)
-    prev = session.get('buy_input_data') or {}
-    for k in ('charging_access', 'tco_awareness', 'incentive_awareness'):
-        input_data[k] = prev.get(k, '')
 
     result = predict_fuel(input_data)
     session['fuel_prediction'] = result
@@ -544,45 +545,18 @@ def api_predict_fuel():
 
 
 @app.route('/api/dashboard')
-@session_required
 def api_dashboard():
-    """ดึงข้อมูลสำหรับ Dashboard (JSON)"""
-    user_uid = _current_uid()
+    """ข้อมูลภาพรวมงานวิจัยแบบ JSON — ชุดเดียวกับหน้า /dashboard (สาธารณะ)
 
-    # ลองดึงจาก Firebase ก่อน
-    firebase_data = get_dashboard_data_from_firebase(user_uid)
-
-    if firebase_data:
-        return jsonify({'source': 'firebase', 'data': firebase_data})
-
-    # Fallback: ใช้ผลจริงใน session
-    # 23 ก.ย. 2569: เลิกเติมค่าจำลองแทนผลที่ยังไม่มี — เดิมผู้ใช้ที่ยังไม่ได้วิเคราะห์
-    # จะเห็น "EV 78% ANN (mock)" เหมือนเป็นผลของตัวเอง
-    buy_pred = session.get('buy_prediction', {})
-    fuel_pred = session.get('fuel_prediction', {})
-
-    if not buy_pred and not fuel_pred:
-        return jsonify({'source': 'empty', 'has_result': False})
-
-    dashboard_data = {
-        'source': 'session',
-        'has_result': True,
-        'buy_result': buy_pred.get('result'),
-        'buy_confidence': buy_pred.get('confidence'),
-        'buy_model': buy_pred.get('model_used'),
-        'fuel_result': fuel_pred.get('result'),
-        'fuel_scores': fuel_pred.get('scores'),
-        'fuel_confidence': fuel_pred.get('confidence'),
-        'fuel_model': fuel_pred.get('model_used'),
-        'cost_comparison': {
-            'labels': ['ค่าเชื้อเพลิง', 'ค่าบำรุงรักษา', 'ค่าประกัน'],
-            'ev': [800, 500, 8500],
-            'hybrid': [2200, 1200, 9000],
-            'ice': [3800, 2000, 8000]
-        },
-    }
-
-    return jsonify(dashboard_data)
+    25 ก.ย. 2569: เลิกคืนผลส่วนตัวของผู้ใช้ และตัด `cost_comparison` ที่เป็นตัวเลขฝังตายตัว
+    (800/2200/3800 ฯลฯ) ออก เพราะไม่มีแหล่งที่มาในโปรเจกต์
+    """
+    overview = load_dataset_overview()
+    return jsonify({
+        'source': 'dataset_overview' if overview else 'unavailable',
+        'overview': overview,
+        'cars': summarize_cars(),
+    })
 
 
 # ============================================================
@@ -591,7 +565,7 @@ def api_dashboard():
 
 
 @app.route('/recommend')
-@session_required
+@login_required
 def recommend():
     """หน้าแนะนำรถยนต์ตามประเภทเชื้อเพลิงที่โมเดลพยากรณ์"""
     fuel_pred = session.get('fuel_prediction')

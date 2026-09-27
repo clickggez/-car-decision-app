@@ -1,0 +1,11 @@
+
+ทดลองเร็ว (exploratory ไม่ใช่ผลสำหรับเล่ม): ถ้าให้ BUY ใช้ Likert 7P 21 ข้อ จะดีขึ้นไหม — 2026-09-28
+โปรโตคอลล็อกก่อนรัน: ข้อมูล n514 (ชุดที่ BUY บนเว็บใช้) · Bagging(DecisionTree)x25 ไม่จูน ·
+StratifiedShuffleSplit 20 splits test 20% seed 42 · เหมือนกันทุกแขน · ไม่แตะ .pkl
+แขน A = 3 คำถามที่ BUY ใช้อยู่ (education, family_size, purpose multi-hot)
+แขน B = A + Likert 21 ข้อ   แขน C = Likert 21 ข้ออย่างเดียว
+
+n=514 Likert=21 ข้อ baseline=0.5078
+  A ฟีเจอร์ปัจจุบัน      acc 0.5107 ± 0.0424   kappa +0.0211   (15 คอลัมน์)
+  B ปัจจุบัน+Likert      acc 0.5777 ± 0.0461   kappa +0.1558   (36 คอลัมน์)
+  C Likert อย่างเดียว    acc 0.5718 ± 0.0443   kappa +0.1442   (21 คอลัมน์)

@@ -1,0 +1,10 @@
+ตรวจ inference จริงผ่าน predictor.py (00-READ-FIRST §3.1.1) — โมเดลใน _models_2026-09-27_n514
+พื้นที่คำตอบที่ฟอร์มส่งได้ (ไม่ใช่ accuracy)
+BUY  การศึกษา 7 x ครอบครัว 3 x วัตถุประสงค์ 7 แบบ = 147 : {'ซื้อ': 82, 'ไม่ซื้อ': 65}  (205 ms/ครั้ง)
+FUEL ตัวอย่างแบบตาราง 270 ชุด (priority=price): {'สันดาป (ICE)': 70, 'ไฟฟ้า (EV)': 125, 'ไฮบริด': 75}  (423 ms/ครั้ง)
+  prev_car=[]                 {'result': 'สันดาป (ICE)', 'scores': {'EV': 33, 'Hybrid': 32, 'ICE': 36}, 'confidence': 0.36, 'model_used': 'BAGGING (real)'}
+  prev_car=['ice']            {'result': 'สันดาป (ICE)', 'scores': {'EV': 12, 'Hybrid': 34, 'ICE': 54}, 'confidence': 0.54, 'model_used': 'BAGGING (real)'}
+  prev_car=['hybrid']         {'result': 'ไฮบริด', 'scores': {'EV': 25, 'Hybrid': 55, 'ICE': 20}, 'confidence': 0.55, 'model_used': 'BAGGING (real)'}
+  prev_car=['ev']             {'result': 'ไฟฟ้า (EV)', 'scores': {'EV': 61, 'Hybrid': 23, 'ICE': 16}, 'confidence': 0.61, 'model_used': 'BAGGING (real)'}
+  prev_car=['ice', 'hybrid']  {'result': 'ไฮบริด', 'scores': {'EV': 7, 'Hybrid': 70, 'ICE': 23}, 'confidence': 0.7, 'model_used': 'BAGGING (real)'}
+  prev_car=['ice', 'ev']      {'result': 'ไฟฟ้า (EV)', 'scores': {'EV': 49, 'Hybrid': 27, 'ICE': 24}, 'confidence': 0.49, 'model_used': 'BAGGING (real)'}

@@ -135,7 +135,12 @@
       <div class="alert alert-light border" style="font-size:14px;line-height:1.8;">
         <strong>ข้อจำกัดที่ต้องรู้</strong><br>
         นี่คือคำอธิบายว่า <em>โมเดลคิดอย่างไร</em> ไม่ใช่ความจริงเชิงสาเหตุ<br>
-        โมเดล BUY มีความแม่นยำ 69.25% &plusmn; 3.91 (20 random splits)<br>
+        {# 26 ก.ย. 2569: เลิกฝังตัวเลขตายตัว (เดิม 69.25% ± 3.91 เป็นเลขชุด ข ไม่ใช่โมเดลที่ deploy)
+           อ่านจาก metrics ใน .pkl ที่โหลดอยู่จริงแทน ตัวเลขจึงเปลี่ยนตามโมเดลเสมอ #}
+        {% if exp.acc_mean is not none %}
+        โมเดล BUY มีความแม่นยำ {{ '%.2f'|format(exp.acc_mean * 100) }}% &plusmn; {{ '%.2f'|format(exp.acc_std * 100) }}
+        (20 random splits) เทียบกับการทายคลาสใหญ่สุดเสมอ {{ '%.2f'|format(exp.baseline * 100) }}%<br>
+        {% endif %}
         ระบบไม่อธิบายผลของ FUEL โดยตั้งใจ เพราะความมั่นใจของ FUEL ชี้ผิดทาง
       </div>
     {% endif %}

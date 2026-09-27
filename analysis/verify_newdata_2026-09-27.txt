@@ -1,0 +1,240 @@
+
+วัดผลโมเดลที่เทรนจากข้อมูลแบบสอบถามชุด 27 ก.ย. 2569 (n=514) — 2026-09-27
+
+================================================================================
+🔒 โปรโตคอลการประเมิน + เกณฑ์ — เขียนและล็อกไว้ "ก่อน" แก้ train_models.py และก่อนเทรน
+================================================================================
+ที่มา: ผู้ใช้อนุมัติ 2026-09-27 ให้ใช้ข้อมูลชุด n=514 แทนชุด n=511 (2026-09-26)
+ชุด n=511 ถูกถอดเพราะ Likert 21 ข้อมีการแจกแจงเท่ากันทุกข้อ (302/126/52/22/9) — ห้องประชุม #32–#36
+ผลของชุด n=511 (verify_newdata_2026-09-26.txt) ถือเป็นประวัติ ไม่ใช้อ้างอิงต่อ
+
+ข้อมูล
+  ไฟล์   : files/user_from/survey_2026-09-27_n514.csv
+  SHA-256: 7d6196f2fbec3bb818335723e2b589fd72cd9be8520d9992665e8f34912eff02
+  514 แถว × 44 คอลัมน์ ไม่มี timestamp · คอลัมน์สุดท้าย "คอลัมน์ 1" ว่างทั้งคอลัมน์ -> ทิ้ง
+  ดึงคอลัมน์ด้วยชื่อหัวคอลัมน์ (train_models.SURVEY_HEADERS) ไม่ใช้ตำแหน่ง
+  BUY  : ผู้ตอบทุกคน (n=514) label = "4. ท่านมีแนวโน้มจะซื้อรถยนต์ตามประเภทเชื้อเพลิงที่ท่านสนใจหรือไม่"
+  FUEL : เฉพาะผู้ที่มีรถยนต์ (ตอบคำถามการใช้รถ) — ออกแบบเดิมไม่เปลี่ยน
+         label = "5. หากต้องเลือกซื้อรถยนต์ ท่านสนใจรถประเภทใดมากที่สุด"
+
+การเปลี่ยนแปลงการเข้ารหัสฟีเจอร์ (ตัดสินก่อนเทรน ตามคำสั่ง coordinator/ผู้ใช้ 2026-09-27)
+  - คำถามเลือกได้หลายข้อ (คั่นด้วย ", ") เข้ารหัสแบบ multi-hot ไม่ยุบเหลือตัวเลือกแรกอีกต่อไป
+      prev_car -> prev_ice / prev_hybrid / prev_ev      (เดิม _first_mapped ทำให้ ICE กลืนคำตอบผสม)
+      concern  -> concern_<token> 7 ตัว                 (ผู้ไม่มีรถไม่ได้ตอบ = 0 ทุกตัว เลิก mode-fill)
+      purpose  -> purpose_<token> 5 ตัว
+      priority -> prio_<token> (เป็น multi-hot อยู่แล้ว)
+  - ตัด purpose_housing (ฟีเจอร์ผสมที่ต้องใช้ purpose ค่าเดียว — นิยามไม่ได้เมื่อ purpose เป็น multi-hot)
+  - FUEL บังคับเก็บ prev_ice/prev_hybrid/prev_ev ในขั้นคัดฟีเจอร์ (แทน force_keep prev_car เดิม เหตุผลเดิม)
+  - ไม่มีคำถาม TPB / กลุ่ม EV / NEP (ข้อมูลไม่มี และอาจารย์ไม่ต้องการ)
+
+โมเดล (train_models.py)
+  - ขั้นเลือกชุดฟีเจอร์/จูนพารามิเตอร์ด้วย CV ภายในเหมือนเดิมทุกอย่าง
+  - meta-classifier = BaggingClassifier x25 เท่านั้น (META_MODEL_NAMES = ("BAGGING",))
+  - base learner = โมเดลเดี่ยวที่ CV ดีที่สุดที่ไม่ใช่ ANN (กลไกเดิม) random_state=42
+  - เทรนลง car-dss/_models_2026-09-27_n514/ (CARDSS_MODEL_DIR) — ไม่ทับ car-dss/models/*.pkl
+
+การวัด (สคริปต์นี้)
+  - StratifiedShuffleSplit n_splits=20, test_size=0.2, random_state=42
+  - ทุก split: clone pipeline จาก .pkl แล้ว fit ใหม่เฉพาะ train fold วัดบน test fold
+  - รายงาน: accuracy mean ± sd (min–max), Cohen kappa mean ± sd, balanced accuracy mean ± sd,
+    majority baseline (สัดส่วนคลาสใหญ่สุดของข้อมูลเต็ม), lift = accuracy เฉลี่ย − baseline,
+    SHA-256 ของ .pkl แต่ละไฟล์, เทียบกับเลขที่ฝังใน .pkl
+  - np.std แบบ population (ddof=0) เหมือน verify_web_accuracy.py
+
+เกณฑ์ (ล็อกก่อนเห็นผล)
+  - **ไม่มีเกณฑ์ "สำเร็จ" ที่ผูกกับ accuracy** — รายงานผลตามจริงทุกกรณี
+  - ห้ามเปลี่ยน random_state / threshold / ชุดฟีเจอร์ / label / กลุ่มตัวอย่าง / การเข้ารหัส หลังเห็นผล
+  - ห้ามเทียบ accuracy ข้ามชุดข้อมูล (สัดส่วนคลาสต่างกัน) — เทียบได้เฉพาะ lift และ kappa
+  - ตัวเลขวินิจฉัยของ coordinator (analysis/eval_new514_2026-09-27.py) เป็นคนละ pipeline — ไม่ใช้เป็นเกณฑ์
+  - lift ≤ 0 หรือ kappa ≈ 0 ให้รายงานตรง ๆ ไม่ใช่เหตุผลให้จูนใหม่
+  - เงื่อนไขทางเทคนิคก่อนเสนอ deploy (ไม่ใช่เกณฑ์ผลงาน):
+      (1) model_name ของทั้งสองไฟล์ = BAGGING
+      (2) feature_cols ใน .pkl ตรงกับ feature_encoding ปัจจุบัน
+      (3) ค่าเฉลี่ยที่วัดใหม่ ต่างจากค่าที่ฝังใน .pkl < 0.005
+      (4) เทสต์ car-dss/tests ผ่านทั้งหมดเมื่อชี้ไปที่โฟลเดอร์โมเดลใหม่
+
+ข้อจำกัดที่รู้ล่วงหน้า
+  - ชุดฟีเจอร์และพารามิเตอร์ถูกเลือกด้วย CV บนข้อมูลเต็มก่อนแบ่ง 20 splits (โปรโตคอลเดิม) อาจมองโลกในแง่ดีเล็กน้อย
+
+รัน:
+    python analysis/verify_newdata_2026-09-27.py > analysis/verify_newdata_2026-09-27.txt
+**อ่านอย่างเดียว — ไม่เขียนทับ .pkl ใด ๆ**
+
+====================================================================================
+  รันเมื่อ      : 2026-09-27 20:46:43
+  เครื่อง       : Windows-11-10.0.26200-SP0
+  Python       : 3.13.13
+  scikit-learn : 1.8.0
+  โฟลเดอร์โมเดล : C:\Users\click\Desktop\car-decision-app\car-dss\_models_2026-09-27_n514
+  ไฟล์ข้อมูล    : C:\Users\click\Desktop\car-decision-app\files\user_from\survey_2026-09-27_n514.csv
+  SHA-256 ข้อมูล: 7d6196f2fbec3bb818335723e2b589fd72cd9be8520d9992665e8f34912eff02  (ตรงกับที่ล็อกไว้)
+====================================================================================
+
+====================================================================================
+  BUY  (ซื้อ / ไม่ซื้อ)  —  buy_model.pkl
+====================================================================================
+  ไฟล์        : C:\Users\click\Desktop\car-decision-app\car-dss\_models_2026-09-27_n514\buy_model.pkl
+  ขนาด        : 596,897 bytes
+  SHA-256     : c433538468e3c8af9da0a541e9d11ac5c67e593df0693ebc2ac94f2162a37f84
+  โมเดล       : BAGGING  (ตัวจำแนกจริง = BaggingClassifier, ฐาน = HistGradientBoostingClassifier)
+  best_params : {'base': 'GB', 'n_estimators': 25}
+  ชุดฟีเจอร์   : 'selected'  2 categorical + 1 numeric
+    cat : ['education', 'family_size']
+    num : ['purpose_avoid_public']
+  CV (ภายใน, balanced_accuracy) ทุกผู้สมัคร:
+      selected/GB            0.5947
+      selected/XGB           0.5909
+      selected/STACK         0.5812
+      selected/BAGGING       0.5776
+      selected/SVM           0.5758
+      selected/ENSEMBLE      0.5756
+      selected/RF            0.5738
+      selected/ET            0.5675
+      selected/ANN           0.5661
+      all/ET                 0.5421
+      all/GB                 0.5402
+      all/XGB                0.5295
+      all/SVM                0.5167
+      all/RF                 0.5134
+      all/ANN                0.4806
+
+  [เงื่อนไข 1] model_name == BAGGING           : ผ่าน
+  [เงื่อนไข 2] feature_cols ตรง feature_encoding : ผ่าน
+
+  ข้อมูล n=514  สัดส่วนคลาส: {'ซื้อ': np.int64(261), 'ไม่ซื้อ': np.int64(253)}
+  baseline (ทายคลาสใหญ่สุด 'ซื้อ' เสมอ) = 0.5078
+    split  1/20  accuracy = 0.5728  kappa = +0.1413
+    split  2/20  accuracy = 0.5631  kappa = +0.1237
+    split  3/20  accuracy = 0.5340  kappa = +0.0679
+    split  4/20  accuracy = 0.5049  kappa = +0.0087
+    split  5/20  accuracy = 0.4757  kappa = -0.0510
+    split  6/20  accuracy = 0.5437  kappa = +0.0851
+    split  7/20  accuracy = 0.5922  kappa = +0.1816
+    split  8/20  accuracy = 0.5825  kappa = +0.1645
+    split  9/20  accuracy = 0.5825  kappa = +0.1639
+    split 10/20  accuracy = 0.5922  kappa = +0.1816
+    split 11/20  accuracy = 0.5146  kappa = +0.0268
+    split 12/20  accuracy = 0.5825  kappa = +0.1610
+    split 13/20  accuracy = 0.5728  kappa = +0.1446
+    split 14/20  accuracy = 0.5049  kappa = +0.0157
+    split 15/20  accuracy = 0.5534  kappa = +0.1037
+    split 16/20  accuracy = 0.5631  kappa = +0.1233
+    split 17/20  accuracy = 0.5631  kappa = +0.1237
+    split 18/20  accuracy = 0.6408  kappa = +0.2803
+    split 19/20  accuracy = 0.5922  kappa = +0.1832
+    split 20/20  accuracy = 0.5340  kappa = +0.0661
+
+  ── ผล 20 splits ──
+    accuracy          = 0.5583 ± 0.0377  (0.4757–0.6408)
+    Cohen kappa       = +0.1148 ± 0.0747
+    balanced accuracy = 0.5572 ± 0.0373
+    baseline          = 0.5078
+    lift              = +0.0505
+
+  เลขที่ฝังใน .pkl : 0.5583 ± 0.0377
+  [เงื่อนไข 3] ส่วนต่างกับที่วัดใหม่ < 0.005       : ผ่าน (-0.0000)
+
+  ── รายละเอียดรายคลาส (split สุดท้าย ใช้ดูประกอบเท่านั้น) ──
+              precision    recall  f1-score   support
+
+        ซื้อ       0.53      0.63      0.58        52
+     ไม่ซื้อ       0.54      0.43      0.48        51
+
+    accuracy                           0.53       103
+   macro avg       0.53      0.53      0.53       103
+weighted avg       0.53      0.53      0.53       103
+
+
+====================================================================================
+  FUEL (EV / Hybrid / ICE)  —  fuel_model.pkl
+====================================================================================
+  ไฟล์        : C:\Users\click\Desktop\car-decision-app\car-dss\_models_2026-09-27_n514\fuel_model.pkl
+  ขนาด        : 7,345,192 bytes
+  SHA-256     : f74c9f871a022d7b4529b3ec1480818a28d83b4e415081002452ac97f5baa325
+  โมเดล       : BAGGING  (ตัวจำแนกจริง = BaggingClassifier, ฐาน = ExtraTreesClassifier)
+  best_params : {'base': 'ET', 'n_estimators': 25}
+  ชุดฟีเจอร์   : 'selected'  3 categorical + 10 numeric
+    cat : ['usage_type', 'frequency', 'distance']
+    num : ['tech_env_concern', 'mileage_intensity', 'prev_ice', 'prev_hybrid', 'prev_ev', 'prio_fuel_cost', 'prio_electricity_cost', 'prio_maintenance_cost', 'prio_performance', 'prio_technology']
+  CV (ภายใน, balanced_accuracy) ทุกผู้สมัคร:
+      selected/ET            0.6700
+      selected/BAGGING       0.6568
+      all/ET                 0.6550
+      selected/RF            0.6538
+      selected/SVM           0.6532
+      all/SVM                0.6438
+      all/RF                 0.6433
+      selected/XGB           0.6317
+      selected/GB            0.6241
+      selected/ENSEMBLE      0.6203
+      mi/SVM                 0.6173
+      mi/ET                  0.6160
+      mi/ANN                 0.6160
+      mi/RF                  0.6160
+      mi/GB                  0.6160
+      all/XGB                0.6139
+      mi/XGB                 0.6123
+      all/GB                 0.6092
+      selected/STACK         0.5935
+      selected/ANN           0.5549
+      all/ANN                0.5067
+
+  [เงื่อนไข 1] model_name == BAGGING           : ผ่าน
+  [เงื่อนไข 2] feature_cols ตรง feature_encoding : ผ่าน
+
+  ข้อมูล n=341  สัดส่วนคลาส: {'ICE': np.int64(146), 'Hybrid': np.int64(109), 'EV': np.int64(86)}
+  baseline (ทายคลาสใหญ่สุด 'ICE' เสมอ) = 0.4282
+    split  1/20  accuracy = 0.7101  kappa = +0.5534
+    split  2/20  accuracy = 0.6957  kappa = +0.5172
+    split  3/20  accuracy = 0.6522  kappa = +0.4609
+    split  4/20  accuracy = 0.7246  kappa = +0.5682
+    split  5/20  accuracy = 0.6667  kappa = +0.4776
+    split  6/20  accuracy = 0.6522  kappa = +0.4721
+    split  7/20  accuracy = 0.7246  kappa = +0.5693
+    split  8/20  accuracy = 0.6232  kappa = +0.4101
+    split  9/20  accuracy = 0.5797  kappa = +0.3437
+    split 10/20  accuracy = 0.6957  kappa = +0.5183
+    split 11/20  accuracy = 0.6522  kappa = +0.4572
+    split 12/20  accuracy = 0.7101  kappa = +0.5406
+    split 13/20  accuracy = 0.6812  kappa = +0.5059
+    split 14/20  accuracy = 0.6957  kappa = +0.5268
+    split 15/20  accuracy = 0.7246  kappa = +0.5670
+    split 16/20  accuracy = 0.7101  kappa = +0.5469
+    split 17/20  accuracy = 0.7391  kappa = +0.5971
+    split 18/20  accuracy = 0.6667  kappa = +0.4795
+    split 19/20  accuracy = 0.6522  kappa = +0.4493
+    split 20/20  accuracy = 0.6522  kappa = +0.4531
+
+  ── ผล 20 splits ──
+    accuracy          = 0.6804 ± 0.0390  (0.5797–0.7391)
+    Cohen kappa       = +0.5007 ± 0.0607
+    balanced accuracy = 0.6568 ± 0.0395
+    baseline          = 0.4282
+    lift              = +0.2523
+
+  เลขที่ฝังใน .pkl : 0.6804 ± 0.039
+  [เงื่อนไข 3] ส่วนต่างกับที่วัดใหม่ < 0.005       : ผ่าน (+0.0000)
+
+  ── รายละเอียดรายคลาส (split สุดท้าย ใช้ดูประกอบเท่านั้น) ──
+              precision    recall  f1-score   support
+
+          EV       0.69      0.53      0.60        17
+      Hybrid       0.57      0.55      0.56        22
+         ICE       0.69      0.80      0.74        30
+
+    accuracy                           0.65        69
+   macro avg       0.65      0.62      0.63        69
+weighted avg       0.65      0.65      0.65        69
+
+
+====================================================================================
+  สรุป (20 random splits, seed 42, test 20%)
+====================================================================================
+  โมเดล     n  accuracy (min–max)                 kappa              baseline     lift
+  BUY     514  0.5583 ± 0.0377 (0.476–0.641)   +0.1148 ± 0.0747    0.5078  +0.0505
+  FUEL    341  0.6804 ± 0.0390 (0.580–0.739)   +0.5007 ± 0.0607    0.4282  +0.2523
+
+  SHA-256 BUY  : c433538468e3c8af9da0a541e9d11ac5c67e593df0693ebc2ac94f2162a37f84
+  SHA-256 FUEL : f74c9f871a022d7b4529b3ec1480818a28d83b4e415081002452ac97f5baa325
+
+  ทำซ้ำได้ด้วย: python analysis/verify_newdata_2026-09-27.py

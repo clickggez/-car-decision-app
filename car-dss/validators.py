@@ -3,14 +3,27 @@ Centralized input validation for predict_buy and predict_fuel endpoints.
 แก้ Known Issues: no whitelist, no negative-value check, whitespace bypass, XSS pass-through
 """
 
+# 27 ก.ย. 2569: โมเดลเทรนใหม่จากแบบสอบถามชุด n=514 (ผู้ใช้อนุมัติ) — ฟอร์มถามเฉพาะช่องที่โมเดลใช้จริง
+# buy_model.pkl  ใช้ education + family_size + purpose_avoid_public (multi-hot จาก purpose)
+# fuel_model.pkl ใช้ usage_type + frequency + distance + tech_env_concern + mileage_intensity
+#   (จาก frequency, distance) + prev_ice/prev_hybrid/prev_ev (จาก prev_car) + prio_* 5 ตัว (จาก priority)
+# ดู analysis/verify_newdata_2026-09-27.txt · ไม่มีคำถาม TPB / กลุ่ม EV / NEP
+# purpose / prev_car / priority เป็นคำถามเลือกได้หลายข้อ -> list ตรวจแยกด้านล่าง
+# ⚠️ ถ้าเทรนใหม่แล้วชุดฟีเจอร์เปลี่ยน ต้องแก้ตรงนี้ + ฟอร์ม — tests/test_user_facing.py จะฟ้องเอง
+
 _BUY_WHITELISTS = {
+    'education':      {'below_m3', 'm3', 'm6', 'vocational', 'bachelor', 'master', 'phd'},
+    'family_size':    {'1-2', '3-4', '5+'},
+}
+
+# ฟิลด์ที่ยังอยู่ในแบบสอบถามแต่โมเดลชุดนี้ไม่ได้ใช้ — เลิกถามในฟอร์มแล้ว
+# ถ้ายังถูกส่งมา (client เดิม / เทสต์เก่า) ไม่บังคับ แต่ถ้าส่งมาต้องเป็นค่าที่ถูกต้อง
+_BUY_OPTIONAL_WHITELISTS = {
     'gender':         {'male', 'female'},
     'age':            {'20-23', '24-26', '27-30', '31-40', '41-50', '51-60', '60+'},
     'children':       {'0', '1', '2', '3', '3+'},
-    'education':      {'below_m3', 'm3', 'm6', 'vocational', 'bachelor', 'master', 'phd'},
     'occupation':     {'student', 'freelance', 'soe', 'private', 'government',
                        'business_owner', 'trader', 'farmer_fisher', 'other'},
-    'family_size':    {'1-2', '3-4', '5+'},
     'housing_type':   {'house', 'townhome', 'condo', 'dormitory'},
     'housing_status': {'own', 'rent', 'family'},
     'parking':        {'private', 'common', 'none'},
@@ -18,55 +31,49 @@ _BUY_WHITELISTS = {
                        '50001-75000', '75000+'},
     'budget':         {'lt500000', '500001-800000', '800001-1200000',
                        '1200001-1500000', '1500000+'},
-    'concern':        {'fuel_price', 'electricity_cost', 'charging_station', 'gas_station',
-                       'service_center', 'battery_life', 'maintenance', 'resale_value'},
-    'purpose':        {'commute', 'trade', 'travel', 'convenience', 'avoid_public'},
-    # ---- คำถามใหม่ 2026-08-01 (เพิ่มลงฟอร์มเว็บ 2026-08-09) ----
-    # token ต้องตรงกับ dict ใน train_models.py เป๊ะ ไม่งั้น feature_encoding
-    # จะมองเป็นค่าว่างแล้วไปเข้า mode-fill ทำให้ผลทำนายเพี้ยนแบบเงียบ ๆ
-    'charging_access':     {'has', 'installable', 'cannot', 'unsure'},
-    'tco_awareness':       {'much_cheaper', 'slightly_cheaper', 'similar', 'unknown'},
-    'incentive_awareness': {'aware_considered', 'aware_only', 'unknown'},
-    'intention':       {'1', '2', '3', '4', '5', '6', '7'},
-    'attitude':        {'1', '2', '3', '4', '5', '6', '7'},
-    'subjective_norm': {'1', '2', '3', '4', '5', '6', '7'},
-    'pbc_financial':   {'1', '2', '3', '4', '5', '6', '7'},
 }
 
-# life_events เป็น multi-select ที่ "ไม่เลือกเลย" ถือว่าถูกต้อง (= ไม่มีเหตุการณ์)
-# จึงตรวจแยกจาก _BUY_WHITELISTS ซึ่งบังคับว่าต้องมีค่า
-_LIFE_EVENT_ALLOWED = {'job', 'move', 'child', 'income'}
+# purpose เลือกได้หลายข้อ ต้องเลือกอย่างน้อย 1 (ทุกคนในแบบสอบถามตอบข้อนี้)
+_PURPOSE_ALLOWED = {'commute', 'trade', 'travel', 'convenience', 'avoid_public'}
 
-# ฟิลด์ที่ฟอร์มเว็บยังถามอยู่ = ฟิลด์ที่โมเดล fuel ใช้จริง (ดู analysis/fuel_feature_usage_2026-09-23.txt)
-# 23 ก.ย. 2569: ตัด usage_type / frequency / distance / tech_env_concern /
-# resale_maintenance_concern / ev_exposure / range_anxiety ออกจากฟอร์ม เพราะ pipeline
-# ของ fuel_model.pkl ตั้ง remainder='drop' ทิ้งคอลัมน์เหล่านี้ทั้งหมด — สลับค่ามั่ว 10 รอบ
-# คำตอบไม่เปลี่ยนสักเคส (0.0%) จึงไม่บังคับให้ผู้ใช้กรอกอีกต่อไป
-# feature_encoding.fuel_features_from_web ใส่ค่า default ให้ครบอยู่แล้ว โมเดลจึงรับ input ครบ 26 คอลัมน์เท่าเดิม
 _FUEL_WHITELISTS = {
-    'prev_car': {'ice', 'hybrid', 'ev', 'none'},
+    'usage_type':       {'city', 'highway', 'both'},
+    'frequency':        {'occasional', '1-2days', '3-4days', '5-6days', 'everyday'},
+    'distance':         {'lt10', '10-30', '31-50', '51-70', '71-90', '90+'},
+    # ถ้อยคำในฟอร์มตรงกับข้อ 7P ในแบบสอบถามที่ใช้เทรน (5 = เห็นด้วยอย่างยิ่ง)
+    'tech_env_concern': {'1', '2', '3', '4', '5'},
 }
 
-# ฟิลด์ที่เลิกถามแล้ว — ถ้ายังถูกส่งมา (เช่น ทดสอบเก่า หรือ client เดิม) ต้องยังผ่าน validate ได้
+# ฟิลด์ที่เลิกถามแล้ว — ถ้ายังถูกส่งมา ต้องยังผ่าน validate ได้
 _FUEL_OPTIONAL_WHITELISTS = {
-    'usage_type':                 {'city', 'highway', 'both'},
-    'frequency':                  {'occasional', '1-2days', '3-4days', '5-6days', 'everyday'},
-    'distance':                   {'lt10', '10-30', '31-50', '51-70', '71-90', '90+'},
-    'tech_env_concern':           {'1', '2', '3', '4', '5'},
     'resale_maintenance_concern': {'1', '2', '3', '4', '5'},
-    'ev_exposure':                {'both', 'ev_only', 'hybrid_only', 'none'},
-    'range_anxiety':              {'1', '2', '3', '4', '5', '6', '7'},
 }
 
-# NEP 5 ข้อ (สเกล 1-5) — ข้อที่ 5 เป็น reverse-worded, app.py เป็นผู้กลับคะแนน
-# แล้วเฉลี่ยเป็น nep_score ก่อนส่งเข้าโมเดล (ตรรกะเดียวกับ train_models._nep_score)
-_NEP_FIELDS = ('nep_1', 'nep_2', 'nep_3', 'nep_4', 'nep_5')
-_NEP_ALLOWED = {'1', '2', '3', '4', '5'}
+# prev_car เลือกได้หลายข้อ — ไม่เลือกเลยได้ (ยังไม่เคยใช้รถ) · 'none' รับไว้เพื่อ client เดิม
+_PREV_CAR_ALLOWED = {'ice', 'hybrid', 'ev', 'none'}
 
 _PRIORITY_ALLOWED = {
     'price', 'installment', 'fuel_cost', 'electricity_cost', 'maintenance_cost',
     'performance', 'design', 'technology', 'value', 'warranty',
 }
+
+
+def _as_str_list(v):
+    """รับได้ทั้ง list (request.form.getlist) และ string เดี่ยว — คืน None ถ้าชนิดผิด"""
+    if isinstance(v, str):
+        return [v] if v.strip() else []
+    if isinstance(v, (list, tuple)):
+        return list(v) if all(isinstance(x, str) for x in v) else None
+    return None
+
+
+def _check_optional(input_data, whitelists):
+    """ไม่ส่งมาก็ได้ แต่ถ้าส่งมาต้องเป็นค่าที่ถูกต้อง"""
+    for field, allowed in whitelists.items():
+        val = input_data.get(field, '')
+        if isinstance(val, str) and val.strip() and val not in allowed:
+            return False
+    return True
 
 
 def validate_buy(input_data):
@@ -77,14 +84,12 @@ def validate_buy(input_data):
             return False, 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
         if val not in allowed:
             return False, 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
-
-    # life_events: ไม่เลือกเลยได้ (= ไม่มีเหตุการณ์ในรอบ 6 เดือน) แต่ถ้าเลือกต้องอยู่ใน whitelist
-    events = input_data.get('life_events', [])
-    if not isinstance(events, (list, tuple)):
-        return False, 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
-    if any(e not in _LIFE_EVENT_ALLOWED for e in events):
+    if not _check_optional(input_data, _BUY_OPTIONAL_WHITELISTS):
         return False, 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
 
+    purpose = _as_str_list(input_data.get('purpose', []))
+    if not purpose or any(p not in _PURPOSE_ALLOWED for p in purpose):
+        return False, 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
     return True, None
 
 
@@ -96,22 +101,17 @@ def validate_fuel(input_data):
             return False, 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
         if val not in allowed:
             return False, 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
+    if not _check_optional(input_data, _FUEL_OPTIONAL_WHITELISTS):
+        return False, 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
 
-    # ฟิลด์ที่เลิกถามแล้ว: ไม่ส่งมาก็ได้ แต่ถ้าส่งมาต้องเป็นค่าที่ถูกต้อง
-    for field, allowed in _FUEL_OPTIONAL_WHITELISTS.items():
-        val = input_data.get(field, '')
-        if isinstance(val, str) and val.strip() and val not in allowed:
-            return False, 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
+    prev = _as_str_list(input_data.get('prev_car', []))
+    if prev is None or any(p not in _PREV_CAR_ALLOWED for p in prev):
+        return False, 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
 
     priority = input_data.get('priority', [])
     if not priority:
         return False, 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
     if any(p not in _PRIORITY_ALLOWED for p in priority):
         return False, 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
-
-    for f in _NEP_FIELDS:
-        val = input_data.get(f, '')
-        if not isinstance(val, str) or val not in _NEP_ALLOWED:
-            return False, 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
 
     return True, None

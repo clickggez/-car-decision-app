@@ -1,0 +1,9 @@
+ตรวจ inference จริงผ่าน predictor.py (00-READ-FIRST §3.1.1) — โมเดลใน _models_2026-09-26_newdata
+ไล่ครบทุกชุดคำตอบที่ฟอร์มเว็บส่งได้ (in-sample ของพื้นที่คำตอบ ไม่ใช่ accuracy)
+BUY  ทุกชุด (อาชีพ 9 x รายได้ 6 x งบ 5 = 270 ): {'ซื้อ': 153, 'ไม่ซื้อ': 117}
+FUEL ทุกชุด (รถเดิม 4 x Likert 5 x 5 x มี/ไม่มี price = 200 ): {'ไฟฟ้า (EV)': 83, 'ไฮบริด': 83, 'สันดาป (ICE)': 34}
+ตัวอย่างโปรไฟล์ (Likert 5/5, priority=technology):
+  prev_car=ice    {'result': 'ไฟฟ้า (EV)', 'scores': {'EV': 40, 'Hybrid': 40, 'ICE': 20}, 'confidence': 0.4, 'model_used': 'BAGGING (real)'}
+  prev_car=hybrid {'result': 'สันดาป (ICE)', 'scores': {'EV': 21, 'Hybrid': 35, 'ICE': 44}, 'confidence': 0.44, 'model_used': 'BAGGING (real)'}
+  prev_car=ev     {'result': 'ไฟฟ้า (EV)', 'scores': {'EV': 38, 'Hybrid': 30, 'ICE': 33}, 'confidence': 0.38, 'model_used': 'BAGGING (real)'}
+  prev_car=none   {'result': 'ไฮบริด', 'scores': {'EV': 34, 'Hybrid': 35, 'ICE': 31}, 'confidence': 0.35, 'model_used': 'BAGGING (real)'}

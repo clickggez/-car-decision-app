@@ -32,7 +32,7 @@
   <!-- Page header -->
   <div class="page-header fade-in">
     <h1><i class="bi bi-fuel-pump me-2 text-brand"></i>พยากรณ์ประเภทเชื้อเพลิงที่เหมาะสม</h1>
-    <p>กรอกพฤติกรรมการใช้งานรถยนต์และทัศนคติของคุณ เพื่อให้ระบบแนะนำประเภทเชื้อเพลิงที่เหมาะสมที่สุด</p>
+    <p>กรอกพฤติกรรมการใช้รถ ประสบการณ์ และสิ่งที่คุณให้ความสำคัญ เพื่อให้ระบบแนะนำประเภทเชื้อเพลิงที่เหมาะสมที่สุด</p>
   </div>
 
   <!-- Prerequisite notice -->
@@ -48,22 +48,78 @@
          ======================================================== -->
     <div class="card-cardss mb-4 fade-in fade-in-delay-1">
       <div class="section-header-cardss ev">
-        <i class="bi bi-car-front me-2"></i>ส่วนที่ 1 — รถยนต์ที่ใช้อยู่
+        <i class="bi bi-car-front me-2"></i>ส่วนที่ 1 — การใช้งานรถยนต์
       </div>
 
       <div class="row g-3">
 
-        <!-- ประสบการณ์รถที่เคยใช้ -->
+        <!-- 27 ก.ย. 2569: usage_type / frequency / distance กลับมา — fuel_model.pkl ชุด n=514 และ n=630 (28 ก.ย.) ใช้ทั้งสามตัว
+             (รวม mileage_intensity ที่คำนวณจาก frequency x distance) -->
+        <!-- ลักษณะการใช้งาน -->
         <div class="col-md-6">
           <div class="form-group-cardss">
-            <label class="form-label-cardss" for="prev_car">ประสบการณ์รถที่เคยใช้ <span style="color:var(--color-danger);">*</span></label>
-            <select id="prev_car" name="prev_car" class="form-select-cardss" required>
-              <option value="" disabled selected>— เลือกประเภทรถที่เคยใช้ —</option>
-              <option value="ice">สันดาป (น้ำมัน)</option>
-              <option value="hybrid">ไฮบริด</option>
-              <option value="ev">ไฟฟ้า (EV)</option>
-              <option value="none">ยังไม่เคยใช้รถ</option>
+            <label class="form-label-cardss" for="usage_type">ลักษณะการใช้งาน <span style="color:var(--color-danger);">*</span></label>
+            <select id="usage_type" name="usage_type" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกลักษณะการใช้งาน —</option>
+              <option value="city">ขับในเมืองเป็นหลัก</option>
+              <option value="highway">ขับนอกเมืองเป็นหลัก</option>
+              <option value="both">ทั้งในและนอกเมือง</option>
             </select>
+          </div>
+        </div>
+
+        <!-- ความถี่ใช้รถ -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="frequency">ความถี่ในการใช้รถ <span style="color:var(--color-danger);">*</span></label>
+            <select id="frequency" name="frequency" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกความถี่ —</option>
+              <option value="occasional">เป็นครั้งคราว</option>
+              <option value="1-2days">1–2 วัน/สัปดาห์</option>
+              <option value="3-4days">3–4 วัน/สัปดาห์</option>
+              <option value="5-6days">5–6 วัน/สัปดาห์</option>
+              <option value="everyday">ทุกวัน</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ระยะทางเฉลี่ยต่อวัน -->
+        <div class="col-md-6">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss" for="distance">ระยะทางเฉลี่ยต่อวัน <span style="color:var(--color-danger);">*</span></label>
+            <select id="distance" name="distance" class="form-select-cardss" required>
+              <option value="" disabled selected>— เลือกระยะทาง —</option>
+              <option value="lt10">น้อยกว่า 10 กม.</option>
+              <option value="10-30">10–30 กม.</option>
+              <option value="31-50">31–50 กม.</option>
+              <option value="51-70">51–70 กม.</option>
+              <option value="71-90">71–90 กม.</option>
+              <option value="90+">มากกว่า 90 กม.</option>
+            </select>
+          </div>
+        </div>
+
+
+        <!-- ประสบการณ์รถที่เคยใช้ — 27 ก.ย. 2569 เปลี่ยนเป็น checkbox (multi-hot prev_ice/prev_hybrid/prev_ev)
+             เพราะในแบบสอบถามเลือกได้หลายข้อ เดิม select ค่าเดียวทำให้คนที่เคยใช้หลายแบบถูกยุบเหลือแบบเดียว -->
+        <div class="col-12">
+          <div class="form-group-cardss">
+            <label class="form-label-cardss">
+              ประสบการณ์ประเภทรถยนต์ที่เคยใช้
+              <span style="font-size:12px;font-weight:400;color:var(--text-muted);margin-left:4px;">(เลือกได้หลายข้อ — ถ้ายังไม่เคยใช้รถให้เว้นว่าง)</span>
+            </label>
+            <div class="checkbox-grid" id="prevCarGrid">
+          <label class="checkbox-item">
+            <input type="checkbox" name="prev_car" value="ice"> สันดาป (ดีเซล / เบนซิน)
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="prev_car" value="hybrid"> ไฮบริด (Hybrid)
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="prev_car" value="ev"> ไฟฟ้า (EV)
+          </label>
+            </div>
+            <div id="prevCarGrid-err" style="display:none;font-size:12px;color:var(--brand-primary);margin-top:8px;"></div>
           </div>
         </div>
 
@@ -121,60 +177,38 @@
 
       <div class="section-divider"></div>
 
+      <!-- 27 ก.ย. 2569: fuel_model.pkl ชุด n=514 และ n=630 (28 ก.ย.) ใช้ tech_env_concern ข้อเดียว (tech_cost_balance ถูกตัดในขั้นคัดฟีเจอร์)
+           จึงตัดข้อ resale_maintenance_concern ออก
+           26 ก.ย. 2569: ข้อนี้กลับมาครั้งแรก
+           ใช้ถ้อยคำเดียวกับข้อในแบบสอบถาม (ส่วน 7P) ที่ใช้เทรนจริง และสเกลทิศเดียวกัน (5 = เห็นด้วยอย่างยิ่ง)
+           เดิมหน้าเว็บถามเป็น "ความใส่ใจ/ความกังวล" (5 = กังวลมาก) ซึ่งคนละความหมายและกลับทิศกับข้อมูลที่เทรน -->
       <div class="row g-3">
 
-        <!-- ความใส่ใจด้านเทคโนโลยีและสิ่งแวดล้อม -->
-        
-        <!-- ความกังวลเรื่องราคาขายต่อและค่าบำรุงรักษา -->
-        
-      </div><!-- /row -->
-    </div>
-
-    <!-- ========================================================
-         SECTION 3: ทัศนคติด้านสิ่งแวดล้อม (NEP 5 ข้อ)
-         หมายเหตุ: จุดชาร์จ / ต้นทุนรวม / สิทธิประโยชน์ ถามไปแล้วในหน้าก่อนหน้า
-         ระบบดึงคำตอบเดิมมาใช้อัตโนมัติ จึงไม่ถามซ้ำที่นี่
-         23 ก.ย. 2569: ตัดคำถามที่โมเดลไม่ได้ใช้ออก 7 ข้อ เหลือเฉพาะที่มีผลต่อคำตอบจริง
-         หลักฐาน: analysis/fuel_feature_usage_2026-09-23.txt
-         ======================================================== -->
-    <div class="card-cardss mb-4 fade-in fade-in-delay-3">
-      <div class="section-header-cardss ev">
-        <i class="bi bi-tree-fill me-2"></i>ส่วนที่ 3 — ทัศนคติด้านสิ่งแวดล้อม
-      </div>
-
-      <div class="row g-3">
-
-        <!-- NEP 5 ข้อ -->
         <div class="col-12">
-          <div class="form-group-cardss">
+          <div class="form-group-cardss" style="margin-bottom:0;">
             <label class="form-label-cardss">
-              ทัศนคติต่อสิ่งแวดล้อม <span style="color:var(--color-danger);">*</span>
+              ระดับความเห็นของคุณต่อข้อความต่อไปนี้
               <span style="font-size:12px;font-weight:400;color:var(--text-muted);margin-left:4px;">(1 = ไม่เห็นด้วยอย่างยิ่ง ถึง 5 = เห็นด้วยอย่างยิ่ง)</span>
             </label>
           </div>
         </div>
 
-        {% for item in [
-            ('nep_1', 'มนุษย์กำลังใช้ทรัพยากรธรรมชาติเกินกว่าที่โลกจะรองรับได้'),
-            ('nep_2', 'การกระทำของมนุษย์ส่งผลกระทบร้ายแรงต่อสมดุลของธรรมชาติ'),
-            ('nep_3', 'พืชและสัตว์มีสิทธิ์ในการดำรงอยู่เท่าเทียมกับมนุษย์'),
-            ('nep_4', 'หากยังดำเนินต่อไปเช่นนี้ เราจะเผชิญวิกฤตสิ่งแวดล้อมครั้งใหญ่'),
-            ('nep_5', 'ความกังวลเรื่องวิกฤตสิ่งแวดล้อมถูกทำให้เกินจริงไปมาก')
-        ] %}
         <div class="col-md-6">
           <div class="form-group-cardss">
-            <label class="form-label-cardss" for="{{ item[0] }}" style="font-weight:400;">{{ item[1] }}</label>
-            <select id="{{ item[0] }}" name="{{ item[0] }}" class="form-select-cardss" required>
+            <label class="form-label-cardss" for="tech_env_concern">
+              ประเภทพลังงานของรถยนต์มีความเหมาะสมกับการใช้งาน <span style="color:var(--color-danger);">*</span>
+            </label>
+            <select id="tech_env_concern" name="tech_env_concern" class="form-select-cardss" required>
               <option value="" disabled selected>— 1 ถึง 5 —</option>
-              <option value="1">1 — ไม่เห็นด้วยอย่างยิ่ง</option>
-              <option value="2">2</option>
-              <option value="3">3 — เฉย ๆ</option>
-              <option value="4">4</option>
               <option value="5">5 — เห็นด้วยอย่างยิ่ง</option>
+              <option value="4">4 — เห็นด้วย</option>
+              <option value="3">3 — เฉย ๆ</option>
+              <option value="2">2 — ไม่เห็นด้วย</option>
+              <option value="1">1 — ไม่เห็นด้วยอย่างยิ่ง</option>
             </select>
           </div>
         </div>
-        {% endfor %}
+
 
       </div><!-- /row -->
     </div>

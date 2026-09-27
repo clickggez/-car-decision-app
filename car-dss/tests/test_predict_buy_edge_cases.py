@@ -14,6 +14,7 @@ QA Edge-case tests for predict_buy (Task Board: 🔴 High Priority)
 import os
 import sys
 import unittest
+from urllib.parse import urlsplit
 
 # เพิ่ม car-dss/ เข้า sys.path เพื่อ import โมดูล
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -24,21 +25,19 @@ from models.predictor import predict_buy  # noqa: E402
 import app as flask_app_module  # noqa: E402
 
 
+# 27 ก.ย. 2569: ฟอร์มถามเฉพาะ 3 ช่องที่ buy_model.pkl ชุดข้อมูล n=514 ใช้จริง
+# (purpose เลือกได้หลายข้อ) ช่องอื่นของแบบสอบถามยังส่งมาได้ (validators ตรวจแบบไม่บังคับ)
 VALID_INPUT = {
-    'gender': 'male',
-    'age': '27-30',
-    'children': '0',
     'education': 'bachelor',
-    'occupation': 'private',
     'family_size': '1-2',
-    'housing_type': 'condo',
-    'housing_status': 'rent',
-    'parking': 'private',
-    'income': '25001-35000',
-    'budget': '500001-800000',
-    'concern': 'fuel_price',
-    'purpose': 'commute',
+    'purpose': ['commute', 'travel'],
 }
+
+VALID_INPUT_WITH_UNUSED_FIELDS = dict(VALID_INPUT, **{
+    'gender': 'male', 'age': '27-30', 'children': '0', 'occupation': 'private',
+    'housing_type': 'condo', 'housing_status': 'rent', 'parking': 'private',
+    'income': '25001-35000', 'budget': '500001-800000',
+})
 
 
 # ============================================================
@@ -155,9 +154,9 @@ class ApiPredictBuyTests(unittest.TestCase):
 
     # --- 2.2 ค่าติดลบ ---
     def test_negative_values_rejected(self):
+        # 27 ก.ย. 2569: children/income เลิกถามแล้ว (แอปไม่อ่านค่า) -> ทดสอบกับช่องที่ยังใช้
         bad = dict(VALID_INPUT)
-        bad['children'] = '-1'
-        bad['income'] = '-50000'
+        bad['family_size'] = '-1'
         resp = self.client.post('/api/predict/buy', data=bad, follow_redirects=False)
         self.assertEqual(resp.status_code, 302)
         self.assertIn('/predict/buy', resp.headers.get('Location', ''))
@@ -172,31 +171,55 @@ class ApiPredictBuyTests(unittest.TestCase):
         self.assertEqual(resp.status_code, 302)
         self.assertIn('/predict/buy', resp.headers.get('Location', ''))
 
+    def test_only_used_fields_is_enough(self):
+        """กรอกแค่ช่องที่โมเดลใช้ก็ต้องผ่านไปหน้าผลได้ (27 ก.ย. 2569: education/family_size/purpose)"""
+        resp = self.client.post('/api/predict/buy', data=VALID_INPUT, follow_redirects=False)
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('/result/buy', resp.headers.get('Location', ''))
+
+    def test_unused_fields_still_validated_if_sent(self):
+        """ช่องที่เลิกถามแล้ว ถ้ายังถูกส่งมาต้องเป็นค่าที่ถูกต้อง (กัน XSS/ค่ามั่วเข้า Firebase)"""
+        from validators import validate_buy
+        self.assertEqual(validate_buy(dict(VALID_INPUT_WITH_UNUSED_FIELDS)), (True, None))
+        bad = dict(VALID_INPUT_WITH_UNUSED_FIELDS, gender='<script>alert(1)</script>')
+        self.assertFalse(validate_buy(bad)[0])
+
+    def test_purpose_must_pick_at_least_one_valid(self):
+        """27 ก.ย. 2569: purpose เป็น checkbox — ต้องเลือกอย่างน้อย 1 และทุกค่าต้องอยู่ใน whitelist"""
+        from validators import validate_buy
+        self.assertFalse(validate_buy(dict(VALID_INPUT, purpose=[]))[0])
+        self.assertFalse(validate_buy(dict(VALID_INPUT, purpose=['commute', '<x>']))[0])
+
     def test_xss_payload_rejected(self):
+        # 27 ก.ย. 2569: occupation เลิกถามแล้ว -> ทดสอบ XSS กับช่องที่ยังใช้ (select + checkbox)
         bad = dict(VALID_INPUT)
-        bad['occupation'] = '<script>alert(1)</script>'
+        bad['education'] = '<script>alert(1)</script>'
+        bad['purpose'] = ['<script>alert(1)</script>']
         resp = self.client.post('/api/predict/buy', data=bad, follow_redirects=False)
         self.assertEqual(resp.status_code, 302)
         self.assertIn('/predict/buy', resp.headers.get('Location', ''))
 
-    # --- 2.4 guest session (23 ก.ย. 2569: เลิกบังคับล็อกอินฝั่งผู้ใช้) ---
-    def test_guest_not_redirected_to_login(self):
-        """ไม่ล็อกอินต้องเข้าใช้ระบบได้ ไม่ถูกเด้งไปหน้า login อีกต่อไป"""
+    # --- 2.4 ต้องล็อกอินก่อน (25 ก.ย. 2569: อาจารย์เคาะให้กลับมาบังคับล็อกอิน) ---
+    # เดิม (23 ก.ย.) เทสต์สองตัวนี้ยืนยันว่า guest เข้าได้และได้ uid `guest_...`
+    # ตอนนี้พฤติกรรมกลับด้าน: ไม่ล็อกอิน = เด้งไป /login และต้องไม่มี guest uid ถูกสร้าง
+    def test_not_logged_in_redirected_to_login(self):
+        """ไม่ล็อกอิน -> ทั้งหน้าฟอร์มและ API ต้องเด้งไป /login"""
         client = flask_app_module.app.test_client()  # ไม่ set session
         resp = client.get('/predict/buy', follow_redirects=False)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(urlsplit(resp.headers.get('Location', '')).path, '/login')
 
         resp = client.post('/api/predict/buy', data=VALID_INPUT, follow_redirects=False)
         self.assertEqual(resp.status_code, 302)
-        self.assertNotIn('/login', resp.headers.get('Location', ''))
+        self.assertEqual(urlsplit(resp.headers.get('Location', '')).path, '/login')
 
-    def test_guest_gets_own_uid_and_no_admin_rights(self):
-        """guest ต้องมี uid ของตัวเอง (บันทึก Firebase แยกคนได้) และห้ามได้สิทธิ์แอดมิน"""
+    def test_no_guest_uid_created_and_no_admin_rights(self):
+        """ไม่ล็อกอินแล้วยิง API -> session ต้องไม่มี uid ใด ๆ (ไม่ออก guest uid ให้อีก)"""
         client = flask_app_module.app.test_client()
         client.post('/api/predict/buy', data=VALID_INPUT, follow_redirects=False)
         with client.session_transaction() as sess:
-            self.assertTrue(sess['user_uid'].startswith('guest_'))
-            self.assertTrue(sess.get('is_guest'))
+            self.assertNotIn('user_uid', sess)
+            self.assertFalse(sess.get('is_guest'))
             self.assertFalse(sess.get('is_admin'))
 
 

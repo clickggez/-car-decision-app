@@ -66,6 +66,31 @@ if not config.USE_MOCK:
         config.USE_MOCK = True
 
 
+def _check_bundle(bundle, expected_cols, name):
+    """กันโมเดลกับโค้ดคนละรุ่นกัน (2026-09-26)
+
+    .pkl ที่เทรนจากข้อมูลชุดเดิม (มีคอลัมน์ TPB / กลุ่ม EV / NEP) ใช้กับ feature_encoding
+    ปัจจุบันไม่ได้ — ถ้าปล่อยผ่าน pandas จะเติม NaN ให้คอลัมน์ที่หายไปเงียบ ๆ แล้วโมเดล
+    ทำนายเพี้ยนโดยไม่มีใครรู้ จึงหยุดพร้อมข้อความชัดเจนแทน
+    """
+    got = list(bundle.get("feature_cols", []))
+    if got != list(expected_cols):
+        missing = [c for c in got if c not in expected_cols]
+        extra = [c for c in expected_cols if c not in got]
+        raise RuntimeError(
+            f"{name}: โมเดลกับโค้ดไม่ตรงรุ่นกัน — .pkl ต้องการคอลัมน์ที่โค้ดไม่สร้างแล้ว {missing}"
+            f" / โค้ดสร้างคอลัมน์ที่ .pkl ไม่รู้จัก {extra} -> ต้องใช้ .pkl ที่เทรนจากข้อมูลชุด 2026-09-26")
+
+
+if not config.USE_MOCK:
+    for _b, _cols, _n in ((_buy_bundle, fe.buy_feature_columns(), "buy_model.pkl"),
+                          (_fuel_bundle, fe.fuel_feature_columns(), "fuel_model.pkl")):
+        try:
+            _check_bundle(_b, _cols, _n)
+        except RuntimeError as _e:
+            print(f"[WARNING] {_e}")
+
+
 # ============================================================
 # MOCK PREDICTIONS
 # ============================================================
@@ -115,6 +140,7 @@ def _real_predict_buy(input_data):
     """โมเดลจริง: ซื้อ/ไม่ซื้อ — ใช้เมื่อ USE_MOCK = False"""
     import pandas as pd
 
+    _check_bundle(_buy_bundle, fe.buy_feature_columns(), "buy_model.pkl")
     feat = fe.buy_features_from_web(input_data)
     X = pd.DataFrame([feat], columns=_buy_bundle["feature_cols"])
     pipe = _buy_bundle["pipeline"]
@@ -136,6 +162,7 @@ def _real_predict_fuel(input_data):
     """โมเดลจริง: ประเภทเชื้อเพลิง — ใช้เมื่อ USE_MOCK = False"""
     import pandas as pd
 
+    _check_bundle(_fuel_bundle, fe.fuel_feature_columns(), "fuel_model.pkl")
     feat = fe.fuel_features_from_web(input_data)
     X = pd.DataFrame([feat], columns=_fuel_bundle["feature_cols"])
     pipe = _fuel_bundle["pipeline"]
@@ -164,25 +191,14 @@ def predict_buy(input_data):
     พยากรณ์ซื้อ/ไม่ซื้อ
 
     Args:
-        input_data (dict): ข้อมูลจากฟอร์ม predict_buy มี 13 fields:
-            gender           : 'male' | 'female'
-            age              : '20-23' | '24-26' | '27-30' | '31-40' | '41-50' | '51-60' | '60+'
-            children         : '0' | '1' | '2' | '3' | '3+'
+        input_data (dict): ข้อมูลจากฟอร์ม predict_buy
+            27 ก.ย. 2569 (โมเดลชุดข้อมูล n=514) ฟอร์มถาม 3 ช่องที่โมเดลใช้จริง:
             education        : 'below_m3' | 'm3' | 'm6' | 'vocational' | 'bachelor' | 'master' | 'phd'
-            occupation       : 'student' | 'freelance' | 'soe' | 'private' | 'government' |
-                               'business_owner' | 'trader' | 'farmer_fisher' | 'other'
             family_size      : '1-2' | '3-4' | '5+'
-            housing_type     : 'house' | 'townhome' | 'condo' | 'dormitory'
-            housing_status   : 'own' | 'rent' | 'family'
-            parking          : 'private' | 'common' | 'none'
-            income           : 'lt15000' | '15001-25000' | '25001-35000' | '35001-50000' |
-                               '50001-75000' | '75000+'
-            budget           : 'lt500000' | '500001-800000' | '800001-1200000' |
-                               '1200001-1500000' | '1500000+'
-            concern          : 'fuel_price' | 'electricity_cost' | 'charging_station' |
-                               'gas_station' | 'service_center' | 'battery_life' |
-                               'maintenance' | 'resale_value'
-            purpose          : 'commute' | 'trade' | 'travel' | 'convenience' | 'avoid_public'
+            purpose (list)   : subset ของ {'commute', 'trade', 'travel', 'convenience', 'avoid_public'}
+                               (เลือกได้หลายข้อ -> multi-hot · string คั่น ',' ก็รับ)
+            ส่ง field อื่นของแบบสอบถามมาด้วยได้ (gender, age, children, occupation, housing_type,
+            housing_status, parking, income, budget, concern) — โมเดลชุดนี้ไม่ได้ใช้
 
     Returns:
         dict: {
@@ -193,12 +209,8 @@ def predict_buy(input_data):
 
     Example:
         >>> predict_buy({
-        ...     'gender': 'male', 'age': '27-30', 'children': '0',
-        ...     'education': 'bachelor', 'occupation': 'private',
-        ...     'family_size': '1-2', 'housing_type': 'condo',
-        ...     'housing_status': 'rent', 'parking': 'common',
-        ...     'income': '25001-35000', 'budget': '500001-800000',
-        ...     'concern': 'fuel_price', 'purpose': 'commute'
+        ...     'education': 'bachelor', 'family_size': '3-4',
+        ...     'purpose': ['commute', 'travel'],
         ... })
         {'result': 'ซื้อ', 'confidence': 0.883, 'model_used': 'SVM (mock)'}
     """
@@ -212,16 +224,18 @@ def predict_fuel(input_data):
     พยากรณ์ประเภทเชื้อเพลิงที่เหมาะสม
 
     Args:
-        input_data (dict): ข้อมูลจากฟอร์ม predict_fuel มี 6 fields + 1 list:
+        input_data (dict): ข้อมูลจากฟอร์ม predict_fuel
+            27 ก.ย. 2569 (FUEL เทรนใหม่ 28 ก.ย. บนชุด n=630 — ช่องฟอร์มเท่าเดิม) ฟอร์มถามช่องที่โมเดลใช้จริง:
             usage_type                 : 'city' | 'highway' | 'both'
             frequency                  : 'occasional' | '1-2days' | '3-4days' | '5-6days' | 'everyday'
             distance                   : 'lt10' | '10-30' | '31-50' | '51-70' | '71-90' | '90+'
-            prev_car                   : 'ice' | 'hybrid' | 'ev' | 'none'
-            tech_env_concern           : '1'–'5'  (1=ไม่สนใจ, 5=สนใจมาก)
-            resale_maintenance_concern : '1'–'5'  (1=ไม่สนใจ, 5=สนใจมาก)
+            prev_car (list)            : subset ของ {'ice', 'hybrid', 'ev'} (เลือกได้หลายข้อ, ว่างได้)
+            tech_env_concern           : '1'–'5'  "ประเภทพลังงานของรถยนต์มีความเหมาะสมกับการใช้งาน"
+                                         (5 = เห็นด้วยอย่างยิ่ง ตรงกับข้อ 7P ในแบบสอบถาม)
             priority (list)            : subset ของ {'price', 'installment', 'fuel_cost',
                                          'electricity_cost', 'maintenance_cost', 'performance',
                                          'design', 'technology', 'value', 'warranty'}
+            resale_maintenance_concern ส่งมาได้ แต่โมเดลชุดนี้ไม่ได้ใช้
 
     Returns:
         dict: {
@@ -233,8 +247,8 @@ def predict_fuel(input_data):
 
     Example:
         >>> predict_fuel({
-        ...     'usage_type': 'city', 'frequency': 'everyday',
-        ...     'distance': '10-30', 'prev_car': 'ice',
+        ...     'usage_type': 'city', 'frequency': 'everyday', 'distance': '10-30',
+        ...     'prev_car': ['ice', 'hybrid'],
         ...     'tech_env_concern': '4', 'resale_maintenance_concern': '3',
         ...     'priority': ['fuel_cost', 'technology', 'design']
         ... })
