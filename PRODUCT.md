@@ -54,7 +54,7 @@ The recommendations come from machine-learning models trained on the thesis's ow
 - Product name: CarDSS / "ระบบสนับสนุนการตัดสินใจซื้อรถยนต์ตามประเภทเชื้อเพลิง"
 - Voice: plain, calm Thai. Avoid marketing hype, technical jargon (for example "SVM & ANN" or "Data Mining" on public pages) and location-specific phrasing that was previously removed ("เขตบางขุนเทียน").
 - The owner has said the current UI "looks too AI-generated" (2026-09-29). Future work should remove generic AI-template tells.
-- An existing `DESIGN.md` (Tesla-inspired) documents the incumbent visual system. Whether to keep or replace it is still undecided.
+- **The owner retired the Tesla-inspired style on 2026-09-29, and a full redesign is planned.** The old `DESIGN.md` is archived at `agent-docs/archive/DESIGN_tesla_retired_2026-09-29.md` for reference only. Treat the current look as evidence to replace, not a system to extend.
 
 ## Evidence on Hand
 
