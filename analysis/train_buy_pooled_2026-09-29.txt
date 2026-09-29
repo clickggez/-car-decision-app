@@ -1,0 +1,121 @@
+
+เทรน BUY บนชุดผสม = ชุดเดิม n500 (ก.ค.–ส.ค. 2569) + ชุด n514 (27 ก.ย.) — ผู้ใช้สั่ง 2026-09-29
+("ถ้าไม่ใช่เพราะคำถาม EV ก็เอาผสมกันแล้วเทรนเลย")
+ที่มา: ชุดเดิมตัดคำถาม EV แล้ว BUY ยัง lift +0.0735 (analysis/diagnose_newdata_2026-09-26.txt) · n514 lift +0.0505
+
+โปรโตคอล — ล็อกก่อนรัน ห้ามแก้หลังเห็นผล
+  - ใช้เฉพาะคำถามร่วม: train_models.build_buy_xy() ดึงคอลัมน์ด้วยชื่อหัวคอลัมน์ คำถาม EV/TPB/NEP ของชุดเดิมไม่ถูกใช้
+  - ใช้ train_models.train_buy() เดิมทุกอย่าง (คัดฟีเจอร์ Chi-square/ANOVA alpha 0.1, Bagging, 20 splits seed 42 test 20%)
+  - เทรนลง car-dss/_models_2026-09-29_buy_pooled/ ไม่แตะ car-dss/models/*.pkl · FUEL ไม่เกี่ยว
+  - เกณฑ์ "ผสมแล้วดีขึ้นจริง" ต้องผ่านครบ 3 ข้อ:
+      (1) lift รวมของชุดผสม > +0.0505 (BUY n514 บนเว็บปัจจุบัน)
+      (2) บนแถวของชุด n514 ใน test fold เดียวกัน: acc − baseline ของ n514 (0.5078) > +0.0505
+          = คนแบบชุดใหม่ต้องได้ผลดีขึ้นจริง ไม่ใช่เลขรวมสูงเพราะชุดเดิมพาไป
+      (3) ทายข้ามชุด: fit โครงเดียวกันบนชุดเดิมทั้งหมด → ทายชุด n514 ได้ lift > 0 (สัญญาณย้ายข้ามชุดได้จริง)
+          (ห้องประชุม #33: ผสมแล้วโมเดลอาจแค่จำที่มาของแถว — ข้อ 3 กันเรื่องนี้)
+  - รายงานกลับทิศ (n514 → ชุดเดิม) ด้วยเพื่อความครบ แต่ไม่ใช้เป็นเกณฑ์
+  - ข้อจำกัดเดิม: เติมค่าหาย/คัดฟีเจอร์จากข้อมูลทั้งชุดก่อนแบ่ง split (ห้องประชุม #40) → เลขอาจสูงกว่าจริงเล็กน้อย
+
+ชุดเดิม: สำเนาของ แบบสอบถาม เรื่องระบบสนับสนุนการตัดสินใจซื้อรถยนต์ โ… SHA-256 d274308bae9f4587ba2de95d0741b6d5c232a476cf1e7976bbb1f8989cded73a
+n514: survey_2026-09-27_n514.csv… SHA-256 7d6196f2fbec3bb818335723e2b589fd72cd9be8520d9992665e8f34912eff02
+รวม 1014 แถว
+
+
+[predict_buy] เตรียมข้อมูล...
+    การจัดการค่าขาดหาย/ผิดปกติ (เชิงปริมาณ):
+    ตัวอย่าง: 1014 | label: {'ซื้อ': np.int64(553), 'ไม่ซื้อ': np.int64(461)}
+    การคัดเลือกคุณลักษณะ (feature selection, alpha=0.1):
+      [Chi-square] gender               p=0.2342 -> ตัดทิ้ง
+      [Chi-square] age                  p=0.0323 -> เก็บ
+      [Chi-square] children             p=0.0015 -> เก็บ
+      [Chi-square] education            p=0.3424 -> ตัดทิ้ง
+      [Chi-square] occupation           p=0.0643 -> เก็บ
+      [Chi-square] family_size          p=0.0494 -> เก็บ
+      [Chi-square] housing_type         p=0.0006 -> เก็บ
+      [Chi-square] housing_status       p=0.6048 -> ตัดทิ้ง
+      [Chi-square] parking              p=0.0000 -> เก็บ
+      [Chi-square] income               p=0.6036 -> ตัดทิ้ง
+      [Chi-square] budget               p=0.0337 -> เก็บ
+      [ANOVA F]   income_budget_gap    p=0.2220 -> ตัดทิ้ง
+      [ANOVA F]   concern_fuel_price   p=0.4154 -> ตัดทิ้ง
+      [ANOVA F]   concern_electricity_cost p=0.1434 -> ตัดทิ้ง
+      [ANOVA F]   concern_charging_station p=0.1840 -> ตัดทิ้ง
+      [ANOVA F]   concern_service_center p=0.0708 -> เก็บ
+      [ANOVA F]   concern_battery_life p=0.0606 -> เก็บ
+      [ANOVA F]   concern_maintenance  p=0.0002 -> เก็บ
+      [ANOVA F]   concern_resale_value p=0.9841 -> ตัดทิ้ง
+      [ANOVA F]   purpose_commute      p=0.7962 -> ตัดทิ้ง
+      [ANOVA F]   purpose_trade        p=0.6090 -> ตัดทิ้ง
+      [ANOVA F]   purpose_travel       p=0.1352 -> ตัดทิ้ง
+      [ANOVA F]   purpose_convenience  p=0.0114 -> เก็บ
+      [ANOVA F]   purpose_avoid_public p=0.0032 -> เก็บ
+    Mutual Information selection (permutation threshold @95th pct = 0.0364, n_perm=20):
+      [MI] gender               score=0.0008 -> ตัดทิ้ง
+      [MI] age                  score=0.0069 -> ตัดทิ้ง
+      [MI] children             score=0.0086 -> ตัดทิ้ง
+      [MI] education            score=0.0034 -> ตัดทิ้ง
+      [MI] occupation           score=0.0059 -> ตัดทิ้ง
+      [MI] family_size          score=0.0030 -> ตัดทิ้ง
+      [MI] housing_type         score=0.0074 -> ตัดทิ้ง
+      [MI] housing_status       score=0.0005 -> ตัดทิ้ง
+      [MI] parking              score=0.0105 -> ตัดทิ้ง
+      [MI] income               score=0.0018 -> ตัดทิ้ง
+      [MI] budget               score=0.0051 -> ตัดทิ้ง
+      [MI] income_budget_gap    score=0.0000 -> ตัดทิ้ง
+      [MI] concern_fuel_price   score=0.0157 -> ตัดทิ้ง
+      [MI] concern_electricity_cost score=0.0027 -> ตัดทิ้ง
+      [MI] concern_charging_station score=0.0166 -> ตัดทิ้ง
+      [MI] concern_service_center score=0.0079 -> ตัดทิ้ง
+      [MI] concern_battery_life score=0.0249 -> ตัดทิ้ง
+      [MI] concern_maintenance  score=0.0000 -> ตัดทิ้ง
+      [MI] concern_resale_value score=0.0000 -> ตัดทิ้ง
+      [MI] purpose_commute      score=0.0000 -> ตัดทิ้ง
+      [MI] purpose_trade        score=0.0000 -> ตัดทิ้ง
+      [MI] purpose_travel       score=0.0000 -> ตัดทิ้ง
+      [MI] purpose_convenience  score=0.0000 -> ตัดทิ้ง
+      [MI] purpose_avoid_public score=0.0000 -> ตัดทิ้ง
+      (ไม่มีฟีเจอร์ผ่าน threshold เลย — เก็บทั้งหมดไว้กันโมเดลไม่มีข้อมูลเข้าเลย)
+      [SMOTE] เปิดใช้งาน BorderlineSMOTE k_neighbors=5 (class น้อยสุด=461 ตัวอย่าง)
+    == ชุดฟีเจอร์ 'selected' (cat=7, num=5) ==
+    SVM  CV balanced_accuracy = 0.575 (grid search, best params: {'C': 10, 'gamma': 0.01})
+    ET   CV balanced_accuracy = 0.570 (grid search, best params: {'max_depth': 10, 'max_features': 'sqrt', 'min_samples_leaf': 1, 'n_estimators': 200})
+    ANN  CV balanced_accuracy = 0.528 (grid search, best params: {'hidden_layer_sizes': (64, 32, 16), 'learning_rate_init': 0.01})
+    RF   CV balanced_accuracy = 0.572 (grid search, best params: {'max_depth': 6, 'max_features': 'sqrt', 'min_samples_leaf': 1, 'n_estimators': 400})
+    GB   CV balanced_accuracy = 0.569 (grid search, best params: {'learning_rate': 0.03, 'max_depth': 3, 'max_iter': 200, 'min_samples_leaf': 20})
+    XGB  CV balanced_accuracy = 0.569 (grid search, best params: {'colsample_bytree': 1.0, 'learning_rate': 0.05, 'max_depth': 3, 'n_estimators': 200, 'subsample': 1.0})
+    == ชุดฟีเจอร์ 'all' (cat=11, num=13) ==
+    SVM  CV balanced_accuracy = 0.564 (grid search, best params: {'C': 0.5, 'gamma': 0.01})
+    ET   CV balanced_accuracy = 0.560 (grid search, best params: {'max_depth': 5, 'max_features': 'log2', 'min_samples_leaf': 1, 'n_estimators': 100})
+    ANN  CV balanced_accuracy = 0.523 (grid search, best params: {'hidden_layer_sizes': (64, 32), 'learning_rate_init': 0.01})
+    RF   CV balanced_accuracy = 0.563 (grid search, best params: {'max_depth': 6, 'max_features': 'sqrt', 'min_samples_leaf': 2, 'n_estimators': 200})
+    GB   CV balanced_accuracy = 0.574 (grid search, best params: {'learning_rate': 0.03, 'max_depth': 6, 'max_iter': 100, 'min_samples_leaf': 10})
+    XGB  CV balanced_accuracy = 0.559 (grid search, best params: {'colsample_bytree': 1.0, 'learning_rate': 0.05, 'max_depth': 5, 'n_estimators': 100, 'subsample': 1.0})
+    ENSEMBLE(soft-vote: ['SVM', 'ET', 'ANN', 'RF', 'GB', 'XGB']) CV balanced_accuracy = 0.551 (ชุดฟีเจอร์ 'selected')
+    ENSEMBLE(stacking: ['SVM', 'ET', 'ANN', 'RF', 'GB', 'XGB']) CV balanced_accuracy = 0.528 (ชุดฟีเจอร์ 'selected')
+    ENSEMBLE(bagging x25 ของ SVM) CV balanced_accuracy = 0.576 (ชุดฟีเจอร์ 'selected')
+    -> เลือก BAGGING (ชุดฟีเจอร์ 'selected')
+      [SMOTE] เปิดใช้งาน BorderlineSMOTE k_neighbors=5 (class น้อยสุด=369 ตัวอย่าง)
+    held-out test accuracy (1 split, random_state=42) = 0.576
+              precision    recall  f1-score   support
+
+        ซื้อ       0.62      0.59      0.60       111
+     ไม่ซื้อ       0.53      0.57      0.55        92
+
+    accuracy                           0.58       203
+   macro avg       0.57      0.58      0.57       203
+weighted avg       0.58      0.58      0.58       203
+
+    held-out test accuracy (20 random splits) = 0.567 +/- 0.027 (min=0.512, max=0.616)
+      [SMOTE] เปิดใช้งาน BorderlineSMOTE k_neighbors=5 (class น้อยสุด=461 ตัวอย่าง)
+    บันทึก C:\Users\click\Desktop\car-decision-app\analysis\..\car-dss\_models_2026-09-29_buy_pooled\buy_model.pkl
+    การจัดการค่าขาดหาย/ผิดปกติ (เชิงปริมาณ):
+
+=== สรุป BUY ชุดผสม n=1014 · baseline 0.5454 · ฟีเจอร์ที่ผ่านคัด ['age', 'children', 'occupation', 'family_size', 'housing_type', 'parking', 'budget', 'concern_service_center', 'concern_battery_life', 'concern_maintenance', 'purpose_convenience', 'purpose_avoid_public']
+(1) รวม: acc 0.5670 ± 0.0265 · lift +0.0216  เกณฑ์ > +0.0505  → ไม่ผ่าน
+    แถวเดิม : acc 0.6618 ± 0.0356 · baseline 0.5840 · lift +0.0778
+    แถวn514 : acc 0.4819 ± 0.0440 · baseline 0.5078 · lift -0.0258
+(2) แถว n514: lift -0.0259  เกณฑ์ > +0.0505  → ไม่ผ่าน
+(3) ทายข้ามชุด เดิม→n514: acc 0.4708 · baseline 0.5078 · lift -0.0370  เกณฑ์ > 0  → ไม่ผ่าน
+    (อ้างอิง) n514→เดิม: acc 0.5020 · baseline 0.5840 · lift -0.0820
+
+ไม่ผ่านครบ 3 ข้อ — คง BUY n514 ไว้

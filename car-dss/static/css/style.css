@@ -77,6 +77,9 @@
   --border-light:    #2D2F33;
   --border-medium:   #2D2F33;
 
+  /* 29 ก.ย. 2569: สีแจ้งเตือนเข้มเดิมกลืนกับพื้นมืด (Antigravity ห้องประชุม #43) */
+  --color-danger:    #FF6B6B;
+
   --nav-frosted:     rgba(13,13,13,0.80);
   --overlay:         rgba(0,0,0,0.70);
 }
@@ -425,6 +428,11 @@ h1,h2,h3,h4,h5,h6{
 
 [data-theme="dark"] .result-circle.buy{background:#14261a}
 [data-theme="dark"] .result-circle.no-buy{background:#261414}
+/* สีผล BUY — โหมดมืดใช้เฉดสว่างขึ้น (#C40818 บนพื้นมืด contrast ต่ำ · Antigravity ทัก ห้องประชุม #42, 29 ก.ย. 2569) */
+.result-tone.buy{color:#00A550}
+.result-tone.no-buy{color:#C40818}
+[data-theme="dark"] .result-tone.buy{color:#3DD68C}
+[data-theme="dark"] .result-tone.no-buy{color:#FF6B6B}
 [data-theme="dark"] .result-circle.ev{background:#14261a}
 [data-theme="dark"] .result-circle.hybrid{background:#141e26}
 [data-theme="dark"] .result-circle.ice{background:#261e14}

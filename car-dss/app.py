@@ -15,7 +15,7 @@ from flask import (
 )
 
 import config
-from models.predictor import predict_buy, predict_fuel
+from models.predictor import predict_buy, predict_fuel, model_reliability
 from validators import validate_buy, validate_fuel
 
 
@@ -223,8 +223,9 @@ def save_prediction_to_firebase(user_uid, pred_type, input_data, result_data):
 
 @app.route('/')
 def index():
-    """หน้าแรก Home"""
-    return render_template('home.html')
+    """หน้าแรก Home — ตัวเลขข้อมูลอ่านจาก dataset_overview.json (29 ก.ย. 2569 เลิกพิมพ์ "500" ตายตัว)"""
+    car_total = sum(item['count'] for item in summarize_cars())
+    return render_template('home.html', overview=load_dataset_overview(), car_total=car_total)
 
 
 @app.route('/version')
@@ -418,7 +419,7 @@ def result_buy():
     if not result:
         flash('กรุณาทำแบบประเมินก่อน', 'danger')
         return redirect(url_for('predict_buy_page'))
-    return render_template('result_buy.html', result=result)
+    return render_template('result_buy.html', result=result, reliability=model_reliability('buy'))
 
 
 @app.route('/result/fuel')
@@ -429,7 +430,7 @@ def result_fuel():
     if not result:
         flash('กรุณาทำแบบประเมินประเภทเชื้อเพลิงก่อน', 'danger')
         return redirect(url_for('predict_fuel_page'))
-    return render_template('result_fuel.html', result=result)
+    return render_template('result_fuel.html', result=result, reliability=model_reliability('fuel'))
 
 
 def load_dataset_overview():
@@ -502,10 +503,12 @@ def _form_fields(keys):
 @login_required
 def api_predict_buy():
     """รับข้อมูลฟอร์ม → ส่งเข้าโมเดล → redirect ไปหน้าผลลัพธ์"""
-    # 27 ก.ย. 2569: ถามเฉพาะช่องที่ buy_model.pkl (ข้อมูลชุด n=514) ใช้จริง
-    # purpose เลือกได้หลายข้อ (multi-hot) · ไม่มีคำถาม TPB / กลุ่ม EV / life_events
-    input_data = _form_fields(['education', 'family_size'])
+    # 29 ก.ย. 2569: buy_model.pkl เทรนจากชุดเดิม n=500 เฉพาะคำถามทั่วไป — ถามเฉพาะช่องที่โมเดลใช้จริง
+    # purpose / concern เลือกได้หลายข้อ (multi-hot) · concern ว่างได้ (คนไม่มีรถไม่ได้ตอบในแบบสอบถาม)
+    input_data = _form_fields(['age', 'children', 'education', 'occupation', 'family_size',
+                               'housing_type', 'parking', 'budget'])
     input_data['purpose'] = request.form.getlist('purpose')
+    input_data['concern'] = request.form.getlist('concern')
 
     valid, err = validate_buy(input_data)
     if not valid:

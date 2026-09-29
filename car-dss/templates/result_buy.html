@@ -18,7 +18,7 @@
     <div class="step-line"></div>
     <div class="step-item">
       <div class="step-circle">3</div>
-      <span class="step-label">Dashboard</span>
+      <span class="step-label">รถแนะนำ</span>
     </div>
   </div>
 
@@ -26,69 +26,48 @@
   <div class="text-center fade-in" style="margin-bottom:36px;">
     <div class="result-circle {{ 'buy' if result.result == 'ซื้อ' else 'no-buy' }} mb-4" style="margin-bottom:20px !important;">
       {% if result.result == 'ซื้อ' %}
-        <i class="bi bi-check-circle-fill" style="color:#00A550;"></i>
+        <i class="bi bi-check-circle-fill result-tone buy"></i>
       {% else %}
-        <i class="bi bi-x-circle-fill" style="color:#C40818;"></i>
+        <i class="bi bi-x-circle-fill result-tone no-buy"></i>
       {% endif %}
     </div>
 
-    <div style="margin-bottom:8px;">
-      <span class="mock-tag">{{ result.model_used }}</span>
-    </div>
-
-    <h1 class="result-title" style="color:{{ '#00A550' if result.result == 'ซื้อ' else '#C40818' }};">
+    <h1 class="result-title result-tone {{ 'buy' if result.result == 'ซื้อ' else 'no-buy' }}">
       {% if result.result == 'ซื้อ' %}
-        แนะนำ: ซื้อรถยนต์
+        คุณมีแนวโน้มจะซื้อรถ
       {% else %}
-        ยังไม่เหมาะสม: ไม่แนะนำให้ซื้อ
+        คุณยังไม่มีแนวโน้มจะซื้อรถตอนนี้
       {% endif %}
     </h1>
     <p class="result-subtitle">
       {% if result.result == 'ซื้อ' %}
-        ระบบวิเคราะห์แล้วพบว่าคุณมีความพร้อมและเหมาะสมในการซื้อรถยนต์
+        ระบบประเมินจากรูปแบบคำตอบของผู้ตอบแบบสอบถามจริง
       {% else %}
-        ระบบวิเคราะห์แล้วพบว่าปัจจุบันยังไม่เหมาะสมในการซื้อรถยนต์
+        ระบบประเมินจากรูปแบบคำตอบของผู้ตอบแบบสอบถามจริง
       {% endif %}
     </p>
 
   </div>
 
-  <!-- Stat cards -->
-  <div class="row g-3 fade-in fade-in-delay-1 mb-4">
-    <div class="col-6 col-md-6">
-      <div class="stat-card">
-        <div class="stat-value" style="font-size:16px;padding-top:6px;">
-          {{ result.model_used.split('(')[0].strip() }}
-        </div>
-        <div class="stat-label">โมเดลที่ใช้</div>
-      </div>
-    </div>
-    <div class="col-6 col-md-6">
-      <div class="stat-card">
-        <div class="stat-value" style="font-size:18px;">Binary</div>
-        <div class="stat-label">ประเภทโมเดล</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Detail card -->
-  <div class="card-cardss fade-in fade-in-delay-2 mb-4" style="background:var(--bg-secondary);">
-    <div style="font-size:14px;font-weight:500;color:var(--text-primary);margin-bottom:12px;">
-      <i class="bi bi-info-circle me-2 text-brand"></i>รายละเอียดผลการวิเคราะห์
-    </div>
-    {% if result.result == 'ซื้อ' %}
-    <p style="font-size:14px;color:var(--text-secondary);margin:0;line-height:1.8;">
-      จากข้อมูลที่คุณกรอก ระบบประเมินว่าคุณมี<strong>ความพร้อมทางการเงิน</strong> สภาพแวดล้อม
-      และปัจจัยต่างๆ ที่เอื้อต่อการซื้อรถยนต์
-      กรุณาดำเนินการต่อเพื่อวิเคราะห์ว่า<strong>ประเภทเชื้อเพลิงใด</strong>เหมาะสมกับไลฟ์สไตล์ของคุณมากที่สุด
+  <!-- ผลนี้เชื่อได้แค่ไหน — ตัวเลขจาก model_reliability('buy') (metrics ใน .pkl) ห้ามพิมพ์ตายตัว (29 ก.ย. 2569) -->
+  <div class="card-cardss fade-in fade-in-delay-1 mb-4" style="background:var(--bg-secondary);">
+    <h2 style="font-size:15px;font-weight:500;color:var(--text-primary);margin:0 0 10px;">ผลนี้เชื่อได้แค่ไหน</h2>
+    <p style="font-size:14px;color:var(--text-secondary);margin:0 0 10px;line-height:1.8;">
+      ระบบเรียนรูปแบบจากคำตอบของผู้ตอบแบบสอบถามจริงทั้งหมด แล้วใช้รูปแบบนั้นประเมินคำตอบของคุณ
+      {% if reliability %}<br>ระบบดูจาก: {{ reliability.fields_th | join(' · ') }}{% endif %}
     </p>
-    {% else %}
-    <p style="font-size:14px;color:var(--text-secondary);margin:0;line-height:1.8;">
-      จากข้อมูลที่คุณกรอก ระบบพบว่าปัจจุบันยังมีปัจจัยบางประการที่<strong>อาจเป็นอุปสรรค</strong>ต่อการซื้อรถยนต์
-      เช่น งบประมาณ สภาพที่พักอาศัย หรือความจำเป็นในการใช้รถ
-      คุณสามารถลองปรับข้อมูลและทำการพยากรณ์ใหม่ได้
+    {% if reliability %}
+    <p style="font-size:14px;color:var(--text-secondary);margin:0 0 10px;line-height:1.8;">
+      เมื่อทดสอบกับคำตอบจริง {{ '{:,}'.format(reliability.n_samples) }} คน ระบบทายถูกประมาณ
+      <strong>{{ reliability.correct_per_100 }} จาก 100 คน</strong>
+      {% if reliability.baseline_per_100 is not none %}
+      <br>ถ้าไม่ดูคำตอบของคุณเลย แล้วทายคำตอบที่พบบ่อยที่สุดทุกครั้ง จะถูกประมาณ {{ reliability.baseline_per_100 }} จาก 100 คน
+      {% endif %}
     </p>
     {% endif %}
+    <p style="font-size:14px;color:var(--text-secondary);margin:0;line-height:1.8;">
+      ใช้ผลนี้เป็นข้อมูลประกอบการตัดสินใจเท่านั้น คนที่ตัดสินใจคือคุณ
+    </p>
   </div>
 
   <!-- Action buttons -->

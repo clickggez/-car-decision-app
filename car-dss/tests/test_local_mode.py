@@ -33,7 +33,9 @@ import config
 # 27 ก.ย. 2569: ฟอร์มถามเฉพาะช่องที่โมเดลชุดข้อมูล n=514 ใช้จริง
 # ไม่มีคำถาม TPB / กลุ่ม EV / NEP · purpose / prev_car / priority เลือกได้หลายข้อ
 VALID_BUY = {
-    'education': 'bachelor', 'family_size': '3-4', 'purpose': ['commute', 'travel'],
+    'age': '27-30', 'children': '0', 'education': 'bachelor', 'occupation': 'private',
+    'family_size': '3-4', 'housing_type': 'house', 'parking': 'private',
+    'budget': '800001-1200000', 'purpose': ['commute', 'travel'], 'concern': [],
 }
 
 VALID_FUEL = {

@@ -40,21 +40,10 @@
       </a>
     </div>
 
-    <!-- Sub stats -->
-    <div style="margin-top:40px;display:flex;justify-content:center;gap:32px;flex-wrap:wrap;">
-      <div style="text-align:center;">
-        <div style="font-size:14px;font-weight:500;color:rgba(255,255,255,0.8);">500</div>
-        <div style="font-size:12px;color:rgba(255,255,255,0.3);">ชุดข้อมูล</div>
-      </div>
-      <div style="text-align:center;">
-        <div style="font-size:14px;font-weight:500;color:rgba(255,255,255,0.8);">25</div>
-        <div style="font-size:12px;color:rgba(255,255,255,0.3);">รุ่นรถแนะนำ</div>
-      </div>
-      <div style="text-align:center;">
-        <div style="font-size:14px;font-weight:500;color:rgba(255,255,255,0.8);">2</div>
-        <div style="font-size:12px;color:rgba(255,255,255,0.3);">โมเดล ML</div>
-      </div>
-    </div>
+    <!-- ที่มาของผล: ตัวเลขอ่านจาก dataset_overview.json / cars.json สด (29 ก.ย. 2569 เลิกพิมพ์ 500/25 ตายตัว) -->
+    <p style="margin:40px 0 0;font-size:14px;line-height:1.7;color:rgba(255,255,255,0.72);">
+      {% if overview %}สร้างจากคำตอบแบบสอบถามจริง {{ '{:,}'.format(overview.source.rows) }} คน · {% endif %}แนะนำรถ {{ car_total }} รุ่น
+    </p>
   </div>
 
   <!-- Scroll indicator -->
@@ -86,7 +75,7 @@
             พยากรณ์ซื้อ/ไม่ซื้อ
           </h3>
           <p style="font-size:14px;color:var(--text-muted);line-height:1.6;margin:0;">
-            วิเคราะห์ว่าคุณควรซื้อรถยนต์ตอนนี้หรือไม่ จากข้อมูลส่วนบุคคลและปัจจัยทางการเงิน
+            ประเมินว่าคุณมีแนวโน้มจะซื้อรถหรือไม่ จากรูปแบบคำตอบของผู้ตอบแบบสอบถามจริง
           </p>
         </div>
       </div>
@@ -107,10 +96,10 @@
         <div style="background:var(--bg-secondary);border-radius:12px;padding:32px 24px;text-align:center;height:100%;">
           <i class="bi bi-bar-chart-line" style="font-size:32px;margin-bottom:16px;display:block;color:var(--text-primary);"></i>
           <h3 style="font-size:16px;font-weight:500;color:var(--text-primary);margin:0 0 12px 0;">
-            Dashboard ข้อมูล
+            ภาพรวมข้อมูลงานวิจัย
           </h3>
           <p style="font-size:14px;color:var(--text-muted);line-height:1.6;margin:0;">
-            แผนภาพเปรียบเทียบค่าใช้จ่าย เบี้ยประกัน อัตราสิ้นเปลือง ช่วยตัดสินใจรอบด้าน
+            ดูคำตอบจริงของผู้ตอบแบบสอบถาม: แนวโน้มการซื้อ ประเภทรถที่สนใจ ช่วงอายุ และรายได้
           </p>
         </div>
       </div>

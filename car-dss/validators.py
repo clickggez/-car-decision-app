@@ -3,35 +3,37 @@ Centralized input validation for predict_buy and predict_fuel endpoints.
 แก้ Known Issues: no whitelist, no negative-value check, whitespace bypass, XSS pass-through
 """
 
-# 27 ก.ย. 2569: โมเดลเทรนใหม่จากแบบสอบถามชุด n=514 (ผู้ใช้อนุมัติ) — ฟอร์มถามเฉพาะช่องที่โมเดลใช้จริง
-# buy_model.pkl  ใช้ education + family_size + purpose_avoid_public (multi-hot จาก purpose)
-# fuel_model.pkl ใช้ usage_type + frequency + distance + tech_env_concern + mileage_intensity
-#   (จาก frequency, distance) + prev_ice/prev_hybrid/prev_ev (จาก prev_car) + prio_* 5 ตัว (จาก priority)
-# ดู analysis/verify_newdata_2026-09-27.txt · ไม่มีคำถาม TPB / กลุ่ม EV / NEP
-# purpose / prev_car / priority เป็นคำถามเลือกได้หลายข้อ -> list ตรวจแยกด้านล่าง
+# 29 ก.ย. 2569: buy_model.pkl เทรนจากแบบสอบถามชุดเดิม n=500 เฉพาะคำถามทั่วไป (analysis/train_buy_old500_2026-09-29.txt)
+#   ใช้ age, children, education, occupation, family_size, housing_type, parking, budget, concern_*, purpose_*
+# fuel_model.pkl (ชุด n=630) ใช้ usage_type + frequency + distance + tech_env_concern + prev_* + prio_*
+# purpose / concern / prev_car / priority เป็นคำถามเลือกได้หลายข้อ -> list ตรวจแยกด้านล่าง
 # ⚠️ ถ้าเทรนใหม่แล้วชุดฟีเจอร์เปลี่ยน ต้องแก้ตรงนี้ + ฟอร์ม — tests/test_user_facing.py จะฟ้องเอง
 
 _BUY_WHITELISTS = {
-    'education':      {'below_m3', 'm3', 'm6', 'vocational', 'bachelor', 'master', 'phd'},
-    'family_size':    {'1-2', '3-4', '5+'},
-}
-
-# ฟิลด์ที่ยังอยู่ในแบบสอบถามแต่โมเดลชุดนี้ไม่ได้ใช้ — เลิกถามในฟอร์มแล้ว
-# ถ้ายังถูกส่งมา (client เดิม / เทสต์เก่า) ไม่บังคับ แต่ถ้าส่งมาต้องเป็นค่าที่ถูกต้อง
-_BUY_OPTIONAL_WHITELISTS = {
-    'gender':         {'male', 'female'},
     'age':            {'20-23', '24-26', '27-30', '31-40', '41-50', '51-60', '60+'},
     'children':       {'0', '1', '2', '3', '3+'},
+    'education':      {'below_m3', 'm3', 'm6', 'vocational', 'bachelor', 'master', 'phd'},
     'occupation':     {'student', 'freelance', 'soe', 'private', 'government',
                        'business_owner', 'trader', 'farmer_fisher', 'other'},
+    'family_size':    {'1-2', '3-4', '5+'},
     'housing_type':   {'house', 'townhome', 'condo', 'dormitory'},
-    'housing_status': {'own', 'rent', 'family'},
     'parking':        {'private', 'common', 'none'},
-    'income':         {'lt15000', '15001-25000', '25001-35000', '35001-50000',
-                       '50001-75000', '75000+'},
     'budget':         {'lt500000', '500001-800000', '800001-1200000',
                        '1200001-1500000', '1500000+'},
 }
+
+# ฟิลด์ที่ยังอยู่ในแบบสอบถามแต่โมเดลชุดนี้ไม่ได้ใช้ — ไม่ถามในฟอร์ม
+# ถ้ายังถูกส่งมา (client เดิม / เทสต์เก่า) ไม่บังคับ แต่ถ้าส่งมาต้องเป็นค่าที่ถูกต้อง
+_BUY_OPTIONAL_WHITELISTS = {
+    'gender':         {'male', 'female'},
+    'housing_status': {'own', 'rent', 'family'},
+    'income':         {'lt15000', '15001-25000', '25001-35000', '35001-50000',
+                       '50001-75000', '75000+'},
+}
+
+# concern เลือกได้หลายข้อ ว่างได้ (ในแบบสอบถาม คนไม่มีรถไม่ได้ตอบข้อนี้)
+_CONCERN_ALLOWED = {'fuel_price', 'electricity_cost', 'charging_station', 'service_center',
+                    'battery_life', 'maintenance', 'resale_value'}
 
 # purpose เลือกได้หลายข้อ ต้องเลือกอย่างน้อย 1 (ทุกคนในแบบสอบถามตอบข้อนี้)
 _PURPOSE_ALLOWED = {'commute', 'trade', 'travel', 'convenience', 'avoid_public'}
@@ -89,6 +91,9 @@ def validate_buy(input_data):
 
     purpose = _as_str_list(input_data.get('purpose', []))
     if not purpose or any(p not in _PURPOSE_ALLOWED for p in purpose):
+        return False, 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
+    concern = _as_str_list(input_data.get('concern', []))
+    if concern is None or any(c not in _CONCERN_ALLOWED for c in concern):
         return False, 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
     return True, None
 

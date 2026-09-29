@@ -80,15 +80,16 @@ DROPPED_FUEL_FIELDS = [
 REQUIRED_FUEL_FIELDS = ['usage_type', 'frequency', 'distance', 'prev_car', 'priority', 'tech_env_concern']
 
 # ฟอร์ม BUY: buy_model.pkl ชุด n=514 ใช้ education + family_size + purpose_avoid_public (จาก purpose)
-REQUIRED_BUY_FIELDS = ['education', 'family_size', 'purpose']
+# 29 ก.ย. 2569: buy_model.pkl จากชุดเดิม n=500 (คำถามทั่วไป)
+REQUIRED_BUY_FIELDS = ['age', 'children', 'education', 'occupation', 'family_size',
+                       'housing_type', 'parking', 'budget', 'concern', 'purpose']
 
 # คำถามกลุ่ม TPB / EV / เหตุการณ์ชีวิต — แบบสอบถามชุดใหม่ไม่มี อาจารย์ไม่ต้องการแล้ว ห้ามกลับมา
 DROPPED_BUY_FIELDS = [
     'charging_access', 'tco_awareness', 'incentive_awareness',
     'intention', 'attitude', 'subjective_norm', 'pbc_financial', 'life_events',
-    # ยังอยู่ในแบบสอบถามแต่ buy_model.pkl ชุด n=514 ไม่ได้ใช้
-    'gender', 'age', 'children', 'occupation', 'income', 'budget',
-    'housing_type', 'housing_status', 'parking', 'concern',
+    # ยังอยู่ในแบบสอบถามแต่ buy_model.pkl (ชุดเดิม n=500) ไม่ได้ใช้
+    'gender', 'income', 'housing_status',
 ]
 
 NAME_RE = re.compile(r'''\bname\s*=\s*(["'])(.*?)\1''')
@@ -436,7 +437,7 @@ class FuelFormAsksOnlyUsedQuestionsTests(unittest.TestCase):
     def test_buy_form_asks_only_used_questions(self):
         """26 ก.ย. 2569: เดิมเทสต์นี้ชื่อ test_buy_form_untouched (ยืนยันว่าฟอร์ม BUY ถามครบ 27 ฟีเจอร์
         รวมคำถาม TPB/EV) — พฤติกรรมกลับด้านตามคำสั่งผู้ใช้: แบบสอบถามชุดใหม่ไม่มีคำถามเหล่านั้น
-        และ buy_model.pkl ชุด n=514 ใช้แค่ education/family_size/purpose"""
+        29 ก.ย. 2569: buy_model.pkl เปลี่ยนเป็นโมเดลจากชุดเดิม n=500 (คำถามทั่วไป 10 ช่อง)"""
         fields = rendered_form_fields('/predict/buy')
         for field in REQUIRED_BUY_FIELDS:
             with self.subTest(field=field):
@@ -489,6 +490,103 @@ class RemovedTextStaysRemovedTests(unittest.TestCase):
         html = flask_app_module.app.test_client().get('/').get_data(as_text=True)
         self.assertIn('ตามประเภทเชื้อเพลิง', html,
                       'หน้าแรกควรใช้ชื่อระบบใหม่ที่ผู้ใช้กำหนด')
+
+
+class HonestResultTests(unittest.TestCase):
+    """29 ก.ย. 2569 (impeccable critique P0): หน้าผลต้องบอกว่าเชื่อได้แค่ไหน และห้ามอ้างสิ่งที่โมเดลไม่ได้ใช้
+    — ตัวเลขความแม่นยำต้องมาจาก metrics ใน .pkl (model_reliability) ไม่ใช่พิมพ์ตายตัว
+    — ของที่ใช้ตอนพัฒนา (Skeleton Mode / Mock / ชื่อโมเดล) ห้ามโผล่ให้ผู้ใช้เห็น"""
+
+    DEV_RESIDUE = ('mock-tag', 'Skeleton Mode', '(real)', '(mock)', 'Multi-class', 'Binary', 'จำนวน Class')
+
+    @classmethod
+    def setUpClass(cls):
+        _setup_app()
+        from models import predictor
+        from models import feature_encoding
+        cls.pr, cls.fe = predictor, feature_encoding
+
+    def _page(self, url, key, value):
+        client = logged_in_client()
+        with client.session_transaction() as sess:
+            sess[key] = value
+        resp = client.get(url)
+        self.assertEqual(resp.status_code, 200, url)
+        return resp.get_data(as_text=True)
+
+    def _check(self, html, kind):
+        rel = self.pr.model_reliability(kind)
+        if rel is None:
+            self.skipTest('โหมด mock ไม่มีตัวเลขความแม่นยำ')
+        self.assertIn('ผลนี้เชื่อได้แค่ไหน', html)
+        self.assertIn(f"{rel['correct_per_100']} จาก 100 คน", html)
+        self.assertIn(' · '.join(rel['fields_th']), html)
+        # เทียบกับ baseline (ทายคำตอบที่พบบ่อยที่สุด) ไม่ใช่เดาสุ่ม — Codex ห้องประชุม #44
+        self.assertNotIn('เดาสุ่ม', html)
+        if rel['baseline_per_100'] is not None:
+            self.assertIn(f"ทายคำตอบที่พบบ่อยที่สุดทุกครั้ง จะถูกประมาณ {rel['baseline_per_100']} จาก 100 คน", html)
+        self.assertIn(f"{rel['n_samples']:,}", html)
+        for text in self.DEV_RESIDUE:
+            with self.subTest(kind=kind, text=text):
+                self.assertNotIn(text, html)
+
+    def test_buy_result_shows_real_reliability(self):
+        html = self._page('/result/buy', 'buy_prediction',
+                          {'result': 'ซื้อ', 'confidence': 0.6, 'model_used': 'BAGGING (real)'})
+        self._check(html, 'buy')
+
+    def test_fuel_result_shows_real_reliability(self):
+        html = self._page('/result/fuel', 'fuel_prediction',
+                          {'result': 'ไฮบริด', 'scores': {'EV': 20, 'Hybrid': 50, 'ICE': 30},
+                           'confidence': 0.5, 'model_used': 'BAGGING (real)'})
+        self._check(html, 'fuel')
+
+    def test_trust_block_lists_exactly_what_model_uses(self):
+        """กล่อง "ผลนี้เชื่อได้แค่ไหน" บอกว่าระบบดูอะไร — ต้องตรงกับช่องที่ .pkl ใช้จริงทุกช่อง ไม่ขาดไม่เกิน"""
+        if config.USE_MOCK:
+            self.skipTest('โหมด mock')
+        for kind, bundle in (('buy', self.pr._buy_bundle), ('fuel', self.pr._fuel_bundle)):
+            rel = self.pr.model_reliability(kind)
+            used = self.fe.form_fields_used(bundle['cat_cols'], bundle['num_cols'])
+            with self.subTest(kind=kind):
+                self.assertEqual(set(rel['fields']), used)
+                self.assertEqual(len(rel['fields_th']), len(used))
+                for label in rel['fields_th']:
+                    self.assertRegex(label, '[ก-๙]', f'ชื่อช่อง "{label}" ยังไม่มีคำแปลไทยใน explainer.FIELD_TH')
+
+    def test_baseline_file_matches_deployed_models(self):
+        """data/model_reliability.json ต้องเป็นของ .pkl ชุดปัจจุบัน (SHA ตรง) — ลืมรัน verify_web_accuracy.py หลังเปลี่ยนโมเดล = ตก"""
+        if config.USE_MOCK:
+            self.skipTest('โหมด mock')
+        for kind in ('buy', 'fuel'):
+            with self.subTest(kind=kind):
+                self.assertIsNotNone(self.pr.model_reliability(kind)['baseline_per_100'],
+                                     'model_reliability.json ไม่ตรงกับ .pkl — รัน python analysis/verify_web_accuracy.py ใหม่')
+
+    def test_stale_baseline_is_hidden(self):
+        """SHA ไม่ตรง (เปลี่ยนโมเดลแต่ไม่ได้วัดใหม่) ต้องคืน None ไม่ใช่ตัวเลขของโมเดลเก่า"""
+        import json, tempfile
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, 'model_reliability.json'), 'w', encoding='utf-8') as f:
+                json.dump({'buy': {'sha256': '0' * 64, 'baseline': 0.9}}, f)
+            with mock.patch.object(config, 'DATA_DIR', d), mock.patch.dict(self.pr._baseline_cache, clear=True):
+                self.assertIsNone(self.pr._verified_baseline('buy'))
+
+    def test_home_numbers_are_live(self):
+        html = flask_app_module.app.test_client().get('/').get_data(as_text=True)
+        ov = flask_app_module.load_dataset_overview()
+        total = sum(item['count'] for item in flask_app_module.summarize_cars())
+        self.assertIn(f"แนะนำรถ {total} รุ่น", html)
+        if ov:
+            self.assertIn(f"คำตอบแบบสอบถามจริง {ov['source']['rows']:,} คน", html)
+
+    def test_templates_free_of_dev_residue(self):
+        for name in ('base.html', 'recommend.html', 'result_buy.html', 'result_fuel.html', 'home.html'):
+            html = read_template(name)
+            for text in ('mock-tag', 'Skeleton Mode', 'model_used', 'เขตบางขุนเทียน', '>Mock<'):
+                with self.subTest(template=name, text=text):
+                    self.assertNotIn(text, html)
 
 
 if __name__ == '__main__':

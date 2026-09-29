@@ -91,6 +91,74 @@ if not config.USE_MOCK:
             print(f"[WARNING] {_e}")
 
 
+def _file_sha256(path):
+    import hashlib
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+_baseline_cache = {}
+
+
+def _verified_baseline(kind):
+    """baseline (ทายคำตอบที่พบบ่อยที่สุดทุกครั้ง) จาก data/model_reliability.json — 29 ก.ย. 2569 (Codex #44)
+
+    ไฟล์นั้นสร้างโดย analysis/verify_web_accuracy.py พร้อม SHA-256 ของ .pkl ที่วัด
+    ใช้ค่าเฉพาะเมื่อ SHA ตรงกับ .pkl ที่โหลดอยู่ — เปลี่ยนโมเดลแต่ลืมรันสคริปต์ = คืน None (หน้าเว็บซ่อนประโยคนี้เอง)
+    """
+    if kind in _baseline_cache:
+        return _baseline_cache[kind]
+    import json, os
+    val = None
+    try:
+        with open(os.path.join(config.DATA_DIR, "model_reliability.json"), encoding="utf-8") as f:
+            entry = json.load(f).get(kind, {})
+        path = config.BUY_MODEL_PATH if kind == "buy" else config.FUEL_MODEL_PATH
+        if entry.get("sha256") == _file_sha256(path) and entry.get("baseline"):
+            val = float(entry["baseline"])
+    except (OSError, ValueError, AttributeError):
+        val = None
+    _baseline_cache[kind] = val
+    return val
+
+
+def model_reliability(kind):
+    """ความแม่นยำของโมเดลที่ใช้อยู่จริง สำหรับกล่อง "ผลนี้เชื่อได้แค่ไหน" บนหน้าผล (2026-09-29)
+
+    อ่านจาก metrics ที่ฝังใน .pkl ตอนเทรน (20 splits) — ตัวเลขเดียวกับ analysis/verify_web_accuracy.py
+    จึงไม่ต้องพิมพ์ตัวเลขตายตัวใน template และเปลี่ยนตามเองเมื่อเปลี่ยนโมเดล
+    kind: 'buy' | 'fuel' · โหมด mock หรือไม่มีตัวเลข -> None (หน้าเว็บซ่อนกล่อง ห้ามเติมตัวเลขแทน)
+    """
+    if config.USE_MOCK:
+        return None
+    bundle = _buy_bundle if kind == 'buy' else _fuel_bundle
+    m = bundle.get("metrics", {}) or {}
+    acc = m.get("test_accuracy_repeated_mean")
+    n = m.get("n_samples")
+    classes = list(bundle.get("classes_", []) or [])
+    if acc is None or not n or not classes:
+        return None
+    from models.explainer import FIELD_TH
+    # ลำดับตามฟอร์ม (ไม่ใช่ลำดับใน pipeline) — อ่านง่ายกว่าสำหรับผู้ใช้
+    used = fe.form_fields_used(bundle.get("cat_cols", []), bundle.get("num_cols", []))
+    order = ["age", "gender", "children", "education", "occupation", "family_size", "housing_type",
+             "housing_status", "parking", "income", "budget", "usage_type", "frequency", "distance",
+             "prev_car", "concern", "purpose", "priority", "tech_env_concern", "resale_maintenance_concern"]
+    fields = sorted(used, key=lambda f: order.index(f) if f in order else len(order))
+    baseline = _verified_baseline(kind)
+    return {
+        "correct_per_100": round(float(acc) * 100),
+        # เทียบกับ "ทายคำตอบที่พบบ่อยที่สุดทุกครั้ง" ไม่ใช่เดาสุ่ม (เดาสุ่มทำให้โมเดลดูเก่งเกินจริง — Codex #44)
+        "baseline_per_100": round(baseline * 100) if baseline is not None else None,
+        "n_samples": int(n),
+        "fields": sorted(used),
+        "fields_th": [FIELD_TH.get(f, f) for f in fields],
+    }
+
+
 # ============================================================
 # MOCK PREDICTIONS
 # ============================================================
@@ -192,13 +260,11 @@ def predict_buy(input_data):
 
     Args:
         input_data (dict): ข้อมูลจากฟอร์ม predict_buy
-            27 ก.ย. 2569 (โมเดลชุดข้อมูล n=514) ฟอร์มถาม 3 ช่องที่โมเดลใช้จริง:
-            education        : 'below_m3' | 'm3' | 'm6' | 'vocational' | 'bachelor' | 'master' | 'phd'
-            family_size      : '1-2' | '3-4' | '5+'
-            purpose (list)   : subset ของ {'commute', 'trade', 'travel', 'convenience', 'avoid_public'}
-                               (เลือกได้หลายข้อ -> multi-hot · string คั่น ',' ก็รับ)
-            ส่ง field อื่นของแบบสอบถามมาด้วยได้ (gender, age, children, occupation, housing_type,
-            housing_status, parking, income, budget, concern) — โมเดลชุดนี้ไม่ได้ใช้
+            29 ก.ย. 2569 (โมเดลจากแบบสอบถามชุดเดิม n=500 คำถามทั่วไป) ฟอร์มถาม 10 ช่องที่โมเดลใช้จริง:
+            age, children, education, occupation, family_size, housing_type, parking, budget
+            purpose (list)   : subset ของ {'commute', 'trade', 'travel', 'convenience', 'avoid_public'} อย่างน้อย 1
+            concern (list)   : subset ของ CONCERN_TOKENS ว่างได้ (คนไม่มีรถไม่ได้ตอบในแบบสอบถาม)
+            ส่ง gender, housing_status, income มาได้ — โมเดลชุดนี้ไม่ได้ใช้
 
     Returns:
         dict: {
@@ -209,8 +275,9 @@ def predict_buy(input_data):
 
     Example:
         >>> predict_buy({
-        ...     'education': 'bachelor', 'family_size': '3-4',
-        ...     'purpose': ['commute', 'travel'],
+        ...     'age': '27-30', 'children': '0', 'education': 'bachelor', 'occupation': 'private',
+        ...     'family_size': '3-4', 'housing_type': 'house', 'parking': 'private',
+        ...     'budget': '800001-1200000', 'purpose': ['commute', 'travel'], 'concern': [],
         ... })
         {'result': 'ซื้อ', 'confidence': 0.883, 'model_used': 'SVM (mock)'}
     """

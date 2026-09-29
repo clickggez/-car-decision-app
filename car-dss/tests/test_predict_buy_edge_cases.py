@@ -28,15 +28,14 @@ import app as flask_app_module  # noqa: E402
 # 27 ก.ย. 2569: ฟอร์มถามเฉพาะ 3 ช่องที่ buy_model.pkl ชุดข้อมูล n=514 ใช้จริง
 # (purpose เลือกได้หลายข้อ) ช่องอื่นของแบบสอบถามยังส่งมาได้ (validators ตรวจแบบไม่บังคับ)
 VALID_INPUT = {
-    'education': 'bachelor',
-    'family_size': '1-2',
-    'purpose': ['commute', 'travel'],
+    # 29 ก.ย. 2569: buy_model.pkl จากชุดเดิม n=500 ใช้ 10 ช่องนี้ (concern ว่างได้)
+    'age': '27-30', 'children': '0', 'education': 'bachelor', 'occupation': 'private',
+    'family_size': '1-2', 'housing_type': 'condo', 'parking': 'private',
+    'budget': '500001-800000', 'purpose': ['commute', 'travel'], 'concern': ['maintenance'],
 }
 
 VALID_INPUT_WITH_UNUSED_FIELDS = dict(VALID_INPUT, **{
-    'gender': 'male', 'age': '27-30', 'children': '0', 'occupation': 'private',
-    'housing_type': 'condo', 'housing_status': 'rent', 'parking': 'private',
-    'income': '25001-35000', 'budget': '500001-800000',
+    'gender': 'male', 'housing_status': 'rent', 'income': '25001-35000',
 })
 
 
@@ -172,7 +171,7 @@ class ApiPredictBuyTests(unittest.TestCase):
         self.assertIn('/predict/buy', resp.headers.get('Location', ''))
 
     def test_only_used_fields_is_enough(self):
-        """กรอกแค่ช่องที่โมเดลใช้ก็ต้องผ่านไปหน้าผลได้ (27 ก.ย. 2569: education/family_size/purpose)"""
+        """กรอกแค่ช่องที่โมเดลใช้ก็ต้องผ่านไปหน้าผลได้ (29 ก.ย. 2569: 10 ช่องของโมเดลชุดเดิม n=500)"""
         resp = self.client.post('/api/predict/buy', data=VALID_INPUT, follow_redirects=False)
         self.assertEqual(resp.status_code, 302)
         self.assertIn('/result/buy', resp.headers.get('Location', ''))
@@ -183,6 +182,17 @@ class ApiPredictBuyTests(unittest.TestCase):
         self.assertEqual(validate_buy(dict(VALID_INPUT_WITH_UNUSED_FIELDS)), (True, None))
         bad = dict(VALID_INPUT_WITH_UNUSED_FIELDS, gender='<script>alert(1)</script>')
         self.assertFalse(validate_buy(bad)[0])
+
+    def test_concern_optional_but_whitelisted(self):
+        """29 ก.ย. 2569: concern ข้ามได้ (คนไม่มีรถไม่ได้ตอบในแบบสอบถาม) แต่ถ้าตอบต้องอยู่ใน whitelist"""
+        from validators import validate_buy
+        self.assertEqual(validate_buy(dict(VALID_INPUT, concern=[])), (True, None))
+        self.assertFalse(validate_buy(dict(VALID_INPUT, concern=['<script>']))[0])
+
+    def test_budget_required(self):
+        """29 ก.ย. 2569: โมเดลใช้งบประมาณ — ต้องตอบ"""
+        from validators import validate_buy
+        self.assertFalse(validate_buy(dict(VALID_INPUT, budget=''))[0])
 
     def test_purpose_must_pick_at_least_one_valid(self):
         """27 ก.ย. 2569: purpose เป็น checkbox — ต้องเลือกอย่างน้อย 1 และทุกค่าต้องอยู่ใน whitelist"""

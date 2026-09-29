@@ -49,9 +49,15 @@ build_buy, build_fuel = tm.build_buy_xy, tm.build_fuel_xy
 MODEL_DIR = os.path.join(CAR, "models")
 
 # 2026-09-28: โมเดลบนเว็บเทรนจากข้อมูลคนละชุด (ผู้ใช้เลือกแบบ ก)
-#   BUY  = ชุด n=514 (ไฟล์ที่เพิ่มมามีแต่คนมีรถ จึงไม่ช่วย BUY)  FUEL = ชุด n=630 (n514 + EV 73 + ไฮบริด 43)
+#   BUY  = ชุดเดิม n=500 คำถามทั่วไป (ตั้งแต่ 29 ก.ย.; ก่อนหน้าเป็น n=514)  FUEL = ชุด n=630 (n514 + EV 73 + ไฮบริด 43)
 # จึงต้องวัดแต่ละเป้าด้วยข้อมูลชุดที่มันเทรนจริง ไม่งั้นเลขไม่ตรงกับที่ฝังใน .pkl
-BUY_CSV = os.path.join(_HERE, "..", "files", "archive_2026-09-28", "survey_2026-09-27_n514.csv")
+# 2026-09-29: BUY เปลี่ยนเป็นโมเดลจากชุดเดิม n=500 (คำถามทั่วไป ไม่ใช้คำถาม EV) — analysis/train_buy_old500_2026-09-29.py
+import glob as _glob
+# เลือกด้วยชื่อที่ระบุชัด (Codex #44: หยิบ "ตัวแรกที่ไม่ใช่ n511" เปราะ ถ้ามี CSV เพิ่มจะอ่านผิดชุด) — ต้องเจอไฟล์เดียว
+_old = _glob.glob(os.path.join(_HERE, "..", "files", "archive_2026-09-26", "*(500) 1.csv"))
+assert len(_old) == 1, f"ต้องมีไฟล์ชุดเดิม n=500 ไฟล์เดียว แต่เจอ {_old}"
+BUY_CSV = _old[0]
+RELIABILITY_OUT = os.path.join(CAR, "data", "model_reliability.json")
 FUEL_CSV = None   # None = ไฟล์เดียวใน files/user_from/ (ชุด n=630)
 N_SPLITS = 20
 TEST_SIZE = 0.2
@@ -134,7 +140,7 @@ def verify(target, pkl_name, builder, csv_path=None):
 
     print(f"\n  ── รายละเอียดรายคลาส (split สุดท้าย) ──")
     print(classification_report(y.iloc[te], pred, zero_division=0))
-    return accs.mean(), accs.std()
+    return accs.mean(), accs.std(), base, len(y), sha256(path)
 
 
 if __name__ == "__main__":
@@ -155,5 +161,15 @@ if __name__ == "__main__":
     print("=" * 84)
     print(f"    BUY  : {b[0]:.4f} ± {b[1]:.4f}")
     print(f"    FUEL : {f[0]:.4f} ± {f[1]:.4f}")
+    # 29 ก.ย. 2569 (Codex #44): หน้าผลต้องเทียบกับ "ทายคำตอบที่พบบ่อยที่สุดทุกครั้ง" (baseline) ไม่ใช่เดาสุ่ม
+    # baseline ต้องใช้ข้อมูลดิบ ซึ่งไม่มีบนเซิร์ฟเวอร์ → เขียนไว้ในไฟล์นี้พร้อม SHA-256 ของ .pkl
+    # predictor.model_reliability() ใช้ค่าเฉพาะเมื่อ SHA ตรงกับ .pkl ที่โหลดอยู่ (เปลี่ยนโมเดลแต่ลืมรันสคริปต์ = ซ่อนเอง)
+    import json
+    out = {k: {"sha256": v[4], "accuracy": round(float(v[0]), 4), "baseline": round(float(v[2]), 4), "n": int(v[3])}
+           for k, v in (("buy", b), ("fuel", f))}
+    out["_note"] = "สร้างโดย analysis/verify_web_accuracy.py ห้ามแก้ด้วยมือ"
+    with open(RELIABILITY_OUT, "w", encoding="utf-8") as fh:
+        json.dump(out, fh, ensure_ascii=False, indent=2)
+    print(f"\n  เขียน {os.path.relpath(RELIABILITY_OUT, os.path.join(_HERE, '..'))} (baseline + SHA สำหรับหน้าผล)")
     print("\n  ทำซ้ำได้ด้วย: python analysis/verify_web_accuracy.py")
     print("  SHA-256 ข้างบนคือหลักฐานว่าวัดจากไฟล์เดียวกับที่เว็บโหลดใช้")

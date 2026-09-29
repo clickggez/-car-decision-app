@@ -1,0 +1,15 @@
+{
+  "buy": {
+    "sha256": "57e16efd004f8511d577007ea9413c99c700d73009b8cf77ca799d505747c5fb",
+    "accuracy": 0.65,
+    "baseline": 0.584,
+    "n": 500
+  },
+  "fuel": {
+    "sha256": "d9fed1c8ccceabc4c61318951b8e59cddf558f632af1088341e390a40e0062f6",
+    "accuracy": 0.6571,
+    "baseline": 0.3501,
+    "n": 457
+  },
+  "_note": "สร้างโดย analysis/verify_web_accuracy.py ห้ามแก้ด้วยมือ"
+}

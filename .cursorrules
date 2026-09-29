@@ -49,12 +49,15 @@
 
 ### โซนความรับผิดชอบ
 
+> ⚠️ **29 ก.ย. 2569 ผู้ใช้สั่ง:** ยกเลิกให้ Antigravity ทำหน้าเว็บ — **Claude ทำแทน · Antigravity เปลี่ยนเป็นผู้ตรวจ** (ยังตรวจ UI/มือถือตามเดิม)
+> ใช้ปลั๊กอิน Impeccable (`/impeccable`) ช่วยงานออกแบบ · ห้ามทิ้งฟอนต์ไทยหรือขัด `DESIGN.md` โดยไม่ถามผู้ใช้
+
 **ตกลงกันแล้วในที่ประชุม 10 กันยายน 2569** (บันทึกเต็มที่ `agent-docs/meeting/`)
 กติกาเหล็ก: **ตัวที่ทำ ห้ามเป็นตัวที่ตรวจ**
 
 | โซน | ไฟล์ | ใครทำ | ใครตรวจ | ตัววัดว่าเสร็จ | กู้คืน |
 |---|---|---|---|---|---|
-| 🟢 เว็บ | `car-dss/templates/`, `car-dss/static/`, `app.py`, `validators.py` | **Antigravity** | **Claude** | `pytest car-dss/tests/` (41 ตัว) + `cardss-guard` | ได้ |
+| 🟢 เว็บ | `car-dss/templates/`, `car-dss/static/`, `app.py`, `validators.py` | **Claude** (ผู้ใช้สลับ 29 ก.ย. 2569) | **Antigravity** | `pytest car-dss/tests/` (ผ่านครบทุกตัว) + `cardss-guard` | ได้ |
 | 🟡 วิเคราะห์ | `analysis/*.py` | **Claude** | **Codex** | รันซ้ำได้เลขเดิม — Codex ต้อง**รันจริงเทียบ raw output** ไม่ใช่แค่อ่านโค้ด | ได้ |
 | 🟠 เอกสารประสาน | `agent-docs/00-…04-*.md` | ตัวที่เพิ่งทำงานเสร็จ เขียนของรอบตัวเอง | — | รูปแบบตรงกับของเดิมในไฟล์ | ได้ |
 | 🔴 ล็อก | `car-dss/models/*.pkl`, `car-dss/data/cars.json`, `train_models.py`, `firebase*`, `admin_credentials.json` | **ผู้ใช้เท่านั้น** | — | — | **ไม่ได้** |
