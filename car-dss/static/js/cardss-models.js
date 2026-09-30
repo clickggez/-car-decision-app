@@ -159,31 +159,43 @@
   }
 
   // ---------- physics body matching the sprite ----------
+  // ความยาวตัวรถจริง (มม.) จากสเปกผู้ผลิตรุ่นขายในไทย — รถแต่ละคันยาวตามสัดส่วนจริง ไม่ใช่เท่ากันหมด
+  // (ความสูงตามมาเองจากสัดส่วนรูป P.ar) · รุ่นที่ไม่มีในตาราง = ยาวมาตรฐาน LEN_REF
+  const LEN_REF = 4500;
+  const LEN_MM = {
+    'Tesla Model 3': 4720, 'Tesla Model Y': 4751, 'BYD Atto 3': 4455, 'BYD Dolphin': 4290, 'BYD Seal': 4800,
+    'MG MG4 Electric': 4287, 'GWM ORA 05': 4471, 'Volvo EX30': 4233,
+    'Toyota Corolla Cross HEV': 4460, 'Toyota Yaris Ativ HEV': 4425, 'Toyota Yaris Cross HEV': 4310, 'Toyota Camry HEV': 4915,
+    'Honda City e:HEV': 4580, 'Honda Civic e:HEV': 4681, 'Honda HR-V e:HEV': 4330, 'Honda Accord e:HEV': 4971,
+    'Honda CR-V e:HEV': 4691, 'Nissan Kicks e-Power': 4290, 'Mitsubishi Xpander Cross HEV': 4595, 'Hyundai Stargazer X HEV': 4495,
+    'Mazda Mazda 2': 4340, 'Toyota Yaris Ativ': 4425, 'Honda City Turbo': 4580, 'Nissan Almera Turbo': 4495, 'Mitsubishi Attrage': 4305
+  };
   function makeCar(model, type, i) {
     const [brand, name, style] = model;
     const key = `${brand} ${name}`, P = PHOTOS[key], im = photo[key];
+    const Lc = L * (LEN_MM[key] || LEN_REF) / LEN_REF;   // ยาวตามรถจริง (L = ความยาวของรถ 4.5 เมตร)
     if (P && im) {                       // real photo: physics outline traced from the photo itself
-      const ph = L * P.ar;
+      const ph = Lc * P.ar;
       const span = Math.min(W, 1240), x0 = (W - span) / 2 + span * (0.12 + Math.random() * 0.76), top = -ph - 40;
-      const verts = P.hull.map(([u, v]) => ({ x: x0 - L / 2 + u * L, y: top + v * L }));
+      const verts = P.hull.map(([u, v]) => ({ x: x0 - Lc / 2 + u * Lc, y: top + v * Lc }));
       const c = Matter.Vertices.centre(verts);
       const body = Bodies.fromVertices(c.x, c.y, [verts], { friction: 0.6, frictionAir: 0.01, restitution: 0.15, density: 0.0012 });
-      body.car = { brand, name, style, type, photo: im, pw: L, ph, off: { x: x0 - L / 2 - body.position.x, y: top - body.position.y } };
+      body.car = { brand, name, style, type, photo: im, pw: Lc, ph, off: { x: x0 - Lc / 2 - body.position.x, y: top - body.position.y } };
       Body.setAngle(body, (Math.random() - 0.5) * 1.2);
       Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.08);
       return body;
     }
     const col = DATA[type].color;
-    const sp = sprite(style, col, L, `${brand} ${name}`);
+    const sp = sprite(style, col, Lc, `${brand} ${name}`);
     const s = STYLE[style], h = sp.h, r = sp.r;
     const span = Math.min(W, 1240), x0 = (W - span) / 2 + span * (0.12 + Math.random() * 0.76), y0 = -h - 40 - i * 30;
-    const lower = Bodies.rectangle(x0, y0 - s.beltR * L / 2 - 0.01 * L, L * 0.98, Math.max(s.beltR, s.beltF) * L, { chamfer: { radius: 0.04 * L } });
-    const cabTopL = x0 + (s.trunk + 0.14 + s.roofR - 0.5) * L, cabTopR = x0 + (0.5 - s.hood - s.roofF * 0.35) * L;
-    const cabBotL = x0 + (s.trunk - 0.5) * L, cabBotR = x0 + (0.5 - s.hood + 0.02) * L;
-    const yb = y0 - Math.max(s.beltR, s.beltF) * L + 1, yt = y0 - h;
+    const lower = Bodies.rectangle(x0, y0 - s.beltR * Lc / 2 - 0.01 * Lc, Lc * 0.98, Math.max(s.beltR, s.beltF) * Lc, { chamfer: { radius: 0.04 * Lc } });
+    const cabTopL = x0 + (s.trunk + 0.14 + s.roofR - 0.5) * Lc, cabTopR = x0 + (0.5 - s.hood - s.roofF * 0.35) * Lc;
+    const cabBotL = x0 + (s.trunk - 0.5) * Lc, cabBotR = x0 + (0.5 - s.hood + 0.02) * Lc;
+    const yb = y0 - Math.max(s.beltR, s.beltF) * Lc + 1, yt = y0 - h;
     const cabin = Bodies.fromVertices((cabTopL + cabTopR + cabBotL + cabBotR) / 4, (yb + yt) / 2,
       [[{ x: cabBotL, y: yb }, { x: cabTopL, y: yt }, { x: cabTopR, y: yt }, { x: cabBotR, y: yb }]]);
-    const w1 = Bodies.circle(x0 - 0.3 * L, y0, r), w2 = Bodies.circle(x0 + 0.3 * L, y0, r);
+    const w1 = Bodies.circle(x0 - 0.3 * Lc, y0, r), w2 = Bodies.circle(x0 + 0.3 * Lc, y0, r);
     const body = Body.create({ parts: [lower, cabin, w1, w2], friction: 0.6, frictionAir: 0.01, restitution: 0.15, density: 0.0012 });
     Body.setAngle(body, (Math.random() - 0.5) * 1.2);
     Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.08);
