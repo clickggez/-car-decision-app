@@ -186,6 +186,7 @@ footer .wrap{display:flex;flex-direction:column;gap:40px;padding-block:60px 44px
 .foot-top b{font-family:var(--display);font-size:26px}
 .foot-top p{color:var(--ink-2);margin-top:8px}
 .foot-links{display:flex;flex-direction:column;gap:10px}
+.foot-links a{min-height:44px;display:flex;align-items:center}   /* พื้นที่กดบนมือถือ ≥ 44px (Antigravity #47) */
 .foot-links small{color:var(--ink-3);font-weight:600;font-size:14px}
 .copyright{padding-top:22px;border-top:1px solid var(--line);font-size:14px;color:var(--ink-3)}
 
@@ -215,7 +216,7 @@ footer .wrap{display:flex;flex-direction:column;gap:40px;padding-block:60px 44px
 }
 @media (max-width: 520px){
   .brand small{display:none}
-  .stones{gap:8px}.stone{width:112px;border-radius:56px 56px 8px 8px}.stone b{font-size:34px}.stone span{font-size:14px;line-height:1.25;padding:18px 12px 6px}
+  .stones{gap:8px}.stone{width:min(112px,calc((100% - 16px) / 3));border-radius:56px 56px 8px 8px}.stone b{font-size:34px}.stone span{font-size:14px;line-height:1.25;padding:18px 12px 6px}
   .board dl{grid-template-columns:minmax(0,1fr)}
   .board dt{border-bottom:none;padding-bottom:4px}
   .card,.exit a{padding:26px}

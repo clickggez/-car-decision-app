@@ -164,7 +164,7 @@
   function placeStones() {
     for (const s of stones) {
       s.sway += 0.02;
-      const on = s.lift < -1;
+      const on = !reduce && s.lift < -1;   // ลดภาพเคลื่อนไหว: หินลอยนิ่ง ไม่โยก
       const sx = on ? Math.sin(s.sway) * 2.5 : 0;
       const by = on ? Math.sin(s.sway * 1.5) * 3 : 0;   // gentle bob so the floating stays visible after the water settles
       s.el.style.transform = `translate(${sx.toFixed(2)}px, ${(s.lift + by).toFixed(2)}px) rotate(${((s.ang + (on ? Math.sin(s.sway * 1.3) * 0.025 : 0)) * 57.3).toFixed(2)}deg)`;
@@ -198,6 +198,7 @@
   // pointer: moving through the water pushes it, a click or tap splashes
   let last = null;
   hero.addEventListener('pointermove', (e) => {
+    if (reduce) return;
     const r = cv.getBoundingClientRect(); const x = e.clientX - r.left, y = e.clientY - r.top;
     if (last && level > 5) {
       const sy = surfaceY(x);
@@ -210,6 +211,7 @@
   });
   hero.addEventListener('pointerleave', () => { last = null; });
   hero.addEventListener('pointerdown', (e) => {
+    if (reduce) return;
     const r = cv.getBoundingClientRect(); const x = e.clientX - r.left, y = e.clientY - r.top;
     if (y < surfaceY(x) - 80) return;
     poke(x, 12, 4);
@@ -229,6 +231,9 @@
     raf = visible ? requestAnimationFrame(frame) : 0;
   }
 
+  // ผู้ใช้ตั้งเครื่องให้ลดภาพเคลื่อนไหว (กฎออกแบบข้อ 6): น้ำขึ้นเต็มทันที คำนวณให้นิ่งแล้ววาดภาพเดียว ไม่วนลูป
+  function still() { level = DEPTH; for (let i = 0; i < 400; i++) physics(); draw(); placeStones(); }
+
   let rt;
   const mb = document.getElementById('menuBtn'), menu = document.getElementById('menu');
   const setMenu = (open) => { menu.classList.toggle('open', open); mb.setAttribute('aria-expanded', open); };
@@ -236,12 +241,12 @@
   menu.addEventListener('click', (e) => { if (e.target.closest('a')) setMenu(false); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
   window.addEventListener('resize', () => { if (window.innerWidth > 980) setMenu(false); });
-  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(measure, 150); });
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { measure(); if (reduce) still(); }, 150); });
   measure();
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { measure(); if (reduce) still(); });
   new IntersectionObserver(([en]) => {
     visible = en.isIntersecting;
-    if (visible && !raf) { prev = performance.now(); raf = requestAnimationFrame(frame); }
+    if (visible && !raf && !reduce) { prev = performance.now(); raf = requestAnimationFrame(frame); }
   }).observe(hero);
-  raf = requestAnimationFrame(frame);
+  if (reduce) still(); else raf = requestAnimationFrame(frame);
 })();

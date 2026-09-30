@@ -125,7 +125,7 @@
     <div class="grid3">
       <div class="exit"><span class="exit-tab" aria-label="ขั้นตอนที่ 1">1</span><a href="{{ url_for('predict_buy_page') }}"><h3>พยากรณ์ซื้อ / ไม่ซื้อ</h3><p>วิเคราะห์ว่าคุณควรซื้อรถยนต์ตอนนี้หรือไม่ จากข้อมูลส่วนบุคคลและปัจจัยทางการเงิน</p><span class="go">ลองพยากรณ์ซื้อ / ไม่ซื้อ <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></a></div>
       <div class="exit"><span class="exit-tab" aria-label="ขั้นตอนที่ 2">2</span><a href="{{ url_for('predict_fuel_page') }}"><h3>แนะนำประเภทเชื้อเพลิง</h3><p>เปรียบเทียบรถไฟฟ้า / ไฮบริด / รถน้ำมัน ว่าแบบไหนเหมาะกับพฤติกรรมการใช้งานของคุณ</p><span class="go">ลองเทียบเชื้อเพลิง <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></a></div>
-      <div class="exit"><span class="exit-tab" aria-label="ขั้นตอนที่ 3">3</span><a href="{{ url_for('dashboard') }}"><h3>ภาพรวมข้อมูลด้วยกราฟ</h3><p>แผนภาพเปรียบเทียบค่าใช้จ่าย เบี้ยประกัน อัตราสิ้นเปลือง ช่วยตัดสินใจรอบด้าน</p><span class="go">ดูกราฟข้อมูล <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></a></div>
+      <div class="exit"><span class="exit-tab" aria-label="ขั้นตอนที่ 3">3</span><a href="{{ url_for('dashboard') }}"><h3>ภาพรวมข้อมูลด้วยกราฟ</h3><p>ดูคำตอบจากแบบสอบถามจริงเป็นกราฟ แนวโน้มการซื้อ ประเภทรถที่สนใจ อายุ รายได้ และช่วงราคารถในระบบ</p><span class="go">ดูกราฟข้อมูล <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></a></div>
     </div>
   </div>
 </section>
@@ -135,7 +135,7 @@
     <div class="head"><h2>{{ car_total }} รุ่น<br>แบ่งตามเชื้อเพลิง</h2><p>เลือกป้ายประเภทเชื้อเพลิง รถรุ่นในระบบจะหล่นลงมาบนถนน คลิกหรือลากรถเพื่อดูว่าเป็นรุ่นอะไร</p></div>
     <div class="md-types" role="group" aria-label="เลือกประเภทเชื้อเพลิง">
       <button class="md-type" type="button" data-t="hev" aria-pressed="true"><span class="md-in"><b>ไฮบริด</b><small>{{ car_counts.get('Hybrid', 0) }} รุ่น · HEV</small></span><em class="md-match">เข้ากับคุณ</em></button>
-      <button class="md-type" type="button" data-t="ev" aria-pressed="false"><span class="md-in"><b>EV</b><small>{{ car_counts.get('EV', 0) }} รุ่น · รถไฟฟ้า</small></span><em class="md-match">เข้ากับคุณ</em></button>
+      <button class="md-type" type="button" data-t="ev" aria-pressed="false"><span class="md-in"><b>รถไฟฟ้า</b><small>{{ car_counts.get('EV', 0) }} รุ่น · EV</small></span><em class="md-match">เข้ากับคุณ</em></button>
       <button class="md-type" type="button" data-t="ice" aria-pressed="false"><span class="md-in"><b>สันดาป</b><small>{{ car_counts.get('ICE', 0) }} รุ่น · รถน้ำมัน</small></span><em class="md-match">เข้ากับคุณ</em></button>
     </div>
   </div>

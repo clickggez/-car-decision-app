@@ -2,7 +2,7 @@
   const { Engine, Bodies, Body, Composite, Constraint, Query, Events, Sleeping } = Matter;
   // [brand, model, body style]
   const DATA = {
-    ev:  { name: 'EV · รถไฟฟ้า', color: ['#3E8FE0', '#2F74C0', '#5AA9F0'], models: [
+    ev:  { name: 'รถไฟฟ้า · EV', color: ['#3E8FE0', '#2F74C0', '#5AA9F0'], models: [
       ['Tesla','Model 3','sedan'],['Tesla','Model Y','suv'],['BYD','Atto 3','suv'],['BYD','Dolphin','hatch'],
       ['BYD','Seal','sedan'],['MG','MG4 Electric','hatch'],['GWM','ORA 05','suv'],['Volvo','EX30','suv'] ] },
     hev: { name: 'ไฮบริด · HEV', color: ['#1FA394', '#178678', '#2FBFAE'], models: [
@@ -26,19 +26,22 @@
   const stage = document.getElementById('mdStage'), cv = document.getElementById('mdCv'), g = cv.getContext('2d');
   const tip = document.getElementById('mdTip'), tipName = document.getElementById('mdTipName'), tipSub = document.getElementById('mdTipSub');
   const DPR = Math.min(window.devicePixelRatio || 1, 2);
+  // ผู้ใช้ตั้งเครื่องให้ลดภาพเคลื่อนไหว (กฎออกแบบข้อ 6): รถวางนิ่งบนถนนทันที น้ำไม่เป็นคลื่น ไม่มีหยดกระเซ็น · ลากรถเองยังได้
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let dropped = false;
   let W = 0, H = 0, GROUND = 0, L = 160, engine, walls = [], cars = [], current = 'hev', dropTimer = 0;
   // flood water over the road: same spring-column surface as the hero
   let WD = 48, WN = 0, wdx = 6, wh = new Float32Array(0), wv = new Float32Array(0), wdrops = [], wtime = 0, nextDrip = 0;
   const WK = 0.02, WDAMP = 0.014, WSPREAD = 0.25;
   const wcol = (x) => Math.max(0, Math.min(WN - 1, Math.round(x / wdx)));
-  const wswell = (x) => 3 * Math.sin(x * 0.007 + wtime * 1.3) + 1.6 * Math.sin(x * 0.021 - wtime * 1.9);
+  const wswell = (x) => reduce ? 0 : 3 * Math.sin(x * 0.007 + wtime * 1.3) + 1.6 * Math.sin(x * 0.021 - wtime * 1.9);
   const surf = (x) => GROUND - WD + wh[wcol(x)] + wswell(x);
   function wpoke(x, f, spread = 3) {
     const i = wcol(x);
     for (let j = -spread; j <= spread; j++) { const k = i + j; if (k >= 0 && k < WN) wv[k] += f * (1 - Math.abs(j) / (spread + 1)); }
   }
   function splash(x, power) {
+    if (reduce) return;
     wpoke(x, Math.min(14, power), 5);
     const n = Math.min(18, 6 + power * 1.5);
     for (let i = 0; i < n; i++) wdrops.push({ x: x + (Math.random() - 0.5) * L * 0.6, y: surf(x) - 2, vx: (Math.random() - 0.5) * 5, vy: -2 - Math.random() * power * 0.7, r: 1 + Math.random() * 2.2 });
@@ -57,7 +60,7 @@
     for (const d of wdrops) { d.vy += 0.3; d.x += d.vx; d.y += d.vy; if (d.vy > 0 && d.y > surf(d.x)) { wpoke(d.x, 0.8 + d.r * 0.4, 1); d.dead = true; } }
     wdrops = wdrops.filter((d) => !d.dead && d.x > -10 && d.x < W + 10);
     const now = performance.now();
-    if (now > nextDrip) { wpoke(Math.random() * W, 1.5 + Math.random() * 2, 1); nextDrip = now + 300 + Math.random() * 700; }
+    if (!reduce && now > nextDrip) { wpoke(Math.random() * W, 1.5 + Math.random() * 2, 1); nextDrip = now + 300 + Math.random() * 700; }
   }
   // cars sink slowly (buoyancy below their weight), water slows them down, entering the water splashes
   function buoy() {
@@ -224,6 +227,11 @@
     let i = 0; const token = (drop.token = (drop.token || 0) + 1);
     const next = () => {
       if (token !== drop.token || i >= list.length) return;
+      if (reduce) {   // ใส่ทุกคันพร้อมกันแล้วคำนวณล่วงหน้าจนนิ่ง ไม่ให้เห็นรถร่วง
+        list.forEach((m, k) => { const b = makeCar(m, type, 0); Body.translate(b, { x: 0, y: -k * L * 0.5 }); cars.push(b); Composite.add(engine.world, b); });
+        for (let k = 0; k < 600; k++) { Engine.update(engine, 1000 / 60); waterStep(); }
+        i = list.length; return;
+      }
       const b = makeCar(list[i], type, 0); cars.push(b); Composite.add(engine.world, b); i++;
       dropTimer = setTimeout(next, 170);
     };
@@ -319,7 +327,8 @@
     if (p.y > surf(p.x) - 20) wpoke(p.x, Math.max(-6, Math.min(6, (e.movementX || 0) * 0.25)), 2);
     cv.style.cursor = hit(p) ? 'grab' : 'default';
   });
-  const release = () => { if (!held) return; Composite.remove(engine.world, held.c); held = null; cv.classList.remove('dragging'); hideTip(false); };
+  let wakeUntil = 0;   // ลดภาพเคลื่อนไหว: ฟิสิกส์ทำงานเฉพาะตอนลากรถ + 2.5 วินาทีหลังปล่อยให้รถตกถึงพื้น
+  const release = () => { if (!held) return; wakeUntil = performance.now() + 2500; Composite.remove(engine.world, held.c); held = null; cv.classList.remove('dragging'); hideTip(false); };
   cv.addEventListener('pointerup', release); cv.addEventListener('pointercancel', release);
 
   // ---------- controls + loop ----------
@@ -331,7 +340,8 @@
   let visible = true, raf = 0, last = performance.now(), acc = 0;
   function frame(now) {
     acc += Math.min(50, now - last); last = now;
-    while (acc >= 1000 / 60) { Engine.update(engine, 1000 / 60); waterStep(); acc -= 1000 / 60; }
+    const live = !reduce || held || now < wakeUntil;
+    while (acc >= 1000 / 60) { if (live) { Engine.update(engine, 1000 / 60); waterStep(); } acc -= 1000 / 60; }
     draw(); placeTip();
     raf = visible ? requestAnimationFrame(frame) : 0;
   }
