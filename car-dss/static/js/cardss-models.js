@@ -34,7 +34,9 @@
   // ระดับน้ำเป็นเซนติเมตรจริง: L พิกเซล = รถยาว 4.5 ม. (LEN_REF) → 1 ซม. = L / 450 พิกเซล · ปุ่ม #wl เปลี่ยน wlCm
   const wlBtns = [...document.querySelectorAll('#wl button')], wlNote = document.getElementById('wlNote');
   let wlCm = +((wlBtns.find((b) => b.getAttribute('aria-pressed') === 'true') || {}).dataset?.cm || 10);
-  const wlPx = () => wlCm * L / 450;
+  // ผู้ใช้เลือก 30 ก.ย. 2569: ขยายน้ำ 2 เท่าให้เห็นชัด (ไม่ใช่สัดส่วนจริง — ป้ายบนหน้าเว็บบอกไว้)
+  const WL_EXAGGERATE = 2;
+  const wlPx = () => wlCm * WL_EXAGGERATE * L / 450;
   let WD = 48, WN = 0, wdx = 6, wh = new Float32Array(0), wv = new Float32Array(0), wdrops = [], wtime = 0, nextDrip = 0;
   const WK = 0.02, WDAMP = 0.014, WSPREAD = 0.25;
   const wcol = (x) => Math.max(0, Math.min(WN - 1, Math.round(x / wdx)));
