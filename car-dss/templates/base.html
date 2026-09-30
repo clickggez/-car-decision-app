@@ -9,6 +9,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}CarDSS{% endblock %}</title>
 
+  {# หน้าแรกใช้ชุดสไตล์ของตัวเอง (cardss.css) จึงแทนบล็อกนี้ — หน้าอื่นยังใช้ของเดิมจนกว่าจะออกแบบใหม่ (30 ก.ย. 2569) #}
+  {% block base_assets %}
   <!-- Google Fonts: Inter + Noto Sans Thai -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,10 +24,12 @@
 
   <!-- Custom CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% endblock %}
 
   {% block extra_head %}{% endblock %}
 </head>
 <body>
+{% block body %}
 
   <!-- ====================================================
        NAVBAR — frosted glass
@@ -177,5 +181,6 @@
   <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
   {% block extra_scripts %}{% endblock %}
+{% endblock %}
 </body>
 </html>

@@ -65,7 +65,7 @@ FAKE_DASHBOARD_MARKERS = [
     '78.0%', 'EV: 78', 'mockScores', 'mockCosts', 'cost_comparison',
     '32500', '19600', '11300',            # เบี้ยประกันที่ฝังตายตัว
     '[800,', '[2200,', '[3800,',          # ค่าใช้จ่ายรายเดือนที่ฝังตายตัว
-    'Loss Ratio', 'ข้อมูลจำลอง', 'เขตบางขุนเทียน',
+    'Loss Ratio', 'ข้อมูลจำลอง',
 ]
 
 # 27 ก.ย. 2569: โมเดลเทรนใหม่จากแบบสอบถามชุด n=514 (ผู้ใช้อนุมัติ) — ดู analysis/verify_newdata_2026-09-27.txt
@@ -220,15 +220,24 @@ class CtaLinksTests(unittest.TestCase):
         _setup_app()
 
     def test_home_cta_goes_to_prediction_form(self):
-        """ปุ่ม "เริ่มวิเคราะห์" บนหน้าแรกต้องชี้ /predict/buy
+        """ปุ่ม "เริ่มเลือกรถ" บนหน้าแรก (ดีไซน์ 30 ก.ย. 2569 มี 2 ปุ่ม: หัวเรื่อง + ปิดท้าย) ต้องชี้ /predict/buy
         (ถ้ายังไม่ล็อกอิน route นั้นจะพาไป /login เองพร้อมข้อความแจ้ง)"""
         html = flask_app_module.app.test_client().get('/').get_data(as_text=True)
         links = anchors(html)
-        cta = [href for href, _, text in links if 'เริ่มวิเคราะห์' in text]
-        self.assertTrue(cta, 'หาปุ่ม "เริ่มวิเคราะห์" บนหน้าแรกไม่เจอ')
+        cta = [href for href, _, text in links if 'เริ่มเลือกรถ' in text]
+        self.assertEqual(len(cta), 2, 'หน้าแรกควรมีปุ่ม "เริ่มเลือกรถ" 2 ปุ่ม')
         for href in cta:
             self.assertEqual(path_of(href), '/predict/buy',
-                             f'ปุ่มเริ่มวิเคราะห์ชี้ไป {href} ควรชี้ /predict/buy')
+                             f'ปุ่มเริ่มเลือกรถชี้ไป {href} ควรชี้ /predict/buy')
+
+    def test_home_links_point_to_real_routes(self):
+        """ดีไซน์ต้นฉบับลิงก์ไปเว็บจริงแบบเต็ม URL — หลังย้ายเข้า Flask ทุกลิงก์ต้องเป็น route ในระบบ"""
+        html = flask_app_module.app.test_client().get('/').get_data(as_text=True)
+        self.assertNotIn('pythonanywhere.com', html)
+        allowed = {'/', '/predict/buy', '/predict/fuel', '/dashboard', '/login', '/logout', ''}
+        for href, _, _ in anchors(html):
+            with self.subTest(href=href):
+                self.assertIn(path_of(href), allowed)
 
     def test_home_cta_redirect_lands_on_login(self):
         """กดปุ่มหน้าแรกตอนยังไม่ล็อกอิน -> ต้องจบที่หน้าล็อกอินพร้อมข้อความ ไม่ใช่หน้า error"""
@@ -252,7 +261,8 @@ class CtaLinksTests(unittest.TestCase):
         self.assertNotIn('ctaLogin', by_id)
 
     def test_navbar_shows_overview_link_when_logged_out(self):
-        html = flask_app_module.app.test_client().get('/').get_data(as_text=True)
+        # เมนูใน base.html (หน้าอื่นที่ยังไม่ออกแบบใหม่) — หน้าแรกมีเมนูของตัวเองตามดีไซน์ 30 ก.ย. 2569
+        html = flask_app_module.app.test_client().get('/dashboard').get_data(as_text=True)
         nav = html[html.index('id="mainNav"'):html.index('</ul>', html.index('id="mainNav"'))]
         hrefs = [path_of(h) for h, _, _ in anchors(nav)]
         self.assertIn('/dashboard', hrefs, 'เมนูบนต้องมีลิงก์ภาพรวมข้อมูลแม้ยังไม่ล็อกอิน')
@@ -577,16 +587,33 @@ class HonestResultTests(unittest.TestCase):
         html = flask_app_module.app.test_client().get('/').get_data(as_text=True)
         ov = flask_app_module.load_dataset_overview()
         total = sum(item['count'] for item in flask_app_module.summarize_cars())
-        self.assertIn(f"แนะนำรถ {total} รุ่น", html)
+        # ดีไซน์ 30 ก.ย. 2569: ตัวเลขอยู่บนหินกิโล + หัวข้อส่วนรถ + ป้ายประเภท (เคยพิมพ์ 500/25/12/8/5 ตายตัว)
+        self.assertIn(f'<span>รุ่นรถในระบบ</span><b>{total}</b>', html)
+        self.assertIn(f'<h2>{total} รุ่น<br>', html)
+        for item in flask_app_module.summarize_cars():
+            with self.subTest(fuel=item['fuel']):
+                self.assertIn(f"<small>{item['count']} รุ่น · ", html)
         if ov:
-            self.assertIn(f"คำตอบแบบสอบถามจริง {ov['source']['rows']:,} คน", html)
+            self.assertIn(f"<span>ข้อมูลตัวอย่าง</span><b>{ov['source']['rows']:,}</b>", html)
 
     def test_templates_free_of_dev_residue(self):
         for name in ('base.html', 'recommend.html', 'result_buy.html', 'result_fuel.html', 'home.html'):
             html = read_template(name)
-            for text in ('mock-tag', 'Skeleton Mode', 'model_used', 'เขตบางขุนเทียน', '>Mock<'):
+            for text in ('mock-tag', 'Skeleton Mode', 'model_used', '>Mock<'):
                 with self.subTest(template=name, text=text):
                     self.assertNotIn(text, html)
+
+    def test_survey_area_stated_as_data_source(self):
+        # 29 ก.ย. 2569 ผู้ใช้ยืนยันว่าแจกแบบสอบถามในเขตบางขุนเทียนจริง
+        # บอกพื้นที่ได้เฉพาะในฐานะ "ที่มาของข้อมูล" (หน้าแรก + ภาพรวม) ไม่ใช่ป้ายหรือคำอธิบายผล
+        client = flask_app_module.app.test_client()
+        # 30 ก.ย. 2569 ผู้ใช้ออกแบบหน้าแรกใหม่ธีมบางขุนเทียน/พระราม 2 และสั่งให้กฎตามดีไซน์ → หน้าแรกพูดถึงพื้นที่ได้
+        self.assertIn('บางขุนเทียน', client.get('/').get_data(as_text=True))
+        self.assertIn('ข้อมูลเก็บในเขตบางขุนเทียน จึงอาจไม่ตรงกับคนพื้นที่อื่น',
+                      client.get('/dashboard').get_data(as_text=True))
+        for name in ('base.html', 'recommend.html', 'result_buy.html', 'result_fuel.html'):
+            with self.subTest(template=name):
+                self.assertNotIn('บางขุนเทียน', read_template(name))
 
 
 if __name__ == '__main__':

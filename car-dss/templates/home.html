@@ -1,245 +1,200 @@
 {% extends "base.html" %}
-{% block title %}CarDSS — ระบบสนับสนุนการตัดสินใจซื้อรถยนต์{% endblock %}
+{# หน้าแรก — ดีไซน์ "พระราม 2 คืนฝนตก" ที่ผู้ใช้ออกแบบ (30 ก.ย. 2569) · คู่มือ agent-docs/DESIGN.md
+   มีเมนู/ท้ายเว็บของตัวเอง จึงแทนบล็อก body ทั้งก้อน หน้าอื่นยังใช้ base.html แบบเดิม
+   ตัวเลขทุกตัวมาจากระบบ: overview.source.rows (dataset_overview.json) · car_total/car_counts (cars.json) #}
 
-{% block content %}
+{% block title %}CarDSS — ระบบสนับสนุนการตัดสินใจเลือกซื้อรถยนต์ตามประเภทเชื้อเพลิง{% endblock %}
 
-<!-- ============================================================
-     HERO — full viewport, cinematic dark
-     ============================================================ -->
-<section style="min-height:100vh;display:flex;align-items:center;justify-content:center;
-                background:#171A20;position:relative;overflow:hidden;">
+{% block base_assets %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/cardss.css') }}">
+{% endblock %}
 
-  <!-- Subtle car silhouette -->
-  <div style="position:absolute;bottom:0;right:0;opacity:0.04;pointer-events:none;">
-    <svg width="700" height="280" viewBox="0 0 700 280">
-      <path d="M80 220 Q120 100 250 90 Q350 85 420 90 Q520 95 580 140 Q620 165 660 180 L680 220 Z" fill="white"/>
-      <circle cx="190" cy="235" r="35" fill="white"/>
-      <circle cx="540" cy="235" r="35" fill="white"/>
-    </svg>
+{% block body %}
+
+
+<div class="page">
+<div class="rain-layer" id="rainLayer" aria-hidden="true"></div>
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="{{ url_for('index') }}">
+      <svg width="40" height="44" viewBox="0 0 40 44" aria-hidden="true"><path d="M20 2 L37 8 C37 26 31 36 20 42 C9 36 3 26 3 8 Z" fill="#F3EEE3"/><text x="20" y="28" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="700" font-size="16" fill="#1D1F1E">35</text></svg>
+      <span><b>CarDSS</b><small>ระบบช่วยเลือกรถ ฉบับคนพระราม 2</small></span>
+    </a>
+    <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>เมนู</span></button>
+    <nav class="links" id="menu" aria-label="เมนูหลัก">
+      <a href="{{ url_for('predict_buy_page') }}">พยากรณ์ซื้อ/ไม่ซื้อ</a>
+      <a href="{{ url_for('predict_fuel_page') }}">ประเภทเชื้อเพลิง</a>
+      <a href="{{ url_for('dashboard') }}">ภาพรวมข้อมูล</a>
+      {% if current_user and current_user.is_authenticated %}
+      <a class="pill-btn" href="{{ url_for('logout') }}">ออกจากระบบ ({{ current_user.username }})</a>
+      {% else %}
+      <a class="pill-btn" href="{{ url_for('login') }}">เข้าสู่ระบบ</a>
+      {% endif %}
+    </nav>
   </div>
+</header>
 
-  <div style="position:relative;z-index:1;text-align:center;max-width:640px;padding:40px 24px;" class="fade-in">
+{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}
+<div class="wrap flash-list" role="status">
+  {% for category, message in messages %}<p class="flash flash-{{ category }}">{{ message }}</p>{% endfor %}
+</div>
+{% endif %}{% endwith %}
 
-    <h1 style="font-size:clamp(22px, 4.4vw, 38px);font-weight:500;color:white;line-height:1.3;margin:0 0 16px 0;overflow-wrap:break-word;">
-      ระบบสนับสนุนการตัดสินใจ<br>เลือกซื้อรถยนต์<wbr>ตามประเภทเชื้อเพลิง
-    </h1>
+<section class="hero" id="hero">
+  <div class="wrap">
+    <div class="copy">
+      <div class="kicker"><i></i>ทางหลวงหมายเลข 35 · บางขุนเทียน – มหาชัย</div>
+      <h1>บางขุนเทียนติดทุกเช้า<br>รถแบบไหน<br><span class="hl">ถึงจะคุ้ม?</span></h1>
+      <p class="lead">ตอบคำถามสั้น ๆ เรื่องการเดินทางของคุณ แล้วระบบจะช่วยแนะนำว่ารถไฟฟ้า รถไฮบริด หรือรถน้ำมัน แบบไหนเหมาะกับชีวิตบนถนนเส้นนี้</p>
+      <div class="btns">
+        <a class="btn btn-primary" href="{{ url_for('predict_buy_page') }}">เริ่มเลือกรถ <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></a>
+        <a class="btn btn-ghost" href="#exits">ดูรายละเอียด</a>
+      </div>
+      <p class="hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>ใช้เวลากรอกประมาณ 2 นาที · ได้ผลเทียบรถ 3 ประเภท</p>
+    </div>
+    <div class="sign-col">
+      <div class="sign"><div class="sign-in">
+        <div class="sign-title">เลือกรถให้ถูกทาง</div>
+        <div class="dest"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></svg><div><b>มหาชัย · ลงใต้</b><small>28 – 29 กม.</small></div></div>
+        <div class="dest"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg><div><b>ถนน พระราม 2</b><small>20 – 21 กม.</small></div></div>
+        <div class="dest"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg><div><b>ดาวคะนอง · เข้าเมือง</b><small>9 – 10 กม.</small></div></div>
+      </div></div>
+      <div class="posts" aria-hidden="true"><span></span><span></span></div>
+      <div class="stones">
+        {% if overview %}<div class="stone"><span>ข้อมูลตัวอย่าง</span><b>{{ '{:,}'.format(overview.source.rows) }}</b></div>{% endif %}
+        <div class="stone"><span>รุ่นรถในระบบ</span><b>{{ car_total }}</b></div>
+        <div class="stone"><span>โมเดลพยากรณ์</span><b>2</b></div>
+      </div>
+    </div>
+  </div>
+  <canvas id="water" aria-hidden="true"></canvas>
+</section>
 
-    <p style="font-size:14px;color:rgba(255,255,255,0.4);line-height:1.6;max-width:480px;margin:0 auto 40px auto;">
-      ตอบคำถามสั้น ๆ แล้วระบบจะช่วยแนะนำว่ารถยนต์ประเภทเชื้อเพลิงแบบไหนเหมาะกับการใช้งานของคุณ
-    </p>
+<div class="hazard" aria-hidden="true"></div>
 
-    <!-- CTA Buttons — Tesla style side by side -->
-    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-      <a href="{{ url_for('predict_buy_page') }}"
-         class="btn-cardss-primary" style="padding:8px 40px;min-height:40px;">
-        เริ่มวิเคราะห์
-      </a>
-      <a href="#features"
-         class="btn-cardss-secondary" style="padding:8px 40px;min-height:40px;">
-        ดูรายละเอียด
-      </a>
+<section class="block personas" id="route">
+  <div class="wrap">
+    <div class="head"><h2>คุณเป็นคนบางขุนเทียน<br>สายไหน?</h2><p>กดจุดที่ใกล้บ้านคุณบนถนนพระราม 2 แล้วลองตอบ 3 ข้อ ดูคร่าว ๆ ว่ารถแบบไหนน่าจะเข้ากับคุณ</p></div>
+
+    <div class="route" role="radiogroup" aria-label="เลือกย่านที่อยู่">
+      <div class="route-road" aria-hidden="true"></div>
+      <div class="stops">
+        <button class="stop" type="button" role="radio" aria-checked="true" data-p="0"><i></i><b>กรุงเทพชั้นใน</b><small>สาย 01</small></button>
+        <button class="stop" type="button" role="radio" aria-checked="false" data-p="1"><i></i><b>ท่าข้าม · แสมดำ</b><small>สาย 02</small></button>
+        <button class="stop" type="button" role="radio" aria-checked="false" data-p="2"><i></i><b>บางขุนเทียน ชายทะเล</b><small>สาย 03</small></button>
+        <button class="stop" type="button" role="radio" aria-checked="false" data-p="3"><i></i><b>มหาชัย</b><small>สาย 04</small></button>
+      </div>
+      <span class="route-end route-end--r">ลงใต้ →</span>
     </div>
 
-    <!-- ที่มาของผล: ตัวเลขอ่านจาก dataset_overview.json / cars.json สด (29 ก.ย. 2569 เลิกพิมพ์ 500/25 ตายตัว) -->
-    <p style="margin:40px 0 0;font-size:14px;line-height:1.7;color:rgba(255,255,255,0.72);">
-      {% if overview %}สร้างจากคำตอบแบบสอบถามจริง {{ '{:,}'.format(overview.source.rows) }} คน · {% endif %}แนะนำรถ {{ car_total }} รุ่น
-    </p>
-  </div>
+    <div class="route-panel">
+      <article class="card persona" aria-live="polite">
+        <div class="card-top"><span class="tag" id="pTag">สาย 01</span><span class="p-icon" id="pIcon" aria-hidden="true"></span></div>
+        <h3 id="pTitle"></h3>
+        <p id="pText"></p>
+        <div class="consider"><small>สิ่งที่ควรคิด</small><div class="chips" id="pChips"></div></div>
+      </article>
 
-  <!-- Scroll indicator -->
-  <div style="position:absolute;bottom:28px;left:50%;transform:translateX(-50%);">
-    <i class="bi bi-chevron-down" style="font-size:20px;color:rgba(255,255,255,0.2);"></i>
+      <div class="card quiz">
+        <div class="quiz-head"><h3>ลองตอบ 3 ข้อ</h3><small>เปลี่ยนคำตอบได้ ผลจะเปลี่ยนทันที</small></div>
+        <fieldset class="q"><legend>1. ขับรถวันละประมาณกี่กิโล</legend>
+          <div class="seg" data-q="dist"><button type="button" data-v="0">ไม่ถึง 30</button><button type="button" data-v="1">30–80</button><button type="button" data-v="2">เกิน 80</button></div></fieldset>
+        <fieldset class="q"><legend>2. ขับไปต่างจังหวัดบ่อยแค่ไหน</legend>
+          <div class="seg" data-q="trip"><button type="button" data-v="0">แทบไม่ไป</button><button type="button" data-v="1">เดือนละครั้ง</button><button type="button" data-v="2">ทุกสัปดาห์</button></div></fieldset>
+        <fieldset class="q"><legend>3. ชาร์จไฟที่บ้านได้ไหม</legend>
+          <div class="seg" data-q="home"><button type="button" data-v="0">ได้</button><button type="button" data-v="1">ไม่แน่ใจ</button><button type="button" data-v="2">ไม่ได้</button></div></fieldset>
+
+        <div class="hint-result" aria-live="polite">
+          <small>คำใบ้คร่าว ๆ</small>
+          <div class="lanes-mini"><span data-l="ev">ไฟฟ้า</span><span data-l="hev">ไฮบริด</span><span data-l="ice">น้ำมัน</span></div>
+          <p id="qWhy"></p>
+          <a class="btn btn-primary btn-sm" href="{{ url_for('predict_fuel_page') }}">ดูผลละเอียดจากระบบ <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></a>
+          <small class="fine">คำใบ้นี้คิดจากคำตอบ 3 ข้อเท่านั้น ไม่ใช่ผลจากโมเดลพยากรณ์</small>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
-<!-- ============================================================
-     SECTION 2: ระบบนี้ช่วยอะไรได้ — white surface
-     ============================================================ -->
-<section id="features" style="padding:80px 24px;background:var(--bg-primary);">
-  <div style="max-width:1040px;margin:0 auto;">
-
-    <div class="text-center fade-in" style="margin-bottom:56px;">
-      <h2 style="font-size:28px;font-weight:500;color:var(--text-primary);margin:0 0 12px 0;">
-        ระบบนี้ช่วยอะไรได้
-      </h2>
-      <p style="font-size:14px;color:var(--text-muted);max-width:420px;margin:0 auto;">
-        3 ฟีเจอร์หลักที่จะช่วยให้คุณตัดสินใจซื้อรถยนต์ได้อย่างมั่นใจ
-      </p>
+<section class="block exits" id="exits">
+  <div class="wrap">
+    <div class="head"><div><h2>3 ขั้นตอน ช่วยตัดสินใจ</h2><p style="margin-top:12px">เลือกทางที่ตรงกับคำถามในใจคุณตอนนี้</p></div></div>
+    <div class="grid3">
+      <div class="exit"><span class="exit-tab" aria-label="ขั้นตอนที่ 1">1</span><a href="{{ url_for('predict_buy_page') }}"><h3>พยากรณ์ซื้อ / ไม่ซื้อ</h3><p>วิเคราะห์ว่าคุณควรซื้อรถยนต์ตอนนี้หรือไม่ จากข้อมูลส่วนบุคคลและปัจจัยทางการเงิน</p><span class="go">ลองพยากรณ์ซื้อ / ไม่ซื้อ <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></a></div>
+      <div class="exit"><span class="exit-tab" aria-label="ขั้นตอนที่ 2">2</span><a href="{{ url_for('predict_fuel_page') }}"><h3>แนะนำประเภทเชื้อเพลิง</h3><p>เปรียบเทียบรถไฟฟ้า / ไฮบริด / รถน้ำมัน ว่าแบบไหนเหมาะกับพฤติกรรมการใช้งานของคุณ</p><span class="go">ลองเทียบเชื้อเพลิง <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></a></div>
+      <div class="exit"><span class="exit-tab" aria-label="ขั้นตอนที่ 3">3</span><a href="{{ url_for('dashboard') }}"><h3>ภาพรวมข้อมูลด้วยกราฟ</h3><p>แผนภาพเปรียบเทียบค่าใช้จ่าย เบี้ยประกัน อัตราสิ้นเปลือง ช่วยตัดสินใจรอบด้าน</p><span class="go">ดูกราฟข้อมูล <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span></a></div>
     </div>
-
-    <div class="row g-4">
-      <div class="col-md-4 fade-in" style="animation-delay:0.08s;">
-        <div style="background:var(--bg-secondary);border-radius:12px;padding:32px 24px;text-align:center;height:100%;">
-          <i class="bi bi-clipboard-data" style="font-size:32px;margin-bottom:16px;display:block;color:var(--text-primary);"></i>
-          <h3 style="font-size:16px;font-weight:500;color:var(--text-primary);margin:0 0 12px 0;">
-            พยากรณ์ซื้อ/ไม่ซื้อ
-          </h3>
-          <p style="font-size:14px;color:var(--text-muted);line-height:1.6;margin:0;">
-            ประเมินว่าคุณมีแนวโน้มจะซื้อรถหรือไม่ จากรูปแบบคำตอบของผู้ตอบแบบสอบถามจริง
-          </p>
-        </div>
-      </div>
-
-      <div class="col-md-4 fade-in" style="animation-delay:0.16s;">
-        <div style="background:var(--bg-secondary);border-radius:12px;padding:32px 24px;text-align:center;height:100%;">
-          <i class="bi bi-fuel-pump" style="font-size:32px;margin-bottom:16px;display:block;color:var(--text-primary);"></i>
-          <h3 style="font-size:16px;font-weight:500;color:var(--text-primary);margin:0 0 12px 0;">
-            แนะนำประเภทเชื้อเพลิง
-          </h3>
-          <p style="font-size:14px;color:var(--text-muted);line-height:1.6;margin:0;">
-            เปรียบเทียบ EV / Hybrid / สันดาป ว่าแบบไหนเหมาะกับพฤติกรรมการใช้งานของคุณ
-          </p>
-        </div>
-      </div>
-
-      <div class="col-md-4 fade-in" style="animation-delay:0.24s;">
-        <div style="background:var(--bg-secondary);border-radius:12px;padding:32px 24px;text-align:center;height:100%;">
-          <i class="bi bi-bar-chart-line" style="font-size:32px;margin-bottom:16px;display:block;color:var(--text-primary);"></i>
-          <h3 style="font-size:16px;font-weight:500;color:var(--text-primary);margin:0 0 12px 0;">
-            ภาพรวมข้อมูลงานวิจัย
-          </h3>
-          <p style="font-size:14px;color:var(--text-muted);line-height:1.6;margin:0;">
-            ดูคำตอบจริงของผู้ตอบแบบสอบถาม: แนวโน้มการซื้อ ประเภทรถที่สนใจ ช่วงอายุ และรายได้
-          </p>
-        </div>
-      </div>
-    </div>
-
   </div>
 </section>
 
-<!-- ============================================================
-     SECTION 4: ประเภทรถยนต์ — white surface
-     ============================================================ -->
-<section style="padding:80px 24px;background:var(--bg-primary);">
-  <div style="max-width:1040px;margin:0 auto;">
-
-    <div class="text-center fade-in" style="margin-bottom:48px;">
-      <h2 style="font-size:28px;font-weight:500;color:var(--text-primary);margin:0 0 12px 0;">
-        ประเภทรถยนต์ที่ครอบคลุม
-      </h2>
-      <p style="font-size:14px;color:var(--text-muted);max-width:420px;margin:0 auto;">
-        รวม 25 รุ่น ครอบคลุมทุกประเภทเชื้อเพลิงในตลาดไทย
-      </p>
+<section class="block md" id="models">
+  <div class="wrap">
+    <div class="head"><h2>{{ car_total }} รุ่น<br>แบ่งตามเชื้อเพลิง</h2><p>เลือกป้ายประเภทเชื้อเพลิง รถรุ่นในระบบจะหล่นลงมาบนถนน คลิกหรือลากรถเพื่อดูว่าเป็นรุ่นอะไร</p></div>
+    <div class="md-types" role="group" aria-label="เลือกประเภทเชื้อเพลิง">
+      <button class="md-type" type="button" data-t="hev" aria-pressed="true"><span class="md-in"><b>ไฮบริด</b><small>{{ car_counts.get('Hybrid', 0) }} รุ่น · HEV</small></span><em class="md-match">เข้ากับคุณ</em></button>
+      <button class="md-type" type="button" data-t="ev" aria-pressed="false"><span class="md-in"><b>EV</b><small>{{ car_counts.get('EV', 0) }} รุ่น · รถไฟฟ้า</small></span><em class="md-match">เข้ากับคุณ</em></button>
+      <button class="md-type" type="button" data-t="ice" aria-pressed="false"><span class="md-in"><b>สันดาป</b><small>{{ car_counts.get('ICE', 0) }} รุ่น · รถน้ำมัน</small></span><em class="md-match">เข้ากับคุณ</em></button>
     </div>
-
-    <div class="row g-4">
-      <!-- EV -->
-      <div class="col-md-4 fade-in" style="animation-delay:0.08s;">
-        <div style="background:var(--bg-secondary);border-radius:12px;padding:32px 24px;text-align:center;height:100%;">
-          <i class="bi bi-lightning-charge-fill text-ev" style="font-size:40px;margin-bottom:12px;display:block;"></i>
-          <h3 style="font-size:16px;font-weight:500;color:var(--text-primary);margin:0 0 8px 0;">
-            รถยนต์ไฟฟ้า (EV)
-          </h3>
-          <span class="badge-cardss ev" style="margin-bottom:16px;">8 รุ่น</span>
-          <div style="font-size:13px;color:var(--text-muted);line-height:2;text-align:left;margin-top:16px;">
-            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">Tesla Model 3 / Model Y</div>
-            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">BYD Atto 3 / Dolphin / Seal</div>
-            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">MG MG4 Electric</div>
-            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">GWM ORA Good Cat</div>
-            <div style="padding:6px 0;">Volvo EX30</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Hybrid -->
-      <div class="col-md-4 fade-in" style="animation-delay:0.16s;">
-        <div style="background:var(--bg-secondary);border-radius:12px;padding:32px 24px;text-align:center;height:100%;">
-          <i class="bi bi-battery-charging text-hybrid" style="font-size:40px;margin-bottom:12px;display:block;"></i>
-          <h3 style="font-size:16px;font-weight:500;color:var(--text-primary);margin:0 0 8px 0;">
-            รถยนต์ไฮบริด (HEV)
-          </h3>
-          <span class="badge-cardss hybrid" style="margin-bottom:16px;">12 รุ่น</span>
-          <div style="font-size:13px;color:var(--text-muted);line-height:2;text-align:left;margin-top:16px;">
-            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">Toyota Corolla Cross / Yaris Ativ / Yaris Cross / Camry HEV</div>
-            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">Honda City / Civic / HR-V / Accord / CR-V e:HEV</div>
-            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">Nissan Kicks e-Power</div>
-            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">Mitsubishi Xpander Cross HEV</div>
-            <div style="padding:6px 0;">Hyundai Stargazer X HEV</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ICE -->
-      <div class="col-md-4 fade-in" style="animation-delay:0.24s;">
-        <div style="background:var(--bg-secondary);border-radius:12px;padding:32px 24px;text-align:center;height:100%;">
-          <i class="bi bi-fuel-pump-fill text-ice" style="font-size:40px;margin-bottom:12px;display:block;"></i>
-          <h3 style="font-size:16px;font-weight:500;color:var(--text-primary);margin:0 0 8px 0;">
-            รถยนต์สันดาป (ICE)
-          </h3>
-          <span class="badge-cardss ice" style="margin-bottom:16px;">5 รุ่น</span>
-          <div style="font-size:13px;color:var(--text-muted);line-height:2;text-align:left;margin-top:16px;">
-            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">Mazda 2</div>
-            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">Toyota Yaris Ativ</div>
-            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">Honda City Turbo</div>
-            <div style="padding:6px 0;border-bottom:1px solid var(--border-light);">Nissan Almera Turbo</div>
-            <div style="padding:6px 0;">Mitsubishi Attrage</div>
-          </div>
-        </div>
-      </div>
+  </div>
+  <div class="md-stage" id="mdStage">
+    <canvas id="mdCv" aria-label="ถนนที่มีรถหล่นลงมา ลากรถเพื่อดูชื่อรุ่น"></canvas>
+    <div class="md-over">
+      <span class="md-pill"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 13V5a2 2 0 0 1 4 0v6"/><path d="M12 11V4a2 2 0 0 1 4 0v7"/><path d="M16 10a2 2 0 0 1 4 0v4a8 8 0 0 1-8 8h-1a7 7 0 0 1-6-3l-3-5a2 2 0 0 1 3-2l1 1"/></svg>คลิกหรือลากรถเพื่อดูรุ่น</span>
+      <span class="md-pill" id="mdCount"></span>
     </div>
+    <div class="md-tip" id="mdTip" hidden><b id="mdTipName"></b><small id="mdTipSub"></small></div>
+  </div>
+  <p class="sr" id="mdList" aria-live="polite"></p>
+</section>
 
+<section class="project">
+  <div class="wrap">
+    <div class="intro"><h2>เกี่ยวกับโครงงาน</h2><p>โครงงานนี้เป็นส่วนหนึ่งของการศึกษาตามหลักสูตรวิทยาศาสตรบัณฑิต สาขาวิชาเทคโนโลยีสารสนเทศ มหาวิทยาลัยเทคโนโลยีราชมงคลกรุงเทพ ปีการศึกษา 2568</p></div>
+    <div class="board-col">
+      <div class="board">
+        <h3>ป้ายโครงการ</h3>
+        <dl>
+          <dt>ชื่อโครงการ</dt><dd>ระบบสนับสนุนการตัดสินใจเลือกซื้อรถยนต์ตามประเภทเชื้อเพลิง (CarDSS)</dd>
+          <dt>ผู้จัดทำ</dt><dd>นายธนภัทร ภมรพล<br>นายรัตนกร พุ่มกระจันทร์</dd>
+          <dt>อาจารย์ที่ปรึกษา</dt><dd>ผู้ช่วยศาสตราจารย์ ดร.อรสา พัสดุ</dd>
+          <dt>หน่วยงาน</dt><dd>มหาวิทยาลัยเทคโนโลยีราชมงคลกรุงเทพ</dd>
+          <dt>กำหนดแล้วเสร็จ</dt><dd>ปีการศึกษา 2568</dd>
+        </dl>
+      </div>
+      <div class="posts" aria-hidden="true"><span></span><span></span></div>
+    </div>
   </div>
 </section>
 
-<!-- ============================================================
-     SECTION 5: เกี่ยวกับโครงงาน — Light Ash
-     ============================================================ -->
-<section style="padding:80px 24px;background:var(--bg-secondary);">
-  <div style="max-width:700px;margin:0 auto;">
-
-    <div class="text-center fade-in" style="margin-bottom:40px;">
-      <h2 style="font-size:28px;font-weight:500;color:var(--text-primary);margin:0;">
-        เกี่ยวกับโครงงาน
-      </h2>
-    </div>
-
-    <div class="fade-in" style="background:var(--bg-surface);border-radius:12px;padding:40px 36px;">
-      <p style="font-size:14px;color:var(--text-secondary);line-height:1.8;margin:0 0 28px 0;text-align:center;">
-        โครงงานนี้เป็นส่วนหนึ่งของการศึกษาตามหลักสูตรวิทยาศาสตรบัณฑิต
-        สาขาวิชาเทคโนโลยีสารสนเทศ
-        มหาวิทยาลัยเทคโนโลยีราชมงคลกรุงเทพ ปีการศึกษา 2568
-      </p>
-
-      <div style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center;">
-        <!-- ผู้จัดทำ -->
-        <div style="flex:1;min-width:240px;padding:20px;background:var(--bg-secondary);border-radius:8px;">
-          <div style="font-size:12px;font-weight:500;color:var(--text-muted);margin-bottom:12px;">
-            ผู้จัดทำ
-          </div>
-          <div style="font-size:14px;color:var(--text-primary);line-height:2;">
-            นายธนภัทร ภมรพล<br>
-            นายรัตนกร พุ่มกระจันทร์
-          </div>
-        </div>
-
-        <!-- อาจารย์ที่ปรึกษา -->
-        <div style="flex:1;min-width:240px;padding:20px;background:var(--bg-secondary);border-radius:8px;">
-          <div style="font-size:12px;font-weight:500;color:var(--text-muted);margin-bottom:12px;">
-            อาจารย์ที่ปรึกษา
-          </div>
-          <div style="font-size:14px;color:var(--text-primary);line-height:2;">
-            ผู้ช่วยศาสตราจารย์ ดร.อรสา พัสดุ
-          </div>
-        </div>
-      </div>
-
-      <div style="text-align:center;margin-top:24px;padding-top:20px;border-top:1px solid var(--border-light);">
-        <span style="font-size:13px;color:var(--text-muted);">
-          มหาวิทยาลัยเทคโนโลยีราชมงคลกรุงเทพ
-        </span>
-      </div>
-    </div>
-
-    <!-- Final CTA -->
-    <div class="text-center fade-in" style="margin-top:48px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-      <a href="{{ url_for('predict_buy_page') }}"
-         class="btn-cardss-primary" style="padding:8px 40px;min-height:40px;">
-        เริ่มวิเคราะห์เลย
-      </a>
-    </div>
-
+<section class="cta">
+  <div class="wrap">
+    <h2>ก่อนออกรถคันต่อไป<br>ให้ CarDSS ช่วยคิดก่อน</h2>
+    <a class="btn btn-dark" href="{{ url_for('predict_buy_page') }}">เริ่มเลือกรถเลย <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></a>
   </div>
 </section>
 
+<footer>
+  <div class="wrap">
+    <div class="foot-top">
+      <div><b>CarDSS</b><p>ระบบสนับสนุนการตัดสินใจ<br>เลือกซื้อรถยนต์ตามประเภทเชื้อเพลิง</p></div>
+      <div class="foot-links"><small>ระบบ</small>
+        <a href="{{ url_for('predict_buy_page') }}">พยากรณ์ซื้อ/ไม่ซื้อ</a>
+        <a href="{{ url_for('predict_fuel_page') }}">พยากรณ์ประเภทเชื้อเพลิง</a>
+        <a href="{{ url_for('dashboard') }}">ภาพรวมข้อมูล</a>
+      </div>
+    </div>
+    <div class="copyright">© 2569 CarDSS · มหาวิทยาลัยเทคโนโลยีราชมงคลกรุงเทพ</div>
+  </div>
+</footer>
+</div>
+
+
+
+<script>window.CARDSS_IMG = "{{ url_for('static', filename='img/cars/') }}";</script>
+<script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
+<script src="{{ url_for('static', filename='js/cardss-models.js') }}"></script>
+<script src="{{ url_for('static', filename='js/cardss-home.js') }}"></script>
 {% endblock %}

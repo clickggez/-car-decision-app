@@ -223,9 +223,13 @@ def save_prediction_to_firebase(user_uid, pred_type, input_data, result_data):
 
 @app.route('/')
 def index():
-    """หน้าแรก Home — ตัวเลขข้อมูลอ่านจาก dataset_overview.json (29 ก.ย. 2569 เลิกพิมพ์ "500" ตายตัว)"""
-    car_total = sum(item['count'] for item in summarize_cars())
-    return render_template('home.html', overview=load_dataset_overview(), car_total=car_total)
+    """หน้าแรก Home — ตัวเลขข้อมูลอ่านจาก dataset_overview.json (29 ก.ย. 2569 เลิกพิมพ์ "500" ตายตัว)
+    30 ก.ย. 2569 ดีไซน์ใหม่ "พระราม 2 คืนฝนตก": car_counts ใช้กับป้ายประเภทรถ (EV/Hybrid/ICE)"""
+    cars = summarize_cars()
+    car_total = sum(item['count'] for item in cars)
+    car_counts = {item['fuel']: item['count'] for item in cars}
+    return render_template('home.html', overview=load_dataset_overview(),
+                           car_total=car_total, car_counts=car_counts)
 
 
 @app.route('/version')
