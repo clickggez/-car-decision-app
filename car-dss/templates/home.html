@@ -139,6 +139,17 @@
       <button class="md-type" type="button" data-t="ev" aria-pressed="false"><span class="md-in"><b>รถไฟฟ้า</b><small>{{ car_counts.get('EV', 0) }} รุ่น · EV</small></span><em class="md-match">เข้ากับคุณ</em></button>
       <button class="md-type" type="button" data-t="ice" aria-pressed="false"><span class="md-in"><b>สันดาป</b><small>{{ car_counts.get('ICE', 0) }} รุ่น · รถน้ำมัน</small></span><em class="md-match">เข้ากับคุณ</em></button>
     </div>
+    <div class="wl-wrap">
+      <p class="wl-label" id="wlLabel">ระดับน้ำท่วมบนถนน (ความสูงน้ำเทียบกับขนาดรถจริง)</p>
+      <div class="wl" id="wl" role="group" aria-labelledby="wlLabel">
+        <button type="button" data-cm="10" aria-pressed="true" data-note="น้ำตื้น ขับผ่านได้ ใช้ความเร็วต่ำ และระวังน้ำกระเซ็นใส่คนเดินถนนหรือรถคันอื่น"><b>ปลอดภัย</b><small>10 ซม.</small></button>
+        <button type="button" data-cm="20" aria-pressed="false" data-note="ขับช้า ๆ ด้วยเกียร์ต่ำอย่างต่อเนื่อง ไม่หยุดกลางน้ำ และเว้นระยะจากคันหน้า เพราะคลื่นจากรถคันอื่นทำให้น้ำสูงขึ้น"><b>ระวัง</b><small>20 ซม.</small></button>
+        <button type="button" data-cm="30" aria-pressed="false" data-note="น้ำสูงเกือบครึ่งล้อ ถึงระดับท่อไอเสียของรถหลายรุ่น เสี่ยงเครื่องดับและเบรกไม่อยู่ ถ้าเลี่ยงเส้นทางได้ให้เลี่ยง"><b>อันตราย</b><small>30 ซม.</small></button>
+        <button type="button" data-cm="50" aria-pressed="false" data-note="น้ำเข้าห้องโดยสารของรถเก๋งส่วนใหญ่ได้ เครื่องอาจดูดน้ำจนพัง และถ้าน้ำไหลแรงอาจพัดรถเสียการควบคุม ห้ามขับผ่าน"><b>ห้ามขับ</b><small>50 ซม.</small></button>
+      </div>
+      <p class="wl-note" id="wlNote" aria-live="polite">น้ำตื้น ขับผ่านได้ ใช้ความเร็วต่ำ และระวังน้ำกระเซ็นใส่คนเดินถนนหรือรถคันอื่น</p>
+      <small class="wl-fine">คำแนะนำทั่วไป ไม่ใช่ผลจากโมเดลพยากรณ์ · ระดับที่ลุยได้จริงต่างกันตามรุ่น ดูคู่มือรถของคุณ</small>
+    </div>
   </div>
   <div class="md-stage" id="mdStage">
     <canvas id="mdCv" aria-label="ถนนที่มีรถหล่นลงมา ลากรถเพื่อดูชื่อรุ่น"></canvas>

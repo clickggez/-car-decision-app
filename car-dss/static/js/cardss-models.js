@@ -31,10 +31,14 @@
   let dropped = false;
   let W = 0, H = 0, GROUND = 0, L = 160, engine, walls = [], cars = [], current = 'hev', dropTimer = 0;
   // flood water over the road: same spring-column surface as the hero
+  // ระดับน้ำเป็นเซนติเมตรจริง: L พิกเซล = รถยาว 4.5 ม. (LEN_REF) → 1 ซม. = L / 450 พิกเซล · ปุ่ม #wl เปลี่ยน wlCm
+  const wlBtns = [...document.querySelectorAll('#wl button')], wlNote = document.getElementById('wlNote');
+  let wlCm = +((wlBtns.find((b) => b.getAttribute('aria-pressed') === 'true') || {}).dataset?.cm || 10);
+  const wlPx = () => wlCm * L / 450;
   let WD = 48, WN = 0, wdx = 6, wh = new Float32Array(0), wv = new Float32Array(0), wdrops = [], wtime = 0, nextDrip = 0;
   const WK = 0.02, WDAMP = 0.014, WSPREAD = 0.25;
   const wcol = (x) => Math.max(0, Math.min(WN - 1, Math.round(x / wdx)));
-  const wswell = (x) => reduce ? 0 : 3 * Math.sin(x * 0.007 + wtime * 1.3) + 1.6 * Math.sin(x * 0.021 - wtime * 1.9);
+  const wswell = (x) => reduce ? 0 : Math.min(1, WD / 30) * (3 * Math.sin(x * 0.007 + wtime * 1.3) + 1.6 * Math.sin(x * 0.021 - wtime * 1.9));   // น้ำตื้นคลื่นเล็กลง
   const surf = (x) => GROUND - WD + wh[wcol(x)] + wswell(x);
   function wpoke(x, f, spread = 3) {
     const i = wcol(x);
@@ -48,7 +52,9 @@
   }
   function waterStep() {
     wtime += 1 / 60;
-    for (let i = 0; i < WN; i++) { wv[i] += -WK * wh[i] - WDAMP * wv[i]; wh[i] = Math.max(-36, Math.min(36, wh[i] + wv[i])); }
+    WD += (wlPx() - WD) * 0.04;   // น้ำค่อย ๆ ขึ้น/ลงหาระดับที่เลือก (รถจมอยู่กับที่ ไม่ลอย)
+    const lim = Math.max(3, WD * 0.8);
+    for (let i = 0; i < WN; i++) { wv[i] += -WK * wh[i] - WDAMP * wv[i]; wh[i] = Math.max(-lim, Math.min(lim, wh[i] + wv[i])); }
     const Lf = new Float32Array(WN), Rf = new Float32Array(WN);
     for (let pass = 0; pass < 4; pass++) {
       for (let i = 0; i < WN; i++) {
@@ -211,7 +217,7 @@
     cv.width = W * DPR; cv.height = H * DPR; cv.style.height = H + 'px';
     GROUND = H - 84;
     L = Math.max(104, Math.min(180, W / 8));
-    WD = Math.round(L * 0.2);
+    WD = wlPx();
     WN = Math.max(40, Math.round(W / 6)); wdx = W / (WN - 1);
     wh = new Float32Array(WN); wv = new Float32Array(WN); wdrops = [];
     engine = Engine.create({ enableSleeping: true }); engine.gravity.y = 1.1;
@@ -362,6 +368,12 @@
     if (visible && !dropped) { dropped = true; drop(current); }
     if (visible && !raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
   }, { threshold: 0.25 }).observe(stage);
+  wlBtns.forEach((btn) => btn.addEventListener('click', () => {
+    wlCm = +btn.dataset.cm;
+    wlBtns.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+    wlNote.textContent = btn.dataset.note;
+    if (reduce) WD = wlPx();   // ลดภาพเคลื่อนไหว: เปลี่ยนระดับทันที ไม่ค่อย ๆ ขึ้น
+  }));
   // the quiz above marks which fuel type fits the visitor
   document.addEventListener('cardss:hint', (e) => document.querySelectorAll('.md-type').forEach((b) => b.classList.toggle('is-hint', b.dataset.t === e.detail)));
   let rt; let lastW = 0;
