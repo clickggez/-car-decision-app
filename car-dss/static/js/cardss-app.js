@@ -254,4 +254,27 @@
     btn.addEventListener('click', () => { rest.forEach((c) => { c.hidden = false; }); rest[0].querySelector('h3').setAttribute('tabindex', '-1'); rest[0].querySelector('h3').focus(); wrap.remove(); });
     wrap.appendChild(btn); sec.appendChild(wrap);
   });
+
+  // ---------- มือถือ (≤ 520px): พับแถบปุ่มท้ายฟอร์มเมื่อเลื่อนลง กลับขึ้นเมื่อเลื่อนย้อน (ผู้ใช้สั่ง 4 ต.ค. 2569) ----------
+  // ไม่พับเมื่อ: ใกล้ท้ายฟอร์ม (ขอบล่างฟอร์มห่างขอบจอ < 160px) · scrollY < 40 · มีโฟกัสอยู่ในแถบ
+  const narrow = window.matchMedia('(max-width: 520px)');
+  document.querySelectorAll('form[data-survey]').forEach((form) => {
+    const bar = form.querySelector('.actionbar');
+    if (!bar) return;
+    let lastY = window.scrollY, ticking = false;
+    const show = () => bar.classList.remove('is-tucked');
+    const update = () => {
+      ticking = false;
+      const y = window.scrollY;
+      const nearEnd = form.getBoundingClientRect().bottom - window.innerHeight < 160;
+      if (!narrow.matches || y < 40 || nearEnd || bar.contains(document.activeElement)) { show(); lastY = y; return; }
+      const dy = y - lastY;
+      if (Math.abs(dy) <= 8) return;            // ขยับไม่เกิน 8px ยังไม่สลับ (สะสมจนเกิน)
+      bar.classList.toggle('is-tucked', dy > 0);
+      lastY = y;
+    };
+    window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+    bar.addEventListener('focusin', show);
+    narrow.addEventListener('change', show);
+  });
 })();

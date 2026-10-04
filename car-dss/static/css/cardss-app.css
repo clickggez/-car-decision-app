@@ -284,6 +284,9 @@
   .scale span{min-height:68px}
   .actionbar{border-radius:0;margin-inline:calc(-1 * clamp(16px,4.5vw,64px));border-inline:0;border-bottom:0}
   .actionbar .btn{width:100%;justify-content:center}
+  /* มือถือ: พับแถบปุ่มลงเมื่อเลื่อนลง กลับขึ้นเมื่อเลื่อนย้อน (cardss-app.js · ผู้ใช้สั่ง 4 ต.ค. 2569) */
+  .actionbar{transition:transform .28s ease}
+  .actionbar.is-tucked{transform:translateY(100%)}
 }
 @media (prefers-reduced-motion: reduce){
   *{transition:none!important;animation:none!important}
