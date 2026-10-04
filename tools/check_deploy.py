@@ -92,8 +92,9 @@ def main():
         r.check(f'ไม่มีข้อความ "{banned}" บนหน้าแรก', banned not in html)
     # 29 ก.ย. 2569: commit ตรงแต่หน้าเว็บยังเก่า (touch wsgi ไม่ติด ต้องกด Reload ในแท็บ Web)
     # เช็คว่า template ที่เสิร์ฟอยู่เป็นรุ่นใหม่จริง ไม่ใช่แค่ไฟล์บนดิสก์
+    # 4 ต.ค. 2569 หน้าแรกดีไซน์ใหม่: ตัวเลขอยู่บนหินกิโล + ปุ่มระดับน้ำ · ส่วน "สายไหน" ถูกตัดออก
     r.check('หน้าแรกเป็น template รุ่นใหม่ (ตัวเลขข้อมูลอ่านสด)',
-            'สร้างจากคำตอบแบบสอบถามจริง' in html,
+            'ข้อมูลตัวอย่าง</span><b>' in html and 'id="wl"' in html and 'สายไหน' not in html,
             'ถ้าตกแต่ commit ตรง = ยังไม่ได้ Reload ให้กดปุ่มในแท็บ Web')
 
     # --- 4. ปุ่มบนหน้าแรกต้องพาไปแบบประเมิน (ถ้ายังไม่ล็อกอิน route นั้นจะพาไป /login เอง) ---
@@ -101,10 +102,10 @@ def main():
     # รับ href ทั้ง "..." และ '...'
     anchors = [(m.group(2), t) for attrs, t in re.findall(r'<a\s([^>]*)>(.*?)</a>', html, re.S)
                for m in [re.search(r"""href\s*=\s*(["'])(.*?)\1""", attrs)] if m]
-    cta = [href for href, text in anchors if 'เริ่มวิเคราะห์' in text]
-    r.check('ปุ่ม "เริ่มวิเคราะห์" ชี้ไปหน้าแบบประเมิน',
+    cta = [href for href, text in anchors if 'เริ่มเลือกรถ' in text]
+    r.check('ปุ่ม "เริ่มเลือกรถ" ชี้ไปหน้าแบบประเมิน',
             bool(cta) and all(urlsplit(h).path == '/predict/buy' for h in cta),
-            f'ปุ่มชี้ไป {cta}' if cta else 'หาปุ่มเริ่มวิเคราะห์ไม่เจอ')
+            f'ปุ่มชี้ไป {cta}' if cta else 'หาปุ่มเริ่มเลือกรถไม่เจอ')
 
     # --- 5. การพยากรณ์ต้องล็อกอิน (อาจารย์เคาะ 25 ก.ย. 2569) / dashboard เปิดได้ทุกคน ---
     for path in ('/predict/buy', '/result/buy', '/recommend'):
