@@ -261,12 +261,14 @@ class CtaLinksTests(unittest.TestCase):
         self.assertNotIn('ctaLogin', by_id)
 
     def test_navbar_shows_overview_link_when_logged_out(self):
-        # เมนูใน base.html (หน้าอื่นที่ยังไม่ออกแบบใหม่) — หน้าแรกมีเมนูของตัวเองตามดีไซน์ 30 ก.ย. 2569
+        # 4 ต.ค. 2569 หน้าในใช้ base_cardss.html (ดีไซน์ผู้ใช้) เมนูแบบเดียวกับหน้าแรก:
+        # แสดงลิงก์พยากรณ์ทุกคน (กดแล้วเด้งไปล็อกอินเอง) · ซ่อนเฉพาะ "รถแนะนำ" ที่ต้องล็อกอิน
         html = flask_app_module.app.test_client().get('/dashboard').get_data(as_text=True)
-        nav = html[html.index('id="mainNav"'):html.index('</ul>', html.index('id="mainNav"'))]
+        nav = html[html.index('id="menu"'):html.index('</nav>', html.index('id="menu"'))]
         hrefs = [path_of(h) for h, _, _ in anchors(nav)]
         self.assertIn('/dashboard', hrefs, 'เมนูบนต้องมีลิงก์ภาพรวมข้อมูลแม้ยังไม่ล็อกอิน')
-        self.assertNotIn('/predict/buy', hrefs, 'ยังไม่ล็อกอินไม่ควรเห็นเมนูพยากรณ์')
+        self.assertIn('/login', hrefs)
+        self.assertNotIn('/recommend', hrefs, 'ยังไม่ล็อกอินไม่ควรเห็นเมนูรถแนะนำ')
 
 
 class DashboardPublicOverviewTests(unittest.TestCase):
@@ -300,6 +302,7 @@ class DashboardPublicOverviewTests(unittest.TestCase):
         body = re.sub(r'<!--.*?-->', '', body, flags=re.S)        # คอมเมนต์ HTML
         body = re.sub(r'^\s*//.*$', '', body, flags=re.M)         # คอมเมนต์ JS
         body = re.sub(r'#[0-9A-Fa-f]{3,6}\b', '', body)          # รหัสสี fallback
+        body = re.sub(r'rgba?\([^)]*\)', '', body)               # สี rgba() ของกราฟ (4 ต.ค. 2569)
         body = re.sub(r'font-weight:\s*\d+', '', body)            # น้ำหนักฟอนต์
         body = re.sub(r'\*\s*100\b', '', body)                    # แปลงเป็นเปอร์เซ็นต์
         body = re.sub(r'\d+(px|ms|%)', '', body)                  # ขนาด
@@ -316,7 +319,7 @@ class DashboardPublicOverviewTests(unittest.TestCase):
             for lab, c in zip(block['labels'], block['counts']):
                 with self.subTest(key=key, label=lab):
                     pct = '%.1f%%' % (c * 100.0 / block['n'])
-                    self.assertRegex(html, rf'<td>{re.escape(lab)}</td><td class="num">{c} คน</td>'
+                    self.assertRegex(html, rf'<t[dh][^>]*>{re.escape(lab)}</t[dh]><td class="num">{c} คน</td>'
                                            rf'<td class="num">{re.escape(pct)}</td>')
 
     def test_overview_matches_research_dataset(self):
@@ -348,7 +351,8 @@ class DashboardPublicOverviewTests(unittest.TestCase):
             }
             sess['buy_prediction'] = {'result': 'ซื้อ', 'confidence': 0.71, 'model_used': 'BAGGING (real)'}
         html = self._html(client)
-        for personal in ('สันดาป (ICE)', '38.0%', '71.0%', 'BAGGING (real)', 'ผลลัพธ์: คุณเหมาะสมกับ'):
+        # 'สันดาป (ICE)' อยู่ในตารางรถสาธารณะ ("รถยนต์สันดาป (ICE)") จึงไม่ใช้เป็นตัวชี้ผลส่วนตัวแล้ว (4 ต.ค. 2569)
+        for personal in ('38.0%', '71.0%', 'BAGGING (real)', 'ผลลัพธ์: คุณเหมาะสมกับ', 'ประเภทที่เข้ากับคุณ'):
             self.assertNotIn(personal, html, f'dashboard สาธารณะแสดงผลส่วนตัว "{personal}"')
 
     def test_same_numbers_for_everyone(self):
@@ -465,12 +469,17 @@ class FuelFormAsksOnlyUsedQuestionsTests(unittest.TestCase):
     def test_multi_select_questions_are_checkboxes(self):
         """27 ก.ย. 2569: คำถามที่แบบสอบถามให้เลือกได้หลายข้อ ต้องเป็น checkbox ไม่ใช่ select ค่าเดียว
         (เดิม prev_car เป็น select ทำให้คำตอบผสมถูกยุบเหลือแบบเดียว)"""
-        fuel = read_template('predict_fuel.html')
-        buy = read_template('predict_buy.html')
+        # 4 ต.ค. 2569 ช่องสร้างผ่าน _cardss_macros.html → ตรวจจากหน้าที่เรนเดอร์จริง
+        _setup_app()
+        client = logged_in_client()
+        buy = client.get('/predict/buy').get_data(as_text=True)
+        with client.session_transaction() as sess:
+            sess['buy_result'] = 'ซื้อ'
+        fuel = client.get('/predict/fuel').get_data(as_text=True)
         for v in ('ice', 'hybrid', 'ev'):
-            self.assertIn(f'type="checkbox" name="prev_car" value="{v}"', fuel)
+            self.assertRegex(fuel, rf'type="checkbox"[^>]*name="prev_car"[^>]*value="{v}"')
         self.assertNotIn('<select id="prev_car"', fuel)
-        self.assertIn('type="checkbox" name="purpose" value="avoid_public"', buy)
+        self.assertRegex(buy, r'type="checkbox"[^>]*name="purpose"[^>]*value="avoid_public"')
         self.assertNotIn('<select id="purpose"', buy)
 
 
@@ -530,11 +539,14 @@ class HonestResultTests(unittest.TestCase):
             self.skipTest('โหมด mock ไม่มีตัวเลขความแม่นยำ')
         self.assertIn('ผลนี้เชื่อได้แค่ไหน', html)
         self.assertIn(f"{rel['correct_per_100']} จาก 100 คน", html)
-        self.assertIn(' · '.join(rel['fields_th']), html)
+        used = html[html.index('class="fields-used"'):html.index('</div>', html.index('class="fields-used"'))]
+        self.assertEqual(re.findall(r'<span>([^<]+)</span>', used), list(rel['fields_th']))
         # เทียบกับ baseline (ทายคำตอบที่พบบ่อยที่สุด) ไม่ใช่เดาสุ่ม — Codex ห้องประชุม #44
         self.assertNotIn('เดาสุ่ม', html)
         if rel['baseline_per_100'] is not None:
-            self.assertIn(f"ทายคำตอบที่พบบ่อยที่สุดทุกครั้ง จะถูกประมาณ {rel['baseline_per_100']} จาก 100 คน", html)
+            # 4 ต.ค. 2569 ดีไซน์ใหม่แยกประโยค/ตัวเลขเป็นแถบเทียบ → ตรวจจากตัวหนังสือล้วน
+            text = ' '.join(re.sub(r'<[^>]+>', ' ', html).split())
+            self.assertRegex(text, rf"ทายคำตอบที่พบบ่อยที่สุดทุกครั้ง\s+{rel['baseline_per_100']} จาก 100 คน")
         self.assertIn(f"{rel['n_samples']:,}", html)
         for text in self.DEV_RESIDUE:
             with self.subTest(kind=kind, text=text):
@@ -595,6 +607,27 @@ class HonestResultTests(unittest.TestCase):
                 self.assertIn(f"<small>{item['count']} รุ่น · ", html)
         if ov:
             self.assertIn(f"<span>ข้อมูลตัวอย่าง</span><b>{ov['source']['rows']:,}</b>", html)
+
+    def test_recommend_cost_table_from_cars_json(self):
+        """4 ต.ค. 2569 ผู้ใช้เลือกแบบ ก: ตารางค่าใช้จ่ายหน้ารถแนะนำคำนวณจาก cars.json (monthly_cost + insurance_class1)
+        เดิม template พิมพ์ตายตัว (~32,500 / ~19,600 / ~11,300 / ค่าบำรุงรักษา) ซึ่งไม่มีที่มา"""
+        cars = flask_app_module.load_cars()
+        table = flask_app_module.build_cost_table(cars)
+        self.assertIsNotNone(table)
+        ev = [flask_app_module._numbers(c['monthly_cost'])[0] for c in cars['EV']]
+        self.assertEqual(dict(table['rows'])['ค่าน้ำมัน / ค่าไฟ']['EV'], f'~{min(ev):,}–{max(ev):,}')
+        client = logged_in_client()
+        with client.session_transaction() as sess:
+            sess['fuel_prediction'] = {'result': 'ไฮบริด (Hybrid)', 'scores': {'EV': 30, 'Hybrid': 40, 'ICE': 30}}
+        html = client.get('/recommend').get_data(as_text=True)
+        self.assertIn(dict(table['rows'])['ค่าน้ำมัน / ค่าไฟ']['Hybrid'], html)
+        for fake in ('~32,500', '~19,600', '~11,300', 'ค่าบำรุงรักษา</th>'):
+            self.assertNotIn(fake, html)
+        self.assertNotIn('ค่าเดิมจาก template เก่า', read_template('recommend.html'))
+
+    def test_login_does_not_promise_history_page(self):
+        # ยังไม่มีหน้าดูประวัติผล → ห้ามบอกว่า "กลับมาดูย้อนหลังได้" (ผู้ใช้ตกลง 4 ต.ค. 2569)
+        self.assertNotIn('ย้อนหลัง', flask_app_module.app.test_client().get('/login').get_data(as_text=True))
 
     def test_home_water_levels(self):
         """30 ก.ย. 2569 ผู้ใช้สั่ง: ปุ่มระดับน้ำ 4 ระดับในส่วนรถหล่น (ปลอดภัย→ห้ามขับ) + คำแนะนำทั่วไป ไม่บอกรายคัน

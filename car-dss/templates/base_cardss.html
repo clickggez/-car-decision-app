@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>{% block title %}CarDSS{% endblock %}</title>
+  {# ชุดสไตล์ "พระราม 2 คืนฝนตก" (ดู DESIGN.md) · base.html เดิมยังเก็บไว้ให้หน้าแอดมินที่ยังไม่ได้ออกแบบใหม่ #}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/cardss.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/cardss-app.css') }}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+<div class="page">
+<div class="rain-layer" id="rainLayer" aria-hidden="true"></div>
+
+{% set ep = request.endpoint %}
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="{{ url_for('index') }}">
+      <svg width="40" height="44" viewBox="0 0 40 44" aria-hidden="true"><path d="M20 2 L37 8 C37 26 31 36 20 42 C9 36 3 26 3 8 Z" fill="#F3EEE3"/><text x="20" y="28" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="700" font-size="16" fill="#1D1F1E">35</text></svg>
+      <span><b>CarDSS</b><small>ระบบช่วยเลือกรถ ฉบับคนพระราม 2</small></span>
+    </a>
+    <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>เมนู</span></button>
+    <nav class="links" id="menu" aria-label="เมนูหลัก">
+      <a href="{{ url_for('predict_buy_page') }}" {% if ep == 'predict_buy_page' %}aria-current="page"{% endif %}>พยากรณ์ซื้อ/ไม่ซื้อ</a>
+      <a href="{{ url_for('predict_fuel_page') }}" {% if ep == 'predict_fuel_page' %}aria-current="page"{% endif %}>ประเภทเชื้อเพลิง</a>
+      {% if current_user and current_user.is_authenticated %}
+      <a href="{{ url_for('recommend') }}" {% if ep == 'recommend' %}aria-current="page"{% endif %}>รถแนะนำ</a>
+      {% endif %}
+      <a href="{{ url_for('dashboard') }}" {% if ep == 'dashboard' %}aria-current="page"{% endif %}>ภาพรวมข้อมูล</a>
+      {% if is_admin %}<a href="{{ url_for('admin_dashboard') }}">ผู้ดูแลระบบ</a>{% endif %}
+      {% if current_user and current_user.is_authenticated %}
+      <a class="pill-btn" href="{{ url_for('logout') }}">ออกจากระบบ ({{ current_user.username }})</a>
+      {% elif ep not in ['login', 'register'] %}
+      <a class="pill-btn" href="{{ url_for('login') }}">เข้าสู่ระบบ</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>
+
+{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}
+<div class="wrap flash-list" role="status">
+  {% for category, message in messages %}<p class="flash flash-{{ category }}">{{ message }}</p>{% endfor %}
+</div>
+{% endif %}{% endwith %}
+
+<main class="app" id="main">
+  {% block content %}{% endblock %}
+</main>
+
+{# หน้าในไม่มีท้ายเว็บ (ผู้ออกแบบสั่งเอาออกทุกหน้า ยกเว้นหน้าแรก) · ถ้าหน้าไหนอยากได้คืน ให้ใส่เนื้อหาใน block นี้ #}
+{% block footer %}{% endblock %}
+</div>
+
+<script src="{{ url_for('static', filename='js/cardss-app.js') }}"></script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,292 +1,148 @@
-{% extends "base.html" %}
-{% block title %}ภาพรวมข้อมูลงานวิจัย — CarDSS{% endblock %}
+{% extends "base_cardss.html" %}
+{% import "_cardss_macros.html" as ui %}
+{% block title %}ภาพรวมข้อมูลจากแบบสอบถาม — CarDSS{% endblock %}
 
 {#
-  หน้าสาธารณะ (25 ก.ย. 2569) — ทุกคนเห็นเหมือนกัน ไม่ต้องล็อกอิน
-  ตัวเลขทุกตัวมาจาก app.dashboard():
-    overview    = data/dataset_overview.json (สร้างโดย analysis/dashboard_overview.py)
-    car_summary = data/cars.json นับสดตอนเปิดหน้า
-  ⛔ ห้ามฝังตัวเลขลงใน template นี้ (เคยพลาด: EV 78%, score card 92/75/88/60, ค่าใช้จ่าย 800/2200/3800)
+  หน้าสาธารณะ ทุกคนเห็นเหมือนกัน ⭐ ห้ามแสดงผลส่วนตัว
+  ตัวเลขทุกตัวมาจาก app.dashboard(): overview = data/dataset_overview.json · car_summary = data/cars.json (นับสด)
+  ⛔ ห้ามฝังตัวเลขลงใน template นี้
 #}
 
 {% block extra_head %}
-<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 {% endblock %}
 
-{% macro pct(part, whole) -%}
-{{ '%.1f'|format(part * 100.0 / whole) if whole else '0.0' }}%
-{%- endmacro %}
-
-{% macro baht(v) -%}
-{{ '{:,}'.format(v) if v else '—' }}
-{%- endmacro %}
+{% macro pct(part, whole) -%}{{ '%.1f'|format(part * 100.0 / whole) if whole else '0.0' }}%{%- endmacro %}
+{% macro baht(v) -%}{{ '{:,}'.format(v) if v else '—' }}{%- endmacro %}
 
 {% block content %}
-<div class="page-container-wide" style="padding-top:48px;">
-
-  <!-- Breadcrumb -->
-  <div class="breadcrumb-cardss fade-in">
-    <a href="{{ url_for('index') }}">หน้าหลัก</a>
-    <span class="sep">›</span>
-    <span class="current">ภาพรวมข้อมูล</span>
-  </div>
-
-  <!-- Page header -->
-  <div class="page-header fade-in">
-    <h1><i class="bi bi-bar-chart-line me-2 text-brand"></i>ภาพรวมข้อมูลงานวิจัย</h1>
-    <p>สถิติเชิงพรรณนาของแบบสอบถามที่ใช้สร้างโมเดลในระบบนี้ — ทุกคนเห็นข้อมูลชุดเดียวกัน</p>
-  </div>
-
-  <!-- ========================================================
-       CTA — ชวนล็อกอิน / เริ่มวิเคราะห์ของตัวเอง
-       ======================================================== -->
-  <div class="chart-card fade-in mb-4" id="dashboardCta" style="height:auto;">
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-      <div>
-        <div style="font-size:16px;font-weight:500;color:var(--text-primary);margin-bottom:4px;">
-          อยากรู้ว่ารถประเภทไหนเหมาะกับคุณ?
-        </div>
-        <div style="font-size:14px;color:var(--text-muted);">
-          {% if current_user and current_user.is_authenticated %}
-            ทำแบบประเมิน 2 ขั้น (ซื้อ/ไม่ซื้อ → ประเภทเชื้อเพลิง) ผลจะบันทึกไว้กับบัญชีของคุณ
-          {% else %}
-            เข้าสู่ระบบก่อนเริ่มวิเคราะห์ เพื่อให้ผลของคุณบันทึกไว้กับบัญชีของคุณเอง
-          {% endif %}
-        </div>
-      </div>
-      <div class="d-flex flex-wrap gap-2">
-        {% if current_user and current_user.is_authenticated %}
-          <a href="{{ url_for('predict_buy_page') }}" class="btn-cardss-primary" id="ctaStart" style="padding:10px 28px;">
-            เริ่มวิเคราะห์
-          </a>
-        {% else %}
-          <a href="{{ url_for('login') }}" class="btn-cardss-primary" id="ctaLogin" style="padding:10px 28px;">
-            เข้าสู่ระบบเพื่อเริ่มวิเคราะห์
-          </a>
-          <a href="{{ url_for('register') }}" class="btn-cardss-secondary" id="ctaRegister" style="padding:10px 24px;">
-            สมัครสมาชิก
-          </a>
-        {% endif %}
-      </div>
-    </div>
-  </div>
+{% set fuel_th = {'EV': 'รถยนต์ไฟฟ้า (EV)', 'Hybrid': 'รถยนต์ไฮบริด (HEV)', 'ICE': 'รถยนต์สันดาป (ICE)'} %}
+<div class="wrap">
+  <header class="page-head">
+    <h1>ภาพรวมข้อมูล<br>จากแบบสอบถาม</h1>
+    <p class="lead">คำตอบจริงจากแบบสอบถามที่ใช้สร้างระบบนี้ แสดงเป็นกราฟพร้อมตัวเลข และรุ่นรถที่ระบบใช้แนะนำ</p>
+  </header>
 
   {% if overview %}
-  <!-- ========================================================
-       ตัวเลขหลัก
-       ======================================================== -->
-  <div class="row g-3 mb-4 fade-in fade-in-delay-1">
-    <div class="col-6 col-md-4">
-      <div class="stat-card">
-        <div class="stat-value" id="statRespondents">{{ overview.source.rows }}</div>
-        <div class="stat-label">ผู้ตอบแบบสอบถาม (คน)</div>
-      </div>
-    </div>
-    <div class="col-6 col-md-4">
-      <div class="stat-card">
-        <div class="stat-value" id="statFuelN">{{ overview.fuel.n }}</div>
-        <div class="stat-label">ผู้มีรถยนต์อยู่แล้ว (ใช้สร้างโมเดลเชื้อเพลิง)</div>
-      </div>
-    </div>
-    <div class="col-12 col-md-4">
-      <div class="stat-card">
-        <div class="stat-value" id="statCars">{{ car_summary|sum(attribute='count') }}</div>
-        <div class="stat-label">รุ่นรถในฐานข้อมูลแนะนำ</div>
-      </div>
-    </div>
+  <div class="stones" style="justify-content:flex-start" aria-label="ตัวเลขหลักของข้อมูล">
+    <div class="stone"><span>ผู้ตอบทั้งหมด</span><b id="statRespondents">{{ '{:,}'.format(overview.source.rows) }}</b></div>
+    <div class="stone"><span>ผู้มีรถอยู่แล้ว</span><b id="statFuelN">{{ '{:,}'.format(overview.fuel.n) }}</b></div>
+    <div class="stone"><span>รุ่นรถในระบบ</span><b id="statCars">{{ car_summary|sum(attribute='count') }}</b></div>
   </div>
 
-  <!-- ========================================================
-       การกระจายของคำตอบในแบบสอบถามทั้งชุด (n=630 ตั้งแต่ 28 ก.ย. — BUY บนเว็บเทรนจากชุดย่อย n=514)
-       ======================================================== -->
-  <div class="row g-4 mb-4 fade-in fade-in-delay-1">
-    <div class="col-md-6">
-      <div class="chart-card">
-        <div class="chart-card-title">
-          แนวโน้มการซื้อรถยนต์ <span style="color:var(--text-muted);font-weight:400;">(n={{ overview.buy.n }})</span>
-        </div>
-        <div style="position:relative;height:220px;">
-          <canvas id="buyChart" aria-label="สัดส่วนแนวโน้มการซื้อ"></canvas>
-        </div>
-        <table class="dash-table" id="buyTable">
-          {% for lab in overview.buy.labels %}
-          {% set c = overview.buy.counts[loop.index0] %}
-          <tr><td>{{ lab }}</td><td class="num">{{ c }} คน</td><td class="num">{{ pct(c, overview.buy.n) }}</td></tr>
-          {% endfor %}
-        </table>
-      </div>
-    </div>
+  <div class="dash-grid">
+    <section class="panel" aria-labelledby="hBuy">
+      <div class="panel-head"><h2 id="hBuy">แนวโน้มการซื้อรถยนต์</h2><small>ผู้ตอบ {{ overview.buy.n }} คน</small></div>
+      <div class="chart-box"><canvas id="buyChart" role="img" aria-label="สัดส่วนแนวโน้มการซื้อรถ รายละเอียดในตารางด้านล่าง"></canvas></div>
+      <div class="table-wrap"><table class="table" id="buyTable" style="min-width:0">
+        <thead><tr><th scope="col">คำตอบ</th><th scope="col" class="num">จำนวน</th><th scope="col" class="num">สัดส่วน</th></tr></thead>
+        <tbody>{% for lab in overview.buy.labels %}{% set c = overview.buy.counts[loop.index0] %}
+          <tr><th scope="row">{{ lab }}</th><td class="num">{{ c }} คน</td><td class="num">{{ pct(c, overview.buy.n) }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </section>
 
-    <div class="col-md-6">
-      <div class="chart-card">
-        <div class="chart-card-title">
-          ประเภทเชื้อเพลิงที่สนใจ <span style="color:var(--text-muted);font-weight:400;">(n={{ overview.fuel.n }})</span>
-        </div>
-        <div style="position:relative;height:220px;">
-          <canvas id="fuelChart" aria-label="สัดส่วนประเภทเชื้อเพลิงที่สนใจ"></canvas>
-        </div>
-        <table class="dash-table" id="fuelTable">
-          {% for lab in overview.fuel.labels %}
-          {% set c = overview.fuel.counts[loop.index0] %}
-          <tr><td>{{ lab }}</td><td class="num">{{ c }} คน</td><td class="num">{{ pct(c, overview.fuel.n) }}</td></tr>
-          {% endfor %}
-        </table>
-      </div>
-    </div>
-  </div>
+    <section class="panel" aria-labelledby="hFuel">
+      <div class="panel-head"><h2 id="hFuel">ประเภทเชื้อเพลิงที่สนใจ</h2><small>ผู้มีรถ {{ overview.fuel.n }} คน</small></div>
+      <div class="chart-box"><canvas id="fuelChart" role="img" aria-label="สัดส่วนประเภทเชื้อเพลิงที่สนใจ รายละเอียดในตารางด้านล่าง"></canvas></div>
+      <div class="table-wrap"><table class="table" id="fuelTable" style="min-width:0">
+        <thead><tr><th scope="col">ประเภท</th><th scope="col" class="num">จำนวน</th><th scope="col" class="num">สัดส่วน</th></tr></thead>
+        <tbody>{% for lab in overview.fuel.labels %}{% set c = overview.fuel.counts[loop.index0] %}
+          <tr><th scope="row">{{ lab }}</th><td class="num">{{ c }} คน</td><td class="num">{{ pct(c, overview.fuel.n) }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </section>
 
-  <!-- ========================================================
-       ลักษณะผู้ตอบ
-       ======================================================== -->
-  <div class="row g-4 mb-4 fade-in fade-in-delay-2">
-    <div class="col-md-6">
-      <div class="chart-card">
-        <div class="chart-card-title">
-          ช่วงอายุของผู้ตอบ <span style="color:var(--text-muted);font-weight:400;">(n={{ overview.age.n }})</span>
-        </div>
-        <div style="position:relative;height:260px;">
-          <canvas id="ageChart" aria-label="ช่วงอายุของผู้ตอบ"></canvas>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-6">
-      <div class="chart-card">
-        <div class="chart-card-title">
-          รายได้เฉลี่ยต่อเดือนของผู้ตอบ <span style="color:var(--text-muted);font-weight:400;">(n={{ overview.income.n }})</span>
-        </div>
-        <div style="position:relative;height:260px;">
-          <canvas id="incomeChart" aria-label="รายได้เฉลี่ยต่อเดือนของผู้ตอบ"></canvas>
-        </div>
-      </div>
-    </div>
+    <section class="panel" aria-labelledby="hAge">
+      <div class="panel-head"><h2 id="hAge">ช่วงอายุของผู้ตอบ</h2><small>{{ overview.age.n }} คน</small></div>
+      <div class="chart-box tall"><canvas id="ageChart" role="img" aria-label="จำนวนผู้ตอบแยกตามช่วงอายุ"></canvas></div>
+    </section>
+
+    <section class="panel" aria-labelledby="hIncome">
+      <div class="panel-head"><h2 id="hIncome">รายได้เฉลี่ยต่อเดือนของผู้ตอบ</h2><small>{{ overview.income.n }} คน</small></div>
+      <div class="chart-box tall"><canvas id="incomeChart" role="img" aria-label="จำนวนผู้ตอบแยกตามรายได้ต่อเดือน"></canvas></div>
+    </section>
   </div>
   {% else %}
-  <div class="chart-card fade-in mb-4" id="overviewUnavailable" style="height:auto;text-align:center;padding:40px 24px;">
-    <div style="font-size:16px;font-weight:500;color:var(--text-primary);margin-bottom:8px;">ยังไม่มีข้อมูลสรุป</div>
-    <div style="font-size:14px;color:var(--text-muted);">
-      ไม่พบไฟล์สรุปข้อมูลงานวิจัยบนเซิร์ฟเวอร์ ผู้ดูแลต้องรัน <code>analysis/dashboard_overview.py</code>
-    </div>
-  </div>
+  <section class="panel empty" id="overviewUnavailable">
+    <h2>ยังไม่มีข้อมูลสรุป</h2>
+    <p class="muted">ไม่พบไฟล์สรุปข้อมูลบนเซิร์ฟเวอร์ ผู้ดูแลระบบต้องสร้างไฟล์สรุปก่อน</p>
+  </section>
   {% endif %}
 
-  <!-- ========================================================
-       รถในฐานข้อมูลแนะนำ (cars.json นับสด)
-       ======================================================== -->
-  <div class="chart-card fade-in fade-in-delay-2 mb-4" style="height:auto;">
-    <div class="chart-card-title">รถที่ระบบใช้แนะนำ แยกตามประเภทเชื้อเพลิง</div>
-    <table class="dash-table" id="carTable">
-      <tr class="head"><td>ประเภท</td><td class="num">จำนวนรุ่น</td><td class="num">ช่วงราคา (บาท)</td></tr>
-      {% for row in car_summary %}
-      <tr>
-        <td><span class="text-{{ row.fuel|lower }}">{{ row.fuel }}</span></td>
-        <td class="num">{{ row.count }}</td>
-        <td class="num">{% if row.price_min %}{{ baht(row.price_min) }} – {{ baht(row.price_max) }}{% else %}—{% endif %}</td>
-      </tr>
-      {% endfor %}
-    </table>
-  </div>
+  <section class="panel" aria-labelledby="hCars">
+    <div class="panel-head"><h2 id="hCars">รถที่ระบบใช้แนะนำ แยกตามประเภท</h2></div>
+    <div class="table-wrap"><table class="table" id="carTable">
+      <thead><tr><th scope="col">ประเภท</th><th scope="col" class="num">จำนวนรุ่น</th><th scope="col" class="num">ช่วงราคา (บาท)</th></tr></thead>
+      <tbody>{% for row in car_summary %}
+        <tr><th scope="row"><span class="dot dot--{{ row.fuel }}" aria-hidden="true"></span>{{ fuel_th.get(row.fuel, row.fuel) }}</th>
+          <td class="num">{{ row.count }}</td>
+          <td class="num">{% if row.price_min %}{{ baht(row.price_min) }} – {{ baht(row.price_max) }}{% else %}—{% endif %}</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </section>
 
-  <!-- ที่มาของข้อมูล -->
-  <div class="fade-in fade-in-delay-3" style="font-size:12px;color:var(--text-muted);line-height:1.8;padding-bottom:24px;">
-    ที่มา: แบบสอบถามงานวิจัย{% if overview %} {{ overview.source.rows }} คน{% endif %} ชุดเดียวกับที่ใช้สร้างโมเดล ·
-    กลุ่มประเภทเชื้อเพลิงนับเฉพาะผู้ที่มีรถยนต์อยู่แล้ว ·
-    ข้อมูลรถมาจากฐานข้อมูลรถแนะนำของระบบ<br>
-    ตัวเลขเป็นสัดส่วนของกลุ่มตัวอย่างในงานวิจัยนี้ ไม่ใช่ตัวแทนผู้ซื้อรถทั้งประเทศ<br>
-    ข้อมูลเก็บในเขตบางขุนเทียน จึงอาจไม่ตรงกับคนพื้นที่อื่น
-  </div>
+  <section class="panel cta-band" id="dashboardCta">
+    <div>
+      <h2>อยากรู้ว่ารถประเภทไหนเหมาะกับคุณ</h2>
+      <p class="muted">{% if current_user and current_user.is_authenticated %}ทำแบบประเมิน 2 ขั้น ผลจะบันทึกไว้กับบัญชีของคุณ{% else %}เข้าสู่ระบบก่อนเริ่ม ผลของคุณจะบันทึกไว้กับบัญชีของคุณเอง{% endif %}</p>
+    </div>
+    <div class="btn-row">
+      {% if current_user and current_user.is_authenticated %}
+      <a class="btn btn-primary" id="ctaStart" href="{{ url_for('predict_buy_page') }}">เริ่มประเมิน {{ ui.arrow() }}</a>
+      {% else %}
+      <a class="btn btn-primary" id="ctaLogin" href="{{ url_for('login') }}">เข้าสู่ระบบเพื่อเริ่มประเมิน {{ ui.arrow() }}</a>
+      <a class="btn btn-ghost" id="ctaRegister" href="{{ url_for('register') }}">สมัครสมาชิก</a>
+      {% endif %}
+    </div>
+  </section>
 
+  <div class="source">
+    <p>ที่มา: แบบสอบถามงานวิจัย{% if overview %} {{ '{:,}'.format(overview.source.rows) }} คน{% endif %} ชุดเดียวกับที่ใช้สร้างระบบ · กลุ่มประเภทเชื้อเพลิงนับเฉพาะผู้ที่มีรถอยู่แล้ว · ข้อมูลรถมาจากฐานข้อมูลรถแนะนำของระบบ</p>
+    <p>ตัวเลขเป็นสัดส่วนของกลุ่มตัวอย่างในงานวิจัยนี้ ไม่ใช่ตัวแทนผู้ซื้อรถทั้งประเทศ</p>
+    <p>ข้อมูลเก็บในเขตบางขุนเทียน จึงอาจไม่ตรงกับคนพื้นที่อื่น</p>
+  </div>
 </div>
-
-<style>
-  .dash-table{width:100%;font-size:13px;border-collapse:collapse;margin-top:16px}
-  .dash-table td{padding:6px 8px;border-bottom:1px solid var(--border-light);color:var(--text-secondary)}
-  .dash-table tr:last-child td{border-bottom:none}
-  .dash-table tr.head td{color:var(--text-muted);font-weight:500}
-  .dash-table td.num{text-align:right;font-variant-numeric:tabular-nums}
-</style>
 {% endblock %}
 
 {% block extra_scripts %}
 {% if overview %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  if (typeof Chart === 'undefined') return;  // โหลด CDN ไม่ได้ = ยังเหลือตารางตัวเลขให้อ่าน
+  if (typeof Chart === 'undefined') return;   // โหลดไลบรารีไม่ได้ ยังมีตารางตัวเลขให้อ่าน
+  var ov = {{ overview|tojson }};             // ข้อมูลทั้งหมดมาจากเซิร์ฟเวอร์
+  var css = getComputedStyle(document.documentElement);
+  var v = function (n) { return css.getPropertyValue(n).trim(); };
+  var INK = v('--ink-2'), LINE = 'rgba(255,255,255,.12)', PAPER = v('--paper');
+  var FONT = { family: "'IBM Plex Sans Thai', sans-serif", size: 14 };
+  Chart.defaults.color = INK; Chart.defaults.font = FONT;
 
-  // ข้อมูลทั้งหมดมาจาก server (dataset_overview.json) — ไม่มีตัวเลขในสคริปต์นี้
-  var ov = {{ overview|tojson }};
-
-  function cssVar(name, fallback) {
-    var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-    return v || fallback;
+  // สีประเภทรถจับจากชื่อป้าย ถ้าไม่ตรงใช้ตามลำดับ ไฟฟ้า → ไฮบริด → สันดาป
+  function fuelColor(label, i) {
+    var s = String(label).toLowerCase();
+    if (/ev|ไฟฟ้า/.test(s) && !/hybrid|ไฮบริด/.test(s)) return v('--ev');
+    if (/hybrid|hev|ไฮบริด/.test(s)) return v('--hev');
+    if (/ice|สันดาป|น้ำมัน/.test(s)) return v('--ice');
+    return [v('--ev'), v('--hev'), v('--ice')][i % 3];
   }
-  var FONT = { family: "'Noto Sans Thai', sans-serif", size: 12 };
-  var charts = [];
-
   function doughnut(id, block, colors) {
-    var el = document.getElementById(id);
-    if (!el) return;
-    charts.push(new Chart(el.getContext('2d'), {
-      type: 'doughnut',
-      data: { labels: block.labels, datasets: [{ data: block.counts, backgroundColor: colors, borderWidth: 0 }] },
-      options: {
-        responsive: true, maintainAspectRatio: false, cutout: '60%',
-        plugins: {
-          legend: { position: 'bottom', labels: { font: FONT, color: cssVar('--text-muted', '#5C5E62'), usePointStyle: true } },
-          tooltip: { callbacks: { label: function (ctx) {
-            return ctx.label + ': ' + ctx.parsed + ' คน (' + (ctx.parsed * 100 / block.n).toFixed(1) + '%)';
-          } } }
-        }
-      }
-    }));
+    var el = document.getElementById(id); if (!el) return;
+    new Chart(el, { type: 'doughnut',
+      data: { labels: block.labels, datasets: [{ data: block.counts, backgroundColor: colors, borderColor: v('--night'), borderWidth: 3 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '62%',
+        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16 } },
+          tooltip: { callbacks: { label: function (c) { return c.label + ': ' + c.parsed + ' คน (' + (c.parsed * 100 / block.n).toFixed(1) + '%)'; } } } } } });
   }
-
   function bars(id, block) {
-    var el = document.getElementById(id);
-    if (!el) return;
-    charts.push(new Chart(el.getContext('2d'), {
-      type: 'bar',
-      data: { labels: block.labels, datasets: [{ data: block.counts, backgroundColor: cssVar('--brand-primary', '#3E6AE1'), borderRadius: 4 }] },
-      options: {
-        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-        scales: {
-          x: { beginAtZero: true, grid: { color: cssVar('--border-light', '#EEEEEE') }, ticks: { font: FONT, color: cssVar('--text-muted', '#5C5E62'), precision: 0 } },
-          y: { grid: { display: false }, ticks: { font: FONT, color: cssVar('--text-muted', '#5C5E62') } }
-        },
-        plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { label: function (ctx) {
-            return ctx.parsed.x + ' คน (' + (ctx.parsed.x * 100 / block.n).toFixed(1) + '%)';
-          } } }
-        }
-      }
-    }));
+    var el = document.getElementById(id); if (!el) return;
+    new Chart(el, { type: 'bar',
+      data: { labels: block.labels, datasets: [{ data: block.counts, backgroundColor: PAPER, borderRadius: 4, maxBarThickness: 26 }] },
+      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        scales: { x: { beginAtZero: true, grid: { color: LINE }, ticks: { precision: 0 } }, y: { grid: { display: false } } },
+        plugins: { legend: { display: false },
+          tooltip: { callbacks: { label: function (c) { return c.parsed.x + ' คน (' + (c.parsed.x * 100 / block.n).toFixed(1) + '%)'; } } } } } });
   }
-
-  doughnut('buyChart', ov.buy, [cssVar('--brand-primary', '#3E6AE1'), cssVar('--text-muted', '#5C5E62')]);
-  doughnut('fuelChart', ov.fuel, [cssVar('--color-ev', '#00A550'), cssVar('--color-hybrid', '#0072CE'), cssVar('--color-ice', '#FF6B00')]);
+  doughnut('buyChart', ov.buy, [PAPER, '#5E707B']);
+  doughnut('fuelChart', ov.fuel, ov.fuel.labels.map(fuelColor));
   bars('ageChart', ov.age);
   bars('incomeChart', ov.income);
-
-  // ----- อัปเดตสีกราฟเมื่อสลับธีม -----
-  // Chart.js อ่าน CSS variable ครั้งเดียวตอนสร้าง ถ้าไม่อัปเดต ตัวเลขแกน/เส้นกริดจะค้างสีเดิม
-  document.addEventListener('cardss:themechange', function () {
-    var grid = cssVar('--border-light', '#EEEEEE');
-    var text = cssVar('--text-muted', '#5C5E62');
-    var brand = cssVar('--brand-primary', '#3E6AE1');
-    charts.forEach(function (ch) {
-      var scales = ch.options.scales || {};
-      Object.keys(scales).forEach(function (k) {
-        if (scales[k].grid && scales[k].grid.display !== false) scales[k].grid.color = grid;
-        if (scales[k].ticks) scales[k].ticks.color = text;
-      });
-      var lg = ch.options.plugins && ch.options.plugins.legend;
-      if (lg && lg.labels) lg.labels.color = text;
-      if (ch.config.type === 'bar') ch.data.datasets[0].backgroundColor = brand;
-      if (ch.canvas.id === 'buyChart') ch.data.datasets[0].backgroundColor = [brand, text];
-      ch.update('none');
-    });
-  });
 });
 </script>
 {% endif %}

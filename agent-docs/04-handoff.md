@@ -5,6 +5,24 @@
 
 ---
 
+**วันที่:** 2026-10-04
+**จาก:** Claude Code (Opus 5.5)
+
+# 📋 ลงหน้าใน 8 หน้าดีไซน์ใหม่ของผู้ใช้ (Downloads/cardss-pages.zip + ส่งต่อ-หน้าใน.md)
+
+- ผู้ใช้อนุญาต (4 ต.ค.): สร้าง template ใหม่ `base_cardss.html` + `_cardss_macros.html` · ตารางค่าใช้จ่ายแบบ ก · แก้ข้อความล็อกอิน
+- ทับ: login register predict_buy result_buy predict_fuel result_fuel recommend dashboard · เพิ่ม `static/css/cardss-app.css` `static/js/cardss-app.js` · แอดมินยังใช้ `base.html`
+- ไม่ใช้จากชุด: `home.html` (เก่ากว่า) · `cardss.css` (สำเนาเก่า ไม่มี .wl) · รูป ora-good-cat · preview/ edit-mode/ hub
+- ✅ ค่าตัวเลือกฟอร์มตรงของเดิมทุกตัว (เรนเดอร์จริงเทียบ name/value: BUY 55/55 · FUEL 32/32)
+- `app.build_cost_table()` คำนวณจาก cars.json (monthly_cost + insurance_class1 ÷ 12) ช่วงต่ำ–สูงต่อประเภท · ตัดแถวค่าบำรุงรักษา (ไม่มีข้อมูล) · template เลิกใช้ค่าตายตัว
+- ล็อกอิน: ตัด "กลับมาดูย้อนหลังได้ทุกเมื่อ" (ยังไม่มีหน้าประวัติ) · dashboard เติม id statRespondents/statFuelN/statCars ให้เทสต์เดิม
+- เทสต์: ปรับ 7 ตัวตามโครงใหม่ (เมนู id="menu", ตาราง th, rgba, checkbox จากหน้าเรนเดอร์, ป้ายช่องที่ใช้, ประโยค baseline) + เพิ่ม 2 ตัว (cost_table, ล็อกอินไม่สัญญาประวัติ) · **pytest 91 ผ่าน**
+- Chrome headless: 8 หน้า × 360/390/768/1280 ไม่มีเลื่อนแนวนอน ไม่มี error ไม่มีตัวอักษร <14px · ส่งฟอร์มว่าง = สรุป "ยังไม่ได้ตอบ 9 ข้อ" · กรอกครบ → /result/buy
+- DESIGN.md รวมฉบับ 4 ต.ค. (ส่วน 1–3, 7) + ของโปรเจกต์ (ส่วน 4–6, แถว .wl)
+- ⏳ เหลือ: หน้าแอดมิน/หน้าผิดพลาดยังแบบเดิม · `cars.json` ยังชี้รูป .png (ล็อก ผู้ใช้เท่านั้น — ถ้าจะใช้ .webp ต้องให้ผู้ใช้แก้) · มือถือจริงยังไม่ได้ลอง
+
+---
+
 **วันที่:** 2026-09-30 (บ่าย)
 **จาก:** Claude Code (Opus 5.5)
 

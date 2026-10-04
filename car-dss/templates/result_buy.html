@@ -1,111 +1,36 @@
-{% extends "base.html" %}
-{% block title %}ผลพยากรณ์การตัดสินใจซื้อรถยนต์ — CarDSS{% endblock %}
+{% extends "base_cardss.html" %}
+{% import "_cardss_macros.html" as ui %}
+{% block title %}ผลขั้นที่ 1 แนวโน้มการซื้อรถ — CarDSS{% endblock %}
+
+{# ตัวแปรจากระบบ: result.result ('ซื้อ' หรือค่าอื่น) · reliability (model_reliability('buy')) — ห้ามพิมพ์ตัวเลขตายตัว #}
 
 {% block content %}
-<div class="page-container-narrow" style="padding-top:56px;padding-bottom:56px;">
+{% set will_buy = result.result == 'ซื้อ' %}
+<div class="wrap">
+  {{ ui.trip(2 if will_buy else 0, done=1) }}
 
-  <!-- Step indicator -->
-  <div class="steps fade-in">
-    <div class="step-item">
-      <div class="step-circle done"><i class="bi bi-check-lg" style="font-size:14px;"></i></div>
-      <span class="step-label">พยากรณ์ซื้อ/ไม่ซื้อ</span>
-    </div>
-    <div class="step-line done"></div>
-    <div class="step-item">
-      <div class="step-circle {% if result.result == 'ซื้อ' %}active{% endif %}">2</div>
-      <span class="step-label {% if result.result == 'ซื้อ' %}active{% endif %}">ประเภทเชื้อเพลิง</span>
-    </div>
-    <div class="step-line"></div>
-    <div class="step-item">
-      <div class="step-circle">3</div>
-      <span class="step-label">รถแนะนำ</span>
-    </div>
-  </div>
-
-  <!-- Result circle + main result -->
-  <div class="text-center fade-in" style="margin-bottom:36px;">
-    <div class="result-circle {{ 'buy' if result.result == 'ซื้อ' else 'no-buy' }} mb-4" style="margin-bottom:20px !important;">
-      {% if result.result == 'ซื้อ' %}
-        <i class="bi bi-check-circle-fill result-tone buy"></i>
+  <section class="verdict" aria-labelledby="verdictTitle">
+    <div class="page-head">
+      <div class="kicker"><i></i>ผลขั้นที่ 1 · แนวโน้มการซื้อรถ</div>
+      {% if will_buy %}
+      <h1 id="verdictTitle">คุณมีแนวโน้ม<br><span class="hl">จะซื้อรถ</span></h1>
+      <p class="lead">ระบบประเมินจากรูปแบบคำตอบของผู้ตอบแบบสอบถามจริง ขั้นต่อไปคือดูว่ารถน้ำมัน ไฮบริด หรือไฟฟ้า แบบไหนเหมาะกับการใช้รถของคุณ</p>
+      <div class="btn-row">
+        <a class="btn btn-primary" href="{{ url_for('predict_fuel_page') }}">ไปขั้นที่ 2: วิเคราะห์ประเภทเชื้อเพลิง {{ ui.arrow() }}</a>
+        <a class="btn-text" href="{{ url_for('predict_buy_page') }}">แก้คำตอบขั้นที่ 1</a>
+      </div>
       {% else %}
-        <i class="bi bi-x-circle-fill result-tone no-buy"></i>
+      <h1 id="verdictTitle">คุณยังไม่มีแนวโน้ม<br>จะซื้อรถตอนนี้</h1>
+      <p class="lead">ผลนี้ไม่ได้ตัดสินว่าคุณควรหรือไม่ควรซื้อรถ ถ้างบ ที่พัก หรือความจำเป็นในการเดินทางเปลี่ยนไป ลองประเมินใหม่ได้ทุกเมื่อ</p>
+      <div class="btn-row">
+        <a class="btn btn-primary" href="{{ url_for('predict_buy_page') }}">กรอกข้อมูลใหม่อีกครั้ง {{ ui.arrow() }}</a>
+        <a class="btn btn-ghost" href="{{ url_for('dashboard') }}">ดูภาพรวมข้อมูลจากแบบสอบถาม</a>
+      </div>
       {% endif %}
     </div>
 
-    <h1 class="result-title result-tone {{ 'buy' if result.result == 'ซื้อ' else 'no-buy' }}">
-      {% if result.result == 'ซื้อ' %}
-        คุณมีแนวโน้มจะซื้อรถ
-      {% else %}
-        คุณยังไม่มีแนวโน้มจะซื้อรถตอนนี้
-      {% endif %}
-    </h1>
-    <p class="result-subtitle">
-      {% if result.result == 'ซื้อ' %}
-        ระบบประเมินจากรูปแบบคำตอบของผู้ตอบแบบสอบถามจริง
-      {% else %}
-        ระบบประเมินจากรูปแบบคำตอบของผู้ตอบแบบสอบถามจริง
-      {% endif %}
-    </p>
+  </section>
 
-  </div>
-
-  <!-- ผลนี้เชื่อได้แค่ไหน — ตัวเลขจาก model_reliability('buy') (metrics ใน .pkl) ห้ามพิมพ์ตายตัว (29 ก.ย. 2569) -->
-  <div class="card-cardss fade-in fade-in-delay-1 mb-4" style="background:var(--bg-secondary);">
-    <h2 style="font-size:15px;font-weight:500;color:var(--text-primary);margin:0 0 10px;">ผลนี้เชื่อได้แค่ไหน</h2>
-    <p style="font-size:14px;color:var(--text-secondary);margin:0 0 10px;line-height:1.8;">
-      ระบบเรียนรูปแบบจากคำตอบของผู้ตอบแบบสอบถามจริงทั้งหมด แล้วใช้รูปแบบนั้นประเมินคำตอบของคุณ
-      {% if reliability %}<br>ระบบดูจาก: {{ reliability.fields_th | join(' · ') }}{% endif %}
-    </p>
-    {% if reliability %}
-    <p style="font-size:14px;color:var(--text-secondary);margin:0 0 10px;line-height:1.8;">
-      เมื่อทดสอบกับคำตอบจริง {{ '{:,}'.format(reliability.n_samples) }} คน ระบบทายถูกประมาณ
-      <strong>{{ reliability.correct_per_100 }} จาก 100 คน</strong>
-      {% if reliability.baseline_per_100 is not none %}
-      <br>ถ้าไม่ดูคำตอบของคุณเลย แล้วทายคำตอบที่พบบ่อยที่สุดทุกครั้ง จะถูกประมาณ {{ reliability.baseline_per_100 }} จาก 100 คน
-      {% endif %}
-    </p>
-    {% endif %}
-    <p style="font-size:14px;color:var(--text-secondary);margin:0;line-height:1.8;">
-      ใช้ผลนี้เป็นข้อมูลประกอบการตัดสินใจเท่านั้น คนที่ตัดสินใจคือคุณ
-    </p>
-  </div>
-
-  <!-- Action buttons -->
-  <div class="fade-in fade-in-delay-3">
-    {% if result.result == 'ซื้อ' %}
-    <!-- ซื้อ → แสดงปุ่มไปหน้า predict_fuel (<<extend>>) -->
-    <div class="text-center mb-3">
-      <a href="{{ url_for('predict_fuel_page') }}" class="btn-cardss-primary" style="padding:16px 36px;font-size:15px;width:100%;justify-content:center;">
-        <i class="bi bi-fuel-pump"></i> วิเคราะห์ประเภทเชื้อเพลิง
-        <i class="bi bi-arrow-right ms-1"></i>
-      </a>
-    </div>
-    <div class="text-center">
-      <a href="{{ url_for('dashboard') }}" class="btn-cardss-secondary" style="width:100%;justify-content:center;">
-        <i class="bi bi-bar-chart-line"></i> ดูภาพรวมข้อมูลงานวิจัย
-      </a>
-    </div>
-    {% else %}
-    <!-- ไม่ซื้อ → ซ่อนปุ่ม predict_fuel (<<extend>> condition ไม่ผ่าน) -->
-    <div class="text-center mb-3">
-      <a href="{{ url_for('predict_buy_page') }}" class="btn-cardss-primary" style="padding:16px 36px;font-size:15px;width:100%;justify-content:center;">
-        <i class="bi bi-arrow-left"></i> กรอกข้อมูลใหม่อีกครั้ง
-      </a>
-    </div>
-    <div class="text-center">
-      <a href="{{ url_for('dashboard') }}" class="btn-cardss-secondary" style="width:100%;justify-content:center;">
-        <i class="bi bi-bar-chart-line"></i> ดูภาพรวมข้อมูลงานวิจัย
-      </a>
-    </div>
-    {% endif %}
-
-    <div class="text-center mt-3">
-      <a href="{{ url_for('predict_buy_page') }}" class="btn-cardss-ghost" style="font-size:13px;">
-        <i class="bi bi-arrow-counterclockwise me-1"></i> เริ่มต้นใหม่
-      </a>
-    </div>
-  </div>
-
+  {{ ui.trust(reliability, 'ผู้ตอบแบบสอบถามจริง', 'ผู้ตอบแบบสอบถาม') }}
 </div>
 {% endblock %}
-

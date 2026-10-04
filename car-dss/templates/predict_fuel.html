@@ -1,297 +1,62 @@
-{% extends "base.html" %}
-{% block title %}พยากรณ์ประเภทเชื้อเพลิง — CarDSS{% endblock %}
+{% extends "base_cardss.html" %}
+{% import "_cardss_macros.html" as ui %}
+{% block title %}ขั้นที่ 2 ประเภทเชื้อเพลิงที่เหมาะ — CarDSS{% endblock %}
+
+{#
+  ⭐ ชื่อช่องและค่าตัวเลือกต้องตรงกับ fuel_model.pkl (กฎข้อ 2)
+  usage_type, frequency, distance (เลือก 1) · prev_car (หลายข้อ ไม่บังคับ) · priority (หลายข้อ อย่างน้อย 1)
+  tech_env_concern (1–5) ⭐ ถ้อยคำข้อนี้ห้ามเปลี่ยน ต้องตรงกับแบบสอบถามที่ใช้เทรน
+  เข้าหน้านี้ได้เฉพาะคนที่ผลขั้นที่ 1 เป็น "มีแนวโน้มจะซื้อ" (เซิร์ฟเวอร์ตรวจ)
+#}
 
 {% block content %}
-<div class="page-container">
+<div class="wrap">
+  <div class="narrow" style="display:flex;flex-direction:column;gap:32px">
+    {{ ui.trip(2, done=1) }}
 
-  <!-- Breadcrumb -->
-  <div class="breadcrumb-cardss fade-in">
-    <a href="{{ url_for('predict_buy_page') }}">พยากรณ์ซื้อ/ไม่ซื้อ</a>
-    <span class="sep">›</span>
-    <span class="current">พยากรณ์ประเภทเชื้อเพลิง</span>
+    <header class="page-head">
+      <div class="kicker"><i></i>ขั้นที่ 2 จาก 3 · 6 ข้อ</div>
+      <h1>รถแบบไหนเข้ากับการใช้งานของคุณ</h1>
+      <p class="lead">ตอบเรื่องการใช้รถ รถที่เคยใช้ และสิ่งที่คุณให้ความสำคัญ ระบบจะเรียงน้ำมัน ไฮบริด และไฟฟ้า จากเหมาะที่สุดไปน้อยที่สุด</p>
+    </header>
+
+    <div class="alert alert--ok" role="status">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+      <div>ผลขั้นที่ 1: <b>คุณมีแนวโน้มจะซื้อรถ</b> จึงไปต่อขั้นนี้ได้</div>
+    </div>
+
+    <form method="POST" action="{{ url_for('api_predict_fuel') }}" id="predictFuelForm" data-survey novalidate style="display:flex;flex-direction:column;gap:24px">
+      {{ ui.error_summary() }}
+
+      <section class="panel" aria-labelledby="secUse">
+        <div class="panel-head"><h2 id="secUse">การใช้รถของคุณ</h2><small>ข้อ 1–4</small></div>
+        {{ ui.choice('q-usage', 'usage_type', 'ลักษณะการใช้รถ', [('city','ขับในเมืองเป็นหลัก'),('highway','ขับนอกเมืองเป็นหลัก'),('both','ทั้งในและนอกเมือง')], wide=True) }}
+        <div class="divider"></div>
+        {{ ui.choice('q-frequency', 'frequency', 'ความถี่ในการใช้รถ', [('occasional','เป็นครั้งคราว'),('1-2days','1–2 วัน/สัปดาห์'),('3-4days','3–4 วัน/สัปดาห์'),('5-6days','5–6 วัน/สัปดาห์'),('everyday','ทุกวัน')]) }}
+        <div class="divider"></div>
+        {{ ui.choice('q-distance', 'distance', 'ระยะทางเฉลี่ยต่อวัน', [('lt10','น้อยกว่า 10 กม.'),('10-30','10–30 กม.'),('31-50','31–50 กม.'),('51-70','51–70 กม.'),('71-90','71–90 กม.'),('90+','มากกว่า 90 กม.')]) }}
+        <div class="divider"></div>
+        {{ ui.choice('q-prev', 'prev_car', 'รถที่เคยใช้', [('ice','สันดาป (ดีเซล / เบนซิน)'),('hybrid','ไฮบริด'),('ev','ไฟฟ้า')], kind='checkbox', required=False, note='(ไม่บังคับ · เลือกได้หลายข้อ · ถ้ายังไม่เคยใช้รถ เว้นว่างได้)', wide=True) }}
+      </section>
+
+      <section class="panel" aria-labelledby="secMatter">
+        <div class="panel-head"><h2 id="secMatter">สิ่งที่คุณให้ความสำคัญ</h2><small>ข้อ 5–6</small></div>
+        {{ ui.choice('q-priority', 'priority', 'สิ่งที่ให้ความสำคัญในการเลือกซื้อรถ', [('price','ราคารถ'),('installment','ผ่อนชำระ'),('fuel_cost','ค่าน้ำมัน'),('electricity_cost','ค่าไฟฟ้า'),('maintenance_cost','ค่าซ่อมบำรุง'),('performance','สมรรถนะ'),('design','ดีไซน์/รูปลักษณ์'),('technology','เทคโนโลยี'),('value','ความคุ้มค่า'),('warranty','การรับประกัน')], kind='checkbox', note='เลือกได้หลายข้อ') }}
+        <div class="divider"></div>
+        <fieldset class="field" id="q-fit" data-required data-label="ความเหมาะสมของประเภทพลังงาน">
+          <legend>ประเภทพลังงานของรถยนต์มีความเหมาะสมกับการใช้งาน<span class="req" aria-hidden="true">*</span><span class="sr">(จำเป็น)</span></legend>
+          <p class="help">คุณให้ความสำคัญแค่ไหนว่าชนิดพลังงานของรถ (น้ำมัน / ไฮบริด / ไฟฟ้า) ต้องเหมาะกับการใช้รถของคุณ · ให้คะแนน 1 ถึง 5</p>
+          <div class="scale">
+            {% for v, t in [('1','ไม่เห็นด้วยอย่างยิ่ง'),('2','ไม่เห็นด้วย'),('3','เฉย ๆ'),('4','เห็นด้วย'),('5','เห็นด้วยอย่างยิ่ง')] %}
+            <label><input type="radio" name="tech_env_concern" value="{{ v }}" required><span><b>{{ v }}</b><small>{{ t }}</small></span></label>
+            {% endfor %}
+          </div>
+          <p class="field-err"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>กรุณาให้คะแนน 1 ถึง 5</p>
+        </fieldset>
+      </section>
+
+      {{ ui.actionbar('วิเคราะห์ประเภทรถ', back_url=url_for('result_buy'), back_label='กลับไปผลขั้นที่ 1') }}
+    </form>
   </div>
-
-  <!-- Step indicator -->
-  <div class="steps fade-in">
-    <div class="step-item">
-      <div class="step-circle done"><i class="bi bi-check-lg" style="font-size:14px;"></i></div>
-      <span class="step-label">พยากรณ์ซื้อ/ไม่ซื้อ</span>
-    </div>
-    <div class="step-line done"></div>
-    <div class="step-item">
-      <div class="step-circle active">2</div>
-      <span class="step-label active">ประเภทเชื้อเพลิง</span>
-    </div>
-    <div class="step-line"></div>
-    <div class="step-item">
-      <div class="step-circle">3</div>
-      <span class="step-label">รถแนะนำ</span>
-    </div>
-  </div>
-
-  <!-- Page header -->
-  <div class="page-header fade-in">
-    <h1><i class="bi bi-fuel-pump me-2 text-brand"></i>พยากรณ์ประเภทเชื้อเพลิงที่เหมาะสม</h1>
-    <p>กรอกพฤติกรรมการใช้รถ ประสบการณ์ และสิ่งที่คุณให้ความสำคัญ เพื่อให้ระบบแนะนำประเภทเชื้อเพลิงที่เหมาะสมที่สุด</p>
-  </div>
-
-  <!-- Prerequisite notice -->
-  <div class="alert-cardss success fade-in" style="margin-bottom:28px;">
-    <i class="bi bi-check-circle"></i>
-    ผลการพยากรณ์ก่อนหน้า: <strong>แนะนำให้ซื้อรถยนต์</strong> — กรุณากรอกข้อมูลเพิ่มเติมเพื่อวิเคราะห์ประเภทเชื้อเพลิง
-  </div>
-
-  <form method="POST" action="{{ url_for('api_predict_fuel') }}" id="predictFuelForm" novalidate>
-
-    <!-- ========================================================
-         SECTION 1: รถยนต์ที่ใช้อยู่
-         ======================================================== -->
-    <div class="card-cardss mb-4 fade-in fade-in-delay-1">
-      <div class="section-header-cardss ev">
-        <i class="bi bi-car-front me-2"></i>ส่วนที่ 1 — การใช้งานรถยนต์
-      </div>
-
-      <div class="row g-3">
-
-        <!-- 27 ก.ย. 2569: usage_type / frequency / distance กลับมา — fuel_model.pkl ชุด n=514 และ n=630 (28 ก.ย.) ใช้ทั้งสามตัว
-             (รวม mileage_intensity ที่คำนวณจาก frequency x distance) -->
-        <!-- ลักษณะการใช้งาน -->
-        <div class="col-md-6">
-          <div class="form-group-cardss">
-            <label class="form-label-cardss" for="usage_type">ลักษณะการใช้งาน <span style="color:var(--color-danger);">*</span></label>
-            <select id="usage_type" name="usage_type" class="form-select-cardss" required>
-              <option value="" disabled selected>— เลือกลักษณะการใช้งาน —</option>
-              <option value="city">ขับในเมืองเป็นหลัก</option>
-              <option value="highway">ขับนอกเมืองเป็นหลัก</option>
-              <option value="both">ทั้งในและนอกเมือง</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- ความถี่ใช้รถ -->
-        <div class="col-md-6">
-          <div class="form-group-cardss">
-            <label class="form-label-cardss" for="frequency">ความถี่ในการใช้รถ <span style="color:var(--color-danger);">*</span></label>
-            <select id="frequency" name="frequency" class="form-select-cardss" required>
-              <option value="" disabled selected>— เลือกความถี่ —</option>
-              <option value="occasional">เป็นครั้งคราว</option>
-              <option value="1-2days">1–2 วัน/สัปดาห์</option>
-              <option value="3-4days">3–4 วัน/สัปดาห์</option>
-              <option value="5-6days">5–6 วัน/สัปดาห์</option>
-              <option value="everyday">ทุกวัน</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- ระยะทางเฉลี่ยต่อวัน -->
-        <div class="col-md-6">
-          <div class="form-group-cardss">
-            <label class="form-label-cardss" for="distance">ระยะทางเฉลี่ยต่อวัน <span style="color:var(--color-danger);">*</span></label>
-            <select id="distance" name="distance" class="form-select-cardss" required>
-              <option value="" disabled selected>— เลือกระยะทาง —</option>
-              <option value="lt10">น้อยกว่า 10 กม.</option>
-              <option value="10-30">10–30 กม.</option>
-              <option value="31-50">31–50 กม.</option>
-              <option value="51-70">51–70 กม.</option>
-              <option value="71-90">71–90 กม.</option>
-              <option value="90+">มากกว่า 90 กม.</option>
-            </select>
-          </div>
-        </div>
-
-
-        <!-- ประสบการณ์รถที่เคยใช้ — 27 ก.ย. 2569 เปลี่ยนเป็น checkbox (multi-hot prev_ice/prev_hybrid/prev_ev)
-             เพราะในแบบสอบถามเลือกได้หลายข้อ เดิม select ค่าเดียวทำให้คนที่เคยใช้หลายแบบถูกยุบเหลือแบบเดียว -->
-        <div class="col-12">
-          <div class="form-group-cardss">
-            <label class="form-label-cardss">
-              ประสบการณ์ประเภทรถยนต์ที่เคยใช้
-              <span style="font-size:12px;font-weight:400;color:var(--text-muted);margin-left:4px;">(เลือกได้หลายข้อ — ถ้ายังไม่เคยใช้รถให้เว้นว่าง)</span>
-            </label>
-            <div class="checkbox-grid" id="prevCarGrid">
-          <label class="checkbox-item">
-            <input type="checkbox" name="prev_car" value="ice"> สันดาป (ดีเซล / เบนซิน)
-          </label>
-          <label class="checkbox-item">
-            <input type="checkbox" name="prev_car" value="hybrid"> ไฮบริด (Hybrid)
-          </label>
-          <label class="checkbox-item">
-            <input type="checkbox" name="prev_car" value="ev"> ไฟฟ้า (EV)
-          </label>
-            </div>
-            <div id="prevCarGrid-err" style="display:none;font-size:12px;color:var(--brand-primary);margin-top:8px;"></div>
-          </div>
-        </div>
-
-      </div><!-- /row -->
-    </div>
-
-    <!-- ========================================================
-         SECTION 2: สิ่งที่ให้ความสำคัญ
-         ======================================================== -->
-    <div class="card-cardss mb-4 fade-in fade-in-delay-2">
-      <div class="section-header-cardss hybrid">
-        <i class="bi bi-list-check me-2"></i>ส่วนที่ 2 — สิ่งที่คุณให้ความสำคัญ
-      </div>
-
-      <!-- สิ่งสำคัญในการเลือกซื้อ (Checkbox) -->
-      <div class="form-group-cardss">
-        <label class="form-label-cardss">
-          สิ่งสำคัญในการเลือกซื้อรถยนต์ <span style="color:var(--color-danger);">*</span>
-          <span style="font-size:12px;font-weight:400;color:var(--text-muted);margin-left:4px;">(เลือกได้หลายข้อ)</span>
-        </label>
-        <div class="checkbox-grid" id="priorityGrid">
-          <label class="checkbox-item">
-            <input type="checkbox" name="priority" value="price"> ราคารถ
-          </label>
-          <label class="checkbox-item">
-            <input type="checkbox" name="priority" value="installment"> ผ่อนชำระ
-          </label>
-          <label class="checkbox-item">
-            <input type="checkbox" name="priority" value="fuel_cost"> ค่าน้ำมัน
-          </label>
-          <label class="checkbox-item">
-            <input type="checkbox" name="priority" value="electricity_cost"> ค่าไฟฟ้า
-          </label>
-          <label class="checkbox-item">
-            <input type="checkbox" name="priority" value="maintenance_cost"> ค่าซ่อมบำรุง
-          </label>
-          <label class="checkbox-item">
-            <input type="checkbox" name="priority" value="performance"> สมรรถนะ
-          </label>
-          <label class="checkbox-item">
-            <input type="checkbox" name="priority" value="design"> ดีไซน์/รูปลักษณ์
-          </label>
-          <label class="checkbox-item">
-            <input type="checkbox" name="priority" value="technology"> เทคโนโลยี
-          </label>
-          <label class="checkbox-item">
-            <input type="checkbox" name="priority" value="value"> ความคุ้มค่า
-          </label>
-          <label class="checkbox-item">
-            <input type="checkbox" name="priority" value="warranty"> การรับประกัน
-          </label>
-        </div>
-        <div id="priority-err" style="display:none;font-size:12px;color:var(--brand-primary);margin-top:8px;"></div>
-      </div>
-
-      <div class="section-divider"></div>
-
-      <!-- 27 ก.ย. 2569: fuel_model.pkl ชุด n=514 และ n=630 (28 ก.ย.) ใช้ tech_env_concern ข้อเดียว (tech_cost_balance ถูกตัดในขั้นคัดฟีเจอร์)
-           จึงตัดข้อ resale_maintenance_concern ออก
-           26 ก.ย. 2569: ข้อนี้กลับมาครั้งแรก
-           ใช้ถ้อยคำเดียวกับข้อในแบบสอบถาม (ส่วน 7P) ที่ใช้เทรนจริง และสเกลทิศเดียวกัน (5 = เห็นด้วยอย่างยิ่ง)
-           เดิมหน้าเว็บถามเป็น "ความใส่ใจ/ความกังวล" (5 = กังวลมาก) ซึ่งคนละความหมายและกลับทิศกับข้อมูลที่เทรน -->
-      <div class="row g-3">
-
-        <div class="col-12">
-          <div class="form-group-cardss" style="margin-bottom:0;">
-            <label class="form-label-cardss">
-              ระดับความเห็นของคุณต่อข้อความต่อไปนี้
-              <span style="font-size:12px;font-weight:400;color:var(--text-muted);margin-left:4px;">(1 = ไม่เห็นด้วยอย่างยิ่ง ถึง 5 = เห็นด้วยอย่างยิ่ง)</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="col-md-6">
-          <div class="form-group-cardss">
-            <label class="form-label-cardss" for="tech_env_concern">
-              ประเภทพลังงานของรถยนต์มีความเหมาะสมกับการใช้งาน <span style="color:var(--color-danger);">*</span>
-            </label>
-            <select id="tech_env_concern" name="tech_env_concern" class="form-select-cardss" required>
-              <option value="" disabled selected>— 1 ถึง 5 —</option>
-              <option value="5">5 — เห็นด้วยอย่างยิ่ง</option>
-              <option value="4">4 — เห็นด้วย</option>
-              <option value="3">3 — เฉย ๆ</option>
-              <option value="2">2 — ไม่เห็นด้วย</option>
-              <option value="1">1 — ไม่เห็นด้วยอย่างยิ่ง</option>
-            </select>
-          </div>
-        </div>
-
-
-      </div><!-- /row -->
-    </div>
-
-    <!-- Submit -->
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 fade-in fade-in-delay-3">
-      <a href="{{ url_for('result_buy') }}" class="btn-cardss-secondary">
-        <i class="bi bi-arrow-left"></i> กลับหน้าก่อนหน้า
-      </a>
-      <button type="submit" class="btn-cardss-primary" style="padding:16px 48px;font-size:16px;">
-        <i class="bi bi-cpu"></i> วิเคราะห์ประเภทรถ
-      </button>
-    </div>
-
-  </form>
 </div>
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-// Toggle checkbox styling
-document.querySelectorAll('.checkbox-item input[type="checkbox"]').forEach(function(cb) {
-  cb.addEventListener('change', function() {
-    const label = this.closest('.checkbox-item');
-    if (this.checked) {
-      label.classList.add('checked');
-    } else {
-      label.classList.remove('checked');
-    }
-  });
-});
-
-// Form validation
-document.getElementById('predictFuelForm').addEventListener('submit', function(e) {
-  let valid = true;
-
-  // Check selects
-  const selects = this.querySelectorAll('select[required]');
-  let firstInvalid = null;
-  selects.forEach(function(sel) {
-    if (!sel.value) {
-      // ใช้แค่สีเส้นขอบ ไม่ใช้ boxShadow เพราะ 02-design-system.md ห้ามใช้เงา
-      sel.style.borderColor = 'var(--brand-primary)';
-      valid = false;
-      if (!firstInvalid) firstInvalid = sel;
-    } else {
-      sel.style.borderColor = '';
-    }
-  });
-
-  // Check at least one priority checkbox
-  const checked = document.querySelectorAll('input[name="priority"]:checked');
-  const priorityErr = document.getElementById('priority-err');
-  if (checked.length === 0) {
-    priorityErr.textContent = 'กรุณาเลือกอย่างน้อย 1 ข้อ';
-    priorityErr.style.display = 'block';
-    document.getElementById('priorityGrid').style.border = '1px solid var(--brand-primary)';
-    document.getElementById('priorityGrid').style.borderRadius = '4px';
-    document.getElementById('priorityGrid').style.padding = '8px';
-    valid = false;
-    if (!firstInvalid) firstInvalid = document.getElementById('priorityGrid');
-  } else {
-    priorityErr.style.display = 'none';
-    document.getElementById('priorityGrid').style.border = '';
-    document.getElementById('priorityGrid').style.padding = '';
-  }
-
-  if (!valid) {
-    e.preventDefault();
-    // เลื่อนไปที่จุดที่ยังไม่ได้กรอกจุดแรก แทนการเด้งขึ้นบนสุด
-    if (firstInvalid) {
-      firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      if (firstInvalid.focus) firstInvalid.focus({ preventScroll: true });
-    }
-  }
-});
-
-// Remove errors on change
-document.querySelectorAll('select').forEach(function(sel) {
-  sel.addEventListener('change', function() {
-    this.style.borderColor = '';
-    this.style.boxShadow = '';
-  });
-});
-</script>
 {% endblock %}

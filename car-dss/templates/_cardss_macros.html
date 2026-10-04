@@ -1,0 +1,87 @@
+{# ชิ้นส่วนที่ใช้ซ้ำหลายหน้า · {% import "_cardss_macros.html" as ui %} #}
+
+{# แถบขั้นตอน 3 ขั้น · now = 1, 2 หรือ 3 · done = ขั้นที่ผ่านแล้ว (ตัวเลขสูงสุด) #}
+{% macro trip(now, done=0) -%}
+<nav class="trip" aria-label="ขั้นตอนการประเมิน">
+  <ol>
+    {% for label in ['แนวโน้มการซื้อ', 'ประเภทเชื้อเพลิง', 'รถแนะนำ'] %}
+    {% set n = loop.index %}
+    <li class="{{ 'is-done' if n <= done else ('is-now' if n == now else '') }}" {% if n == now %}aria-current="step"{% endif %}>
+      <i>{% if n <= done %}<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span class="sr">ผ่านแล้ว</span>{% else %}{{ n }}{% endif %}</i>
+      <b>{{ label }}</b>
+    </li>
+    {% endfor %}
+  </ol>
+</nav>
+{%- endmacro %}
+
+{# ข้อคำถามแบบกดทั้งการ์ด
+   name/options ต้องตรงกับโมเดล (options = [(value, ข้อความ), ...]) · kind = 'radio' เลือก 1 · 'checkbox' เลือกหลายข้อ
+   required: True = บังคับ · min1 = checkbox ที่ต้องเลือกอย่างน้อย 1 #}
+{% macro choice(id, name, label, options, kind='radio', required=True, note='', help='', wide=False) -%}
+<fieldset class="field" id="{{ id }}" {% if required %}data-required data-label="{{ label }}"{% endif %}>
+  <legend>{{ label }}{% if required %}<span class="req" aria-hidden="true">*</span><span class="sr">(จำเป็น)</span>{% endif %}{% if note %}<span class="opt-note">{{ note }}</span>{% endif %}</legend>
+  {% if help %}<p class="help">{{ help }}</p>{% endif %}
+  <div class="opts{{ ' wide' if wide else '' }}">
+    {% for value, text in options %}
+    <label><input type="{{ kind }}" name="{{ name }}" value="{{ value }}"{% if kind == 'radio' and required %} required{% endif %}><span>{{ text }}</span></label>
+    {% endfor %}
+  </div>
+  <p class="field-err"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>{{ 'กรุณาเลือกอย่างน้อย 1 ข้อ' if kind == 'checkbox' else 'กรุณาเลือก 1 ข้อ' }}</p>
+</fieldset>
+{%- endmacro %}
+
+{# กล่องสรุปข้อที่ยังไม่ได้ตอบ (JS เติมรายการ) #}
+{% macro error_summary() -%}
+<div class="alert alert--error" data-error-summary hidden role="alert" tabindex="-1">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+  <div><b data-count>ยังไม่ได้ตอบบางข้อ</b> กดชื่อข้อเพื่อไปตอบ
+    <ul></ul>
+  </div>
+</div>
+{%- endmacro %}
+
+{# แถบท้ายฟอร์ม: ความคืบหน้า + ปุ่มวิเคราะห์ #}
+{% macro actionbar(button, back_url=None, back_label='') -%}
+<div class="actionbar">
+  <div class="progress" aria-live="polite"><b data-progress-text></b><span class="bar"><i data-progress-bar></i></span></div>
+  <div class="btn-row">
+    {% if back_url %}<a class="btn-text" href="{{ back_url }}">{{ back_label }}</a>{% endif %}
+    <button type="submit" class="btn btn-primary">{{ button }} <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></button>
+  </div>
+</div>
+{%- endmacro %}
+
+{# กล่อง "ผลนี้เชื่อได้แค่ไหน" · ตัวเลขทุกตัวมาจาก reliability (model_reliability) ห้ามพิมพ์ตายตัว
+   who = 'ผู้ตอบแบบสอบถามจริง' หรือ 'ผู้มีรถที่ตอบแบบสอบถามจริง' #}
+{% macro trust(reliability, who, tested_who) -%}
+<section class="panel trust" aria-labelledby="trustTitle">
+  <div class="panel-head"><h2 id="trustTitle">ผลนี้เชื่อได้แค่ไหน</h2></div>
+  <div class="trust-row">
+    <h3>ระบบทำงานยังไง</h3>
+    <p>ระบบเรียนรูปแบบจากคำตอบของ{{ who }}ทั้งหมด แล้วใช้รูปแบบนั้นประเมินคำตอบของคุณ</p>
+    {% if reliability and reliability.fields_th %}
+    <p class="fine">ระบบดูจาก</p>
+    <div class="fields-used">{% for f in reliability.fields_th %}<span>{{ f }}</span>{% endfor %}</div>
+    {% endif %}
+  </div>
+  {% if reliability %}
+  <div class="trust-row">
+    <h3>ทายถูกบ่อยแค่ไหน</h3>
+    <p>เมื่อทดสอบกับคำตอบจริงของ{{ tested_who }} {{ '{:,}'.format(reliability.n_samples) }} คน</p>
+    <div class="meter">
+      <div class="is-model"><span>ระบบนี้ทายถูกประมาณ</span><b>{{ reliability.correct_per_100 }} จาก 100 คน</b><span class="track" aria-hidden="true"><i style="width:{{ reliability.correct_per_100 }}%"></i></span></div>
+      {% if reliability.baseline_per_100 is not none %}
+      <div class="is-base"><span>ถ้าไม่ดูคำตอบของคุณเลย แล้วทายคำตอบที่พบบ่อยที่สุดทุกครั้ง</span><b>{{ reliability.baseline_per_100 }} จาก 100 คน</b><span class="track" aria-hidden="true"><i style="width:{{ reliability.baseline_per_100 }}%"></i></span></div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+  <div class="trust-row">
+    <h3>ใช้ผลนี้ยังไง</h3>
+    <p>ใช้ผลนี้เป็นข้อมูลประกอบการตัดสินใจเท่านั้น คนที่ตัดสินใจคือคุณ</p>
+  </div>
+</section>
+{%- endmacro %}
+
+{% macro arrow(size=22) -%}<svg width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>{%- endmacro %}

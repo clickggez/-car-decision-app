@@ -1,146 +1,52 @@
-{% extends "base.html" %}
-{% block title %}ผลพยากรณ์ประเภทเชื้อเพลิง — CarDSS{% endblock %}
+{% extends "base_cardss.html" %}
+{% import "_cardss_macros.html" as ui %}
+{% block title %}ผลขั้นที่ 2 ประเภทเชื้อเพลิงที่เหมาะ — CarDSS{% endblock %}
+
+{#
+  ตัวแปรจากระบบ: result.scores ({'EV': .., 'Hybrid': .., 'ICE': ..}) ใช้แค่เรียงอันดับ
+  ⭐ ห้ามแสดง % หรือแถบคะแนน (กฎข้อ 3) · reliability = model_reliability('fuel')
+  คำอธิบายประเภท = ข้อความเดิมจาก template เก่า (ลักษณะทั่วไปของรถประเภทนั้น ไม่ใช่เหตุผลจากคำตอบของผู้ใช้)
+#}
+
+
 
 {% block content %}
-<div class="page-container" style="padding-top:56px;padding-bottom:56px;">
+{% set fuel_meta = {
+  'EV':     {'thai': 'รถยนต์ไฟฟ้า', 'code': 'EV',  'desc': 'ประหยัดค่าพลังงาน เหมาะกับการขับในเมือง ลดมลพิษ'},
+  'Hybrid': {'thai': 'รถยนต์ไฮบริด', 'code': 'HEV', 'desc': 'สมดุลระหว่างการประหยัดพลังงานกับความสะดวกในการเติมเชื้อเพลิง'},
+  'ICE':    {'thai': 'รถยนต์สันดาป (รถน้ำมัน)', 'code': 'ICE', 'desc': 'ค่าซ่อมบำรุงต่ำ สถานีบริการครอบคลุม เหมาะกับการขับทางไกล'}
+} %}
+{% set order = result.scores | dictsort(by='value') | reverse | list %}
+{% set top = fuel_meta[order[0][0]] %}
+<div class="wrap">
+  {{ ui.trip(3, done=2) }}
 
-  <!-- Step indicator -->
-  <div class="steps fade-in">
-    <div class="step-item">
-      <div class="step-circle done"><i class="bi bi-check-lg" style="font-size:14px;"></i></div>
-      <span class="step-label">พยากรณ์ซื้อ/ไม่ซื้อ</span>
-    </div>
-    <div class="step-line done"></div>
-    <div class="step-item">
-      <div class="step-circle done"><i class="bi bi-check-lg" style="font-size:14px;"></i></div>
-      <span class="step-label">ประเภทเชื้อเพลิง</span>
-    </div>
-    <div class="step-line done"></div>
-    <div class="step-item">
-      <div class="step-circle active">3</div>
-      <span class="step-label active">รถแนะนำ</span>
-    </div>
-  </div>
+  <header class="page-head">
+    <h1>ประเภทที่เข้ากับคุณที่สุดคือ<br><span class="hl">{{ top.thai }}</span></h1>
+    <p class="lead">ระบบเรียงรถ 3 ประเภทจากเหมาะที่สุดไปน้อยที่สุด โดยประเมินจากรูปแบบคำตอบของผู้มีรถที่ตอบแบบสอบถามจริง</p>
+  </header>
 
-  <!-- Header -->
-  <div class="text-center fade-in mb-4">
-    <h1 class="result-title">ผลพยากรณ์ประเภทเชื้อเพลิง</h1>
-    <p class="result-subtitle">ระบบประเมินจากรูปแบบคำตอบของผู้มีรถที่ตอบแบบสอบถามจริง</p>
-  </div>
-
-  <!-- Fuel type result cards -->
-  <div class="row g-3 fade-in fade-in-delay-1 mb-4">
-
-    {% set fuel_order = result.scores | dictsort(by='value') | reverse | list %}
-
-    {% for fuel_name, score in fuel_order %}
-      {% set is_recommended = loop.first %}
-      {% set fuel_key = 'ev' if fuel_name == 'EV' else ('hybrid' if fuel_name == 'Hybrid' else 'ice') %}
-      {% set fuel_icon = 'bi-lightning-charge-fill' if fuel_name == 'EV' else ('bi-battery-charging' if fuel_name == 'Hybrid' else 'bi-fuel-pump-fill') %}
-      {% set fuel_thai = 'รถยนต์ไฟฟ้า (EV)' if fuel_name == 'EV' else ('รถยนต์ไฮบริด' if fuel_name == 'Hybrid' else 'รถยนต์สันดาป (ICE)') %}
-      {% set fuel_color = 'var(--color-ev)' if fuel_name == 'EV' else ('var(--color-hybrid)' if fuel_name == 'Hybrid' else 'var(--color-ice)') %}
-      {% set fuel_desc = 'ประหยัดค่าพลังงาน เหมาะกับการขับในเมือง ลดมลพิษ' if fuel_name == 'EV' else ('สมดุลระหว่างประหยัดพลังงานและความสะดวกในการเติมเชื้อเพลิง' if fuel_name == 'Hybrid' else 'ราคาซ่อมบำรุงต่ำ สถานีบริการครอบคลุม เหมาะกับทางไกล') %}
-
-      <div class="col-12">
-        <div class="fuel-card {{ 'recommended' if is_recommended else '' }} {{ 'recommended-hybrid' if (is_recommended and fuel_name == 'Hybrid') else '' }} {{ 'recommended-ice' if (is_recommended and fuel_name == 'ICE') else '' }}">
-
-          {% if is_recommended %}
-          <div class="badge-recommended" style="background:{{ fuel_color }};">
-            <i class="bi bi-star-fill"></i> แนะนำอันดับ 1
-          </div>
-          {% endif %}
-
-          <div class="d-flex align-items-center justify-content-between gap-3" style="margin-top: {{ '8px' if is_recommended else '0' }};">
-            <div class="d-flex align-items-center gap-16" style="gap:16px;">
-              <div style="font-size:36px;width:52px;text-align:center;color:{{ fuel_color }};"><i class="bi {{ fuel_icon }}"></i></div>
-              <div>
-                <div style="font-size:18px;font-weight:500;color:var(--text-primary);margin-bottom:2px;">
-                  {{ fuel_thai }}
-                </div>
-                <div style="font-size:13px;color:var(--text-muted);">{{ fuel_desc }}</div>
-              </div>
-            </div>
-            <div style="text-align:right;flex-shrink:0;">
-              <div style="font-size:32px;font-weight:500;color:{{ fuel_color }};line-height:1;">{{ score }}%</div>
-              <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin-top:2px;">ความเหมาะสม</div>
-            </div>
-          </div>
-
-          <!-- Progress bar -->
-          <div style="margin-top:14px;">
-            <div class="confidence-bar-wrap">
-              <div class="confidence-bar-fill {{ fuel_key }}"
-                   style="width:0%;"
-                   data-width="{{ score }}">
-              </div>
-            </div>
-          </div>
-
-          <!-- Badge -->
-          <div style="margin-top:10px;">
-            <span class="badge-cardss {{ fuel_key }}">
-              {% if fuel_name == 'EV' %}<i class="bi bi-lightning-charge-fill"></i> Electric Vehicle
-              {% elif fuel_name == 'Hybrid' %}<i class="bi bi-battery-charging"></i> Hybrid Electric
-              {% else %}<i class="bi bi-fuel-pump-fill"></i> Internal Combustion Engine
-              {% endif %}
-            </span>
-          </div>
-
-        </div>
+  <ol class="ranks" aria-label="อันดับประเภทเชื้อเพลิง">
+    {% for fuel_name, _score in order %}
+    {% set m = fuel_meta[fuel_name] %}
+    <li class="rank" data-f="{{ fuel_name }}">
+      <div class="rank-no" aria-hidden="true"><small>อันดับ</small><b>{{ loop.index }}</b></div>
+      <div>
+        {% if loop.first %}<h2><span class="sr">อันดับ 1:</span>{{ m.thai }} ({{ m.code }})</h2>
+        {% else %}<h3><span class="sr">อันดับ {{ loop.index }}:</span>{{ m.thai }} ({{ m.code }})</h3>{% endif %}
+        <p>{{ m.desc }}</p>
       </div>
+    </li>
     {% endfor %}
+  </ol>
 
+  <div class="btn-row">
+    <a class="btn btn-primary" href="{{ url_for('recommend') }}">ดูรุ่นรถที่แนะนำ {{ ui.arrow() }}</a>
+    <a class="btn-text" href="{{ url_for('predict_buy_page') }}">เริ่มประเมินใหม่ตั้งแต่ขั้นที่ 1</a>
   </div>
 
-  <!-- สรุปผล + ผลนี้เชื่อได้แค่ไหน (29 ก.ย. 2569) — เดิมเป็นกล่องศัพท์ ML ภาษาอังกฤษ และเหตุผลที่แต่งขึ้นเอง
-       (เช่น "มีที่จอดรถส่วนตัวสำหรับชาร์จ" ซึ่งฟอร์มไม่ได้ถาม) · ตัวเลขจาก model_reliability('fuel') ห้ามพิมพ์ตายตัว -->
-  <div class="card-cardss fade-in fade-in-delay-2 mb-4" style="background:var(--bg-secondary);">
-    <h2 style="font-size:15px;font-weight:500;color:var(--text-primary);margin:0 0 10px;">ผลนี้เชื่อได้แค่ไหน</h2>
-    <p style="font-size:14px;color:var(--text-secondary);margin:0 0 10px;line-height:1.8;">
-      ระบบเรียนรูปแบบจากคำตอบของผู้มีรถที่ตอบแบบสอบถามจริงทั้งหมด แล้วใช้รูปแบบนั้นประเมินคำตอบของคุณ
-      {% if reliability %}<br>ระบบดูจาก: {{ reliability.fields_th | join(' · ') }}{% endif %}
-    </p>
-    {% if reliability %}
-    <p style="font-size:14px;color:var(--text-secondary);margin:0 0 10px;line-height:1.8;">
-      เมื่อทดสอบกับคำตอบจริงของผู้มีรถ {{ '{:,}'.format(reliability.n_samples) }} คน ระบบทายถูกประมาณ
-      <strong>{{ reliability.correct_per_100 }} จาก 100 คน</strong>
-      {% if reliability.baseline_per_100 is not none %}
-      <br>ถ้าไม่ดูคำตอบของคุณเลย แล้วทายคำตอบที่พบบ่อยที่สุดทุกครั้ง จะถูกประมาณ {{ reliability.baseline_per_100 }} จาก 100 คน
-      {% endif %}
-    </p>
-    {% endif %}
-    <p style="font-size:14px;color:var(--text-secondary);margin:0;line-height:1.8;">
-      ก่อนตัดสินใจ ลองดูค่าใช้จ่ายจริงและที่ชาร์จหรือปั๊มใกล้บ้านประกอบด้วย
-    </p>
-  </div>
+  {{ ui.trust(reliability, 'ผู้มีรถที่ตอบแบบสอบถามจริง', 'ผู้มีรถ') }}
 
-  <!-- Action buttons -->
-  <div class="text-center fade-in fade-in-delay-3">
-    <a href="{{ url_for('recommend') }}" class="btn-cardss-primary" style="padding:16px 48px;font-size:16px;width:100%;justify-content:center;margin-bottom:12px;">
-      <i class="bi bi-car-front-fill"></i> ดูรุ่นรถที่แนะนำ
-      <i class="bi bi-arrow-right ms-1"></i>
-    </a>
-    <a href="{{ url_for('dashboard') }}" class="btn-cardss-secondary" style="padding:14px 48px;font-size:15px;width:100%;justify-content:center;margin-bottom:12px;">
-      <i class="bi bi-bar-chart-line"></i> ดูภาพรวมข้อมูลงานวิจัย
-    </a>
-    <a href="{{ url_for('predict_buy_page') }}" class="btn-cardss-ghost" style="font-size:13px;">
-      <i class="bi bi-arrow-counterclockwise me-1"></i> เริ่มต้นใหม่
-    </a>
-  </div>
-
+  <p class="fine">ก่อนตัดสินใจ ลองดูค่าใช้จ่ายจริง และที่ชาร์จหรือปั๊มใกล้บ้านประกอบด้วย</p>
 </div>
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-// Animate all bars on load (staggered)
-window.addEventListener('load', function () {
-  const bars = document.querySelectorAll('.confidence-bar-fill[data-width]');
-  bars.forEach(function (bar, i) {
-    setTimeout(function () {
-      bar.style.width = bar.dataset.width + '%';
-    }, 300 + i * 200);
-  });
-});
-</script>
 {% endblock %}

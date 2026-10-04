@@ -4,6 +4,7 @@ CarDSS — Flask Main Application
 """
 
 import os
+import re
 import json
 import uuid
 import datetime
@@ -571,6 +572,39 @@ def api_dashboard():
 # ============================================================
 
 
+def _numbers(text):
+    """ดึงตัวเลขทุกตัวจากข้อความ เช่น '~800 ฿/เดือน' → [800] · '51,000–58,500' → [51000, 58500]"""
+    return [int(n.replace(',', '')) for n in re.findall(r'\d[\d,]*', str(text or ''))]
+
+
+def build_cost_table(car_db):
+    """ตารางค่าใช้จ่ายต่อเดือนในหน้ารถแนะนำ — คำนวณจาก cars.json ล้วน (4 ต.ค. 2569 ผู้ใช้เลือกแบบ ก)
+    เดิม template พิมพ์ตัวเลขตายตัว (ขัดกฎห้ามแต่งตัวเลข) · ใช้เฉพาะแถวที่มีข้อมูลรายรุ่นจริง:
+    monthly_cost (ค่าน้ำมัน/ค่าไฟ) และ insurance_class1 (เบี้ยต่อปี ÷ 12) · แสดงช่วงต่ำสุด–สูงสุดของรุ่นในประเภท
+    ค่าบำรุงรักษาไม่มีในข้อมูลรถ จึงไม่แสดง"""
+    def rng(lo, hi):
+        return f'~{lo:,}' if lo == hi else f'~{lo:,}–{hi:,}'
+
+    rows = {'energy': {}, 'insurance': {}}
+    total = {}
+    for key in ('EV', 'Hybrid', 'ICE'):
+        energy = [n for c in car_db.get(key, []) for n in _numbers(c.get('monthly_cost'))[:1]]
+        ins = [n for c in car_db.get(key, []) for n in _numbers(c.get('insurance_class1'))]
+        if not energy or not ins:
+            return None
+        e_lo, e_hi = min(energy), max(energy)
+        i_lo, i_hi = round(min(ins) / 12), round(max(ins) / 12)
+        rows['energy'][key] = rng(e_lo, e_hi)
+        rows['insurance'][key] = rng(i_lo, i_hi)
+        total[key] = rng(e_lo + i_lo, e_hi + i_hi)
+    return {
+        'rows': [('ค่าน้ำมัน / ค่าไฟ', rows['energy']),
+                 ('เบี้ยประกันชั้น 1 (เบี้ยต่อปี ÷ 12)', rows['insurance'])],
+        'total': total,
+        'note': 'คำนวณจากข้อมูลรถแต่ละรุ่นในระบบ แสดงเป็นช่วงต่ำสุด–สูงสุดของรุ่นในประเภทนั้น · ยังไม่รวมค่าบำรุงรักษา',
+    }
+
+
 @app.route('/recommend')
 @login_required
 def recommend():
@@ -597,7 +631,8 @@ def recommend():
                            fuel_key=fuel_key,
                            fuel_pred=fuel_pred,
                            recommended_cars=recommended_cars,
-                           all_cars=all_cars)
+                           all_cars=all_cars,
+                           cost_table=build_cost_table(car_db))
 
 
 # ============================================================

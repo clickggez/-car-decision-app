@@ -1,78 +1,55 @@
-{% extends "base.html" %}
+{% extends "base_cardss.html" %}
 {% block title %}เข้าสู่ระบบ — CarDSS{% endblock %}
 
+{# ชื่อช่อง username / password และ POST ไป url_for('login') เหมือนเดิม · error มาจากเซิร์ฟเวอร์ #}
+
 {% block content %}
-<!-- Hero Banner — dark, minimal -->
-<section class="hero" style="min-height:100vh;background:#171A20;">
-  <!-- Subtle car silhouette -->
-  <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;">
-    <svg viewBox="0 0 1440 600" fill="none" xmlns="http://www.w3.org/2000/svg"
-         style="position:absolute;bottom:0;width:100%;opacity:0.03;">
-      <path d="M200 400 L300 300 L450 280 L700 270 L900 280 L1050 300 L1150 400 L1200 420 L1240 420
-               Q1260 420 1260 400 L1260 380 Q1240 340 1180 320 L1000 260 L800 240 L600 240 L400 260
-               L240 320 L180 380 Q180 400 200 400Z"
-            fill="white"/>
-      <circle cx="350" cy="430" r="60" fill="white"/>
-      <circle cx="1000" cy="430" r="60" fill="white"/>
-    </svg>
-  </div>
-
-  <div class="hero-content fade-in" style="width:100%;max-width:960px;display:flex;align-items:center;justify-content:center;gap:60px;flex-wrap:wrap;padding:0 24px;">
-    <!-- Left: text -->
-    <div style="text-align:left;flex:1;min-width:260px;max-width:400px;">
-      <h1 class="hero-title" style="font-size:clamp(20px, 3.4vw, 32px);line-height:1.3;overflow-wrap:break-word;">ระบบสนับสนุนการตัดสินใจ<br>เลือกซื้อรถยนต์<wbr>ตามประเภทเชื้อเพลิง</h1>
-      
+<div class="wrap">
+  <div class="auth">
+    <div class="auth-why">
+      <h1>เข้าสู่ระบบ<br>ก่อนเริ่มประเมิน</h1>
+      <p class="muted">ต้องมีบัญชีเพื่อเก็บผลประเมินของคุณไว้ในระบบ และทำแบบประเมินต่อได้ครบทั้ง 3 ขั้นตอน หน้าภาพรวมข้อมูลเปิดดูได้โดยไม่ต้องเข้าระบบ</p>
     </div>
 
-    <!-- Right: login card -->
-    <div class="login-card fade-in fade-in-delay-1" style="flex-shrink:0;width:100%;max-width:380px;border-radius:12px;">
-      <div style="text-align:center;margin-bottom:28px;">
-        <h2 style="font-size:20px;font-weight:500;color:var(--text-primary);margin-bottom:4px;">เข้าสู่ระบบ</h2>
-        <p style="font-size:14px;color:var(--text-muted);margin:0;">กรุณาเข้าสู่ระบบเพื่อใช้งาน CarDSS</p>
+    {# จุดสถานะ: ส้ม = ยังไม่กรอก · เหลือง = กำลังกรอก · เขียว = กรอกครบทั้งชื่อผู้ใช้และรหัสผ่าน (cardss-app.js) #}
+    <div class="kicker auth-status" data-auth-status="loginForm" data-state="idle" aria-live="polite"><i></i><span>ทางเข้าระบบ</span></div>
+    <div class="auth-stage">
+      <div class="sign-col" aria-hidden="true">
+        <div class="sign"><div class="sign-in">
+          <div class="sign-title">เข้าระบบแล้วไปต่อ</div>
+          <div class="dest"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></svg><div><b>ขั้นที่ 1 · แนวโน้มการซื้อ</b><small>10 ข้อ</small></div></div>
+          <div class="dest"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg><div><b>ขั้นที่ 2 · ประเภทเชื้อเพลิง</b><small>6 ข้อ</small></div></div>
+          <div class="dest"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg><div><b>ขั้นที่ 3 · รถแนะนำ</b><small>รุ่นรถตามประเภทที่เหมาะ</small></div></div>
+        </div></div>
+        <div class="posts"><span></span><span></span></div>
       </div>
+      <section class="panel" aria-labelledby="loginTitle">
+        <div class="panel-head"><h2 id="loginTitle">เข้าสู่ระบบ</h2></div>
 
-      {% if error %}
-      <div class="alert-cardss error mb-4">
-        <i class="bi bi-exclamation-circle"></i> {{ error }}
-      </div>
-      {% endif %}
+        {% if error %}
+        <div class="alert alert--error" role="alert"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg><div>{{ error }}</div></div>
+        {% endif %}
 
-      <form method="POST" action="{{ url_for('login') }}" id="loginForm" novalidate>
-        <div class="form-group-cardss">
-          <label class="form-label-cardss" for="username">ชื่อผู้ใช้</label>
-          <input type="text" id="username" name="username" class="form-control-cardss"
-                 placeholder="กรอกชื่อผู้ใช้" autocomplete="username" required
-                 value="{{ request.form.get('username', '') }}">
-          <div class="invalid-feedback-cardss" id="username-err" style="display:none;font-size:12px;color:var(--color-danger);margin-top:4px;"></div>
-        </div>
-
-        <div class="form-group-cardss">
-          <label class="form-label-cardss" for="password">รหัสผ่าน</label>
-          <div style="position:relative;">
-            <input type="password" id="password" name="password" class="form-control-cardss"
-                   placeholder="กรอกรหัสผ่าน" autocomplete="current-password" required>
-            <button type="button" class="toggle-password" aria-label="แสดง/ซ่อนรหัสผ่าน"
-                    style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:16px;"
-                    onclick="togglePassword('password', this)">
-              <i class="bi bi-eye"></i>
-            </button>
+        <form method="POST" action="{{ url_for('login') }}" id="loginForm" data-auth novalidate style="display:flex;flex-direction:column;gap:20px">
+          <div class="field" data-label="ชื่อผู้ใช้">
+            <label for="username">ชื่อผู้ใช้</label>
+            <input class="input" type="text" id="username" name="username" autocomplete="username" required data-check="required" value="{{ request.form.get('username', '') }}">
+            <p class="field-err" id="username-err"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg><span></span></p>
           </div>
-          <div class="invalid-feedback-cardss" id="password-err" style="display:none;font-size:12px;color:var(--color-danger);margin-top:4px;"></div>
-        </div>
+          <div class="field" data-label="รหัสผ่าน">
+            <label for="password">รหัสผ่าน</label>
+            <div class="input-wrap">
+              <input class="input" type="password" id="password" name="password" autocomplete="current-password" required data-check="required">
+              <button type="button" class="peek" data-peek="password" aria-pressed="false" aria-label="แสดงรหัสผ่าน">แสดง</button>
+            </div>
+            <p class="field-err" id="password-err"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg><span></span></p>
+          </div>
+          <button type="submit" class="btn btn-primary" data-busy="กำลังเข้าสู่ระบบ…" style="justify-content:center">เข้าสู่ระบบ</button>
+        </form>
 
-        <button type="submit" class="btn-cardss-primary w-100 justify-content-center mt-2" style="padding:8px;min-height:40px;">
-          เข้าสู่ระบบ
-        </button>
-      </form>
-
-      <div style="text-align:center;margin-top:20px;padding-top:20px;border-top:1px solid var(--border-light);">
-        <span style="font-size:14px;color:var(--text-muted);">ยังไม่มีบัญชี? </span>
-        <a href="{{ url_for('register') }}"
-           style="font-size:14px;font-weight:600;color:#3b82f6;text-decoration:underline;text-underline-offset:3px;transition:color 0.2s,opacity 0.2s;"
-           onmouseover="this.style.color='#60a5fa';this.style.opacity='0.9'"
-           onmouseout="this.style.color='#3b82f6';this.style.opacity='1'">สมัครสมาชิก</a>
-      </div>
+        <p class="auth-alt">ยังไม่มีบัญชี? <a href="{{ url_for('register') }}">สมัครสมาชิก</a></p>
+      </section>
     </div>
   </div>
-</section>
+</div>
 {% endblock %}
