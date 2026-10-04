@@ -10,11 +10,13 @@
       ['Honda','City e:HEV','sedan'],['Honda','Civic e:HEV','sedan'],['Honda','HR-V e:HEV','suv'],['Honda','Accord e:HEV','sedan'],
       ['Honda','CR-V e:HEV','suv'],['Nissan','Kicks e-Power','suv'],['Mitsubishi','Xpander Cross HEV','mpv'],['Hyundai','Stargazer X HEV','mpv'] ] },
     ice: { name: 'สันดาป · รถน้ำมัน', color: ['#C9844A', '#A86A36', '#DB9A62'], models: [
-      ['Mazda','Mazda 2','hatch'],['Toyota','Yaris Ativ','sedan'],['Honda','City Turbo','sedan'],['Nissan','Almera Turbo','sedan'],['Mitsubishi','Attrage','sedan'] ] }
+      ['Mazda','Mazda 2','sedan'],['Toyota','Yaris Ativ','sedan'],['Honda','City Turbo','sedan'],['Nissan','Almera Turbo','sedan'],['Mitsubishi','Attrage','sedan'] ] }
   };
   // Flask can pass its own model list: window.CARDSS_MODELS = { ev: [[brand, model, style], ...], hev: [...], ice: [...] }
   if (window.CARDSS_MODELS) for (const t in DATA) if (Array.isArray(window.CARDSS_MODELS[t])) DATA[t].models = window.CARDSS_MODELS[t];
   if (window.CARDSS_MODELS) document.querySelectorAll('.md-type').forEach((b) => { const sm = b.querySelector('small'); if (sm && DATA[b.dataset.t]) sm.textContent = sm.textContent.replace(/^\d+/, DATA[b.dataset.t].models.length); });
+  // ประเภทตัวถังภาษาไทย แสดงในป้ายตอนลากรถ (ผู้ใช้เลือกแทนปุ่มแยกประเภท 4 ต.ค. 2569)
+  const BODY_TH = { sedan: 'เก๋ง', hatch: 'แฮทช์แบ็ก', suv: 'SUV', mpv: 'MPV 7 ที่นั่ง' };
   // body-style proportions, all relative to car length L
   const STYLE = {
     sedan: { h: 0.29, roofF: 0.30, roofR: 0.20, beltF: 0.16, beltR: 0.12, hood: 0.30, trunk: 0.20 },
@@ -258,7 +260,7 @@
     const wait = list.map((m) => ready[`${m[0]} ${m[1]}`] || Promise.resolve());
     Promise.race([Promise.all(wait), new Promise((r) => setTimeout(r, 2500))]).then(next);
     document.getElementById('mdCount').textContent = `${DATA[type].name} · ${DATA[type].models.length} รุ่น`;
-    document.getElementById('mdList').textContent = `${DATA[type].name}: ` + DATA[type].models.map((m) => `${m[0]} ${m[1]}`).join(', ');
+    document.getElementById('mdList').textContent = `${DATA[type].name}: ` + DATA[type].models.map((m) => `${m[0]} ${m[1]}${BODY_TH[m[2]] ? ' (' + BODY_TH[m[2]] + ')' : ''}`).join(', ');
   }
 
   // ---------- drawing ----------
@@ -316,7 +318,7 @@
   let tipBody = null, tipTimer = 0;
   function showTip(b) {
     tipBody = b; clearTimeout(tipTimer);
-    tipName.textContent = b.car.name; tipSub.textContent = `${b.car.brand} · ${DATA[b.car.type].name}`;
+    tipName.textContent = b.car.name; tipSub.textContent = `${b.car.brand} · ${BODY_TH[b.car.style] || ''} · ${DATA[b.car.type].name}`.replace(' ·  · ', ' · ');
     tip.hidden = false; placeTip();
   }
   function hideTip(now) { clearTimeout(tipTimer); if (now) { tip.hidden = true; tipBody = null; } else tipTimer = setTimeout(() => { tip.hidden = true; tipBody = null; }, 2200); }
