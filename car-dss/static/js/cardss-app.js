@@ -3,11 +3,16 @@
 (() => {
   const R = Math.random;
   const DPR = Math.min(window.devicePixelRatio || 1, 2);
+  // หน้าผลบอกว่าฟอร์มไหนส่งสำเร็จแล้ว → ล้างคำตอบที่จำไว้ของฟอร์มนั้น
+  const clearDrafts = () => document.querySelectorAll('[data-clear-draft]').forEach((el) => {
+    try { localStorage.removeItem('cardss:' + el.dataset.clearDraft); } catch (e) { /* ข้าม */ }
+  });
   const store = {
     get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* ใช้ไม่ได้ก็ข้าม */ } },
     del(k) { try { localStorage.removeItem(k); } catch (e) { /* ข้าม */ } }
   };
+  clearDrafts();
 
   // ---------- ฝนนิ่ง (ลายเดียวกับหน้าแรก) ----------
   const layer = document.getElementById('rainLayer');
@@ -68,7 +73,7 @@
       const done = fields.filter(answered).length;
       if (txt) txt.textContent = `ตอบแล้ว ${done} จาก ${fields.length} ข้อที่จำเป็น`;
       if (bar) bar.style.width = (fields.length ? done * 100 / fields.length : 0) + '%';
-      fields.forEach((f) => { if (answered(f)) f.classList.remove('is-error'); });
+      fields.forEach((f) => { if (answered(f)) { f.classList.remove('is-error'); f.querySelectorAll('[aria-invalid]').forEach((i) => i.removeAttribute('aria-invalid')); } });
     }
     function save() {
       const data = {};
@@ -144,7 +149,7 @@
       const missing = fields.filter((f) => !answered(f));
       if (missing.length) {
         e.preventDefault();
-        missing.forEach((f) => f.classList.add('is-error'));
+        missing.forEach((f) => { f.classList.add('is-error'); f.querySelectorAll('input').forEach((i) => i.setAttribute('aria-invalid', 'true')); });
         if (summary) {
           summary.hidden = false;
           const list = summary.querySelector('ul');
@@ -165,7 +170,8 @@
         btn.disabled = true; btn.classList.add('is-loading');
         btn.innerHTML = '<span class="spin" aria-hidden="true"></span>กำลังวิเคราะห์…';
       }
-      store.del(key);
+      // ไม่ลบคำตอบที่จำไว้ตรงนี้ — ถ้าเซิร์ฟเวอร์ตีกลับ (ตรวจไม่ผ่าน) คำตอบต้องยังอยู่ (Codex #52)
+      // ลบเมื่อหน้าผลโหลดแล้วเท่านั้น ดู [data-clear-draft] ด้านล่าง
     });
     function focusField(f) {
       f.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -181,6 +187,8 @@
     inp.type = show ? 'text' : 'password';
     b.textContent = show ? 'ซ่อน' : 'แสดง';
     b.setAttribute('aria-pressed', String(show));
+    const lab = b.dataset.label || (b.dataset.label = b.getAttribute('aria-label') || 'แสดงรหัสผ่าน');
+    b.setAttribute('aria-label', show ? lab.replace('แสดง', 'ซ่อน') : lab);
   }));
 
   // ---------- ความแข็งแรงรหัสผ่าน ----------
@@ -210,6 +218,9 @@
       else if (inp.dataset.check === 'confirm' && inp.value !== form.querySelector('#password').value) msg = 'รหัสผ่านทั้งสองช่องไม่ตรงกัน';
       f.classList.toggle('is-error', !!msg);
       if (err) err.textContent = msg;
+      const errBox = f.querySelector('.field-err');
+      if (errBox && errBox.id) inp.setAttribute('aria-describedby', errBox.id);
+      inp.setAttribute('aria-invalid', msg ? 'true' : 'false');
       if (msg && !bad) bad = inp;
     });
     if (bad) { e.preventDefault(); bad.focus(); return; }

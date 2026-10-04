@@ -6,7 +6,7 @@
 
 {% block content %}
 {% set will_buy = result.result == 'ซื้อ' %}
-<div class="wrap">
+<div class="wrap" data-clear-draft="predictBuyForm">
   {{ ui.trip(2 if will_buy else 0, done=1) }}
 
   <section class="verdict" aria-labelledby="verdictTitle">

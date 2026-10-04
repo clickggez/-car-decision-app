@@ -18,7 +18,7 @@
 } %}
 {% set order = result.scores | dictsort(by='value') | reverse | list %}
 {% set top = fuel_meta[order[0][0]] %}
-<div class="wrap">
+<div class="wrap" data-clear-draft="predictFuelForm">
   {{ ui.trip(3, done=2) }}
 
   <header class="page-head">

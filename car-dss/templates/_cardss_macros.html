@@ -19,7 +19,7 @@
    name/options ต้องตรงกับโมเดล (options = [(value, ข้อความ), ...]) · kind = 'radio' เลือก 1 · 'checkbox' เลือกหลายข้อ
    required: True = บังคับ · min1 = checkbox ที่ต้องเลือกอย่างน้อย 1 #}
 {% macro choice(id, name, label, options, kind='radio', required=True, note='', help='', wide=False) -%}
-<fieldset class="field" id="{{ id }}" {% if required %}data-required data-label="{{ label }}"{% endif %}>
+<fieldset class="field" id="{{ id }}" aria-describedby="{{ id }}-err" {% if required %}data-required data-label="{{ label }}"{% endif %}>
   <legend>{{ label }}{% if required %}<span class="req" aria-hidden="true">*</span><span class="sr">(จำเป็น)</span>{% endif %}{% if note %}<span class="opt-note">{{ note }}</span>{% endif %}</legend>
   {% if help %}<p class="help">{{ help }}</p>{% endif %}
   <div class="opts{{ ' wide' if wide else '' }}">
@@ -27,7 +27,7 @@
     <label><input type="{{ kind }}" name="{{ name }}" value="{{ value }}"{% if kind == 'radio' and required %} required{% endif %}><span>{{ text }}</span></label>
     {% endfor %}
   </div>
-  <p class="field-err"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>{{ 'กรุณาเลือกอย่างน้อย 1 ข้อ' if kind == 'checkbox' else 'กรุณาเลือก 1 ข้อ' }}</p>
+  <p class="field-err" id="{{ id }}-err"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>{{ 'กรุณาเลือกอย่างน้อย 1 ข้อ' if kind == 'checkbox' else 'กรุณาเลือก 1 ข้อ' }}</p>
 </fieldset>
 {%- endmacro %}
 

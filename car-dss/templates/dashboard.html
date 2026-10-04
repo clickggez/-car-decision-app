@@ -53,12 +53,14 @@
 
     <section class="panel" aria-labelledby="hAge">
       <div class="panel-head"><h2 id="hAge">ช่วงอายุของผู้ตอบ</h2><small>{{ overview.age.n }} คน</small></div>
-      <div class="chart-box tall"><canvas id="ageChart" role="img" aria-label="จำนวนผู้ตอบแยกตามช่วงอายุ"></canvas></div>
+      <div class="chart-box tall"><canvas id="ageChart" role="img" aria-label="จำนวนผู้ตอบแยกตามช่วงอายุ รายละเอียดในตาราง"></canvas></div>
+      <table class="sr" id="ageTable"><caption>จำนวนผู้ตอบแยกตามช่วงอายุ</caption><thead><tr><th scope="col">ช่วง</th><th scope="col">จำนวน</th></tr></thead><tbody>{% for lab in overview.age.labels %}<tr><th scope="row">{{ lab }}</th><td>{{ overview.age.counts[loop.index0] }} คน</td></tr>{% endfor %}</tbody></table>
     </section>
 
     <section class="panel" aria-labelledby="hIncome">
       <div class="panel-head"><h2 id="hIncome">รายได้เฉลี่ยต่อเดือนของผู้ตอบ</h2><small>{{ overview.income.n }} คน</small></div>
-      <div class="chart-box tall"><canvas id="incomeChart" role="img" aria-label="จำนวนผู้ตอบแยกตามรายได้ต่อเดือน"></canvas></div>
+      <div class="chart-box tall"><canvas id="incomeChart" role="img" aria-label="จำนวนผู้ตอบแยกตามรายได้ต่อเดือน รายละเอียดในตาราง"></canvas></div>
+      <table class="sr" id="incomeTable"><caption>จำนวนผู้ตอบแยกตามรายได้ต่อเดือน</caption><thead><tr><th scope="col">ช่วง</th><th scope="col">จำนวน</th></tr></thead><tbody>{% for lab in overview.income.labels %}<tr><th scope="row">{{ lab }}</th><td>{{ overview.income.counts[loop.index0] }} คน</td></tr>{% endfor %}</tbody></table>
     </section>
   </div>
   {% else %}

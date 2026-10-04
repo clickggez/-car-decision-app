@@ -319,7 +319,7 @@ class DashboardPublicOverviewTests(unittest.TestCase):
             for lab, c in zip(block['labels'], block['counts']):
                 with self.subTest(key=key, label=lab):
                     pct = '%.1f%%' % (c * 100.0 / block['n'])
-                    self.assertRegex(html, rf'<t[dh][^>]*>{re.escape(lab)}</t[dh]><td class="num">{c} คน</td>'
+                    self.assertRegex(html, rf'<(t[dh])[^>]*>{re.escape(lab)}</\1><td class="num">{c} คน</td>'
                                            rf'<td class="num">{re.escape(pct)}</td>')
 
     def test_overview_matches_research_dataset(self):
@@ -624,6 +624,44 @@ class HonestResultTests(unittest.TestCase):
         for fake in ('~32,500', '~19,600', '~11,300', 'ค่าบำรุงรักษา</th>'):
             self.assertNotIn(fake, html)
         self.assertNotIn('ค่าเดิมจาก template เก่า', read_template('recommend.html'))
+        # Codex #52: ยืนยันทุกช่องของทุกประเภทเทียบกับ cars.json โดยตรง
+        num = flask_app_module._numbers
+        for key in ('EV', 'Hybrid', 'ICE'):
+            e = [num(c['monthly_cost'])[0] for c in cars[key]]
+            i = [n for c in cars[key] for n in num(c['insurance_class1'])]
+            with self.subTest(fuel=key):
+                self.assertEqual(table['rows'][1][1][key], f'~{round(min(i) / 12):,}–{round(max(i) / 12):,}')
+                self.assertEqual(table['total'][key],
+                                 f'~{min(e) + round(min(i) / 12):,}–{max(e) + round(max(i) / 12):,}')
+                self.assertIn(table['total'][key], html)
+        # ข้อมูลประเภทใดขาด = ไม่แสดงตาราง (ห้ามเติมตัวเลขแทน)
+        self.assertIsNone(flask_app_module.build_cost_table({'EV': [], 'Hybrid': cars['Hybrid'], 'ICE': cars['ICE']}))
+
+    def test_inner_pages_accessibility(self):
+        """Antigravity #53: ข้อความเตือนผูกกับช่อง · ปุ่มรหัสผ่าน 44px · กราฟอายุ/รายได้มีตารางคู่"""
+        client = logged_in_client()
+        buy = client.get('/predict/buy').get_data(as_text=True)
+        for fid in re.findall(r'<fieldset class="field" id="([^"]+)"', buy):
+            with self.subTest(field=fid):
+                self.assertIn(f'aria-describedby="{fid}-err"', buy)
+                self.assertIn(f'id="{fid}-err"', buy)
+        css = open(os.path.join(BASE_DIR, 'static', 'css', 'cardss-app.css'), encoding='utf-8').read()
+        self.assertNotIn('min-height:40px', css[css.index('.peek{'):css.index('}', css.index('.peek{'))])
+        ov = flask_app_module.load_dataset_overview()
+        if ov:
+            dash = flask_app_module.app.test_client().get('/dashboard').get_data(as_text=True)
+            for tid, key in (('ageTable', 'age'), ('incomeTable', 'income')):
+                table = dash[dash.index(f'id="{tid}"'):dash.index('</table>', dash.index(f'id="{tid}"'))]
+                for lab, c in zip(ov[key]['labels'], ov[key]['counts']):
+                    with self.subTest(table=tid, label=lab):
+                        self.assertIn(f'<th scope="row">{lab}</th><td>{c} คน</td>', table)
+
+    def test_draft_cleared_only_on_result_page(self):
+        # Codex #52: คำตอบที่จำไว้ต้องไม่ถูกลบตอนกดส่ง (เซิร์ฟเวอร์อาจตีกลับ) → ลบเมื่อหน้าผลโหลดเท่านั้น
+        js = open(os.path.join(BASE_DIR, 'static', 'js', 'cardss-app.js'), encoding='utf-8').read()
+        self.assertNotIn('store.del(key)', js)
+        self.assertIn('data-clear-draft="predictBuyForm"', read_template('result_buy.html'))
+        self.assertIn('data-clear-draft="predictFuelForm"', read_template('result_fuel.html'))
 
     def test_login_does_not_promise_history_page(self):
         # ยังไม่มีหน้าดูประวัติผล → ห้ามบอกว่า "กลับมาดูย้อนหลังได้" (ผู้ใช้ตกลง 4 ต.ค. 2569)
