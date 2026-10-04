@@ -623,14 +623,16 @@ def sort_cars_by_budget(car_db, budget):
     cap = BUDGET_MAX[budget]
     out = {}
     for key, cars in car_db.items():
-        within, over = [], []
+        within, over, unknown = [], [], []
         for car in cars or []:
             price = _price_to_int(car.get('price'))
-            if cap is not None and price and price > cap:
+            if not price:
+                unknown.append(car)            # ไม่รู้ราคา = ไม่อ้างว่าอยู่ในงบ ไว้ท้ายสุด ไม่ติดป้าย (Codex #55)
+            elif cap is not None and price > cap:
                 over.append(dict(car, over_budget=True))
             else:
                 within.append(car)
-        out[key] = within + over
+        out[key] = within + over + unknown
     return out
 
 

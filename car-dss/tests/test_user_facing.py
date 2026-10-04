@@ -676,6 +676,9 @@ class HonestResultTests(unittest.TestCase):
                 self.assertEqual(flags, sorted(flags))                     # ในงบก่อน เกินงบทีหลัง
                 self.assertEqual(flags, [p > 500000 for p in prices])
         self.assertIs(flask_app_module.sort_cars_by_budget(cars, None), cars)   # ไม่รู้งบ = ลำดับเดิม
+        # รุ่นที่ไม่มีราคา ต้องไม่ถูกจัดเป็น "อยู่ในงบ" (Codex #55)
+        odd = flask_app_module.sort_cars_by_budget({'EV': [{'model': 'x', 'price': ''}, {'model': 'y', 'price': '400,000'}]}, 'lt500000')
+        self.assertEqual([c['model'] for c in odd['EV']], ['y', 'x'])
         client = logged_in_client()
         with client.session_transaction() as sess:
             sess['fuel_prediction'] = {'result': 'ไฮบริด (Hybrid)', 'scores': {'EV': 30, 'Hybrid': 40, 'ICE': 30}}
