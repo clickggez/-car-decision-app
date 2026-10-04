@@ -657,12 +657,17 @@ class HonestResultTests(unittest.TestCase):
                         self.assertIn(f'<th scope="row">{lab}</th><td>{c} คน</td>', table)
 
     def test_register_explains_username_and_password_rules(self):
-        """ผู้ใช้สั่ง 4 ต.ค. 2569: บอกวิธีตั้งชื่อผู้ใช้/รหัสผ่านให้ตรงกติกาจริงของระบบ"""
+        """ผู้ใช้สั่ง 4 ต.ค. 2569: บอกวิธีตั้งชื่อผู้ใช้/รหัสผ่านให้ตรงกติกาจริงของระบบ
+        → ปรับครั้งที่ 2 (ผู้ใช้สั่ง): ย้ายเป็น placeholder สั้น ๆ ในช่อง ไม่มีย่อหน้าใต้ชื่อช่องแล้ว"""
         html = flask_app_module.app.test_client().get('/register').get_data(as_text=True)
-        self.assertIn('ใช้ตัวอังกฤษ a–z ตัวเลข 0–9 หรือขีดล่าง _ ยาว 3–30 ตัว', html)
-        self.assertIn('อย่างน้อย 8 ตัว', html)
-        self.assertIn('ไม่บังคับตัวพิมพ์ใหญ่', html)
-        self.assertIn('aria-describedby="username-help"', html)
+        self.assertRegex(html, r'id="username"[^>]*placeholder="ตัวอังกฤษ ตัวเลข _ · 3–30 ตัว"')
+        self.assertRegex(html, r'id="password"[^>]*placeholder="อย่างน้อย 8 ตัว"')
+        self.assertNotRegex(html, r'id="confirm_password"[^>]*placeholder=')
+        for gone in ('username-help', 'password-help', 'class="help"'):
+            self.assertNotIn(gone, html)
+        # กติกาตรวจเดิมยังอยู่
+        self.assertRegex(html, r'id="username"[^>]*minlength="3"[^>]*maxlength="30"[^>]*data-check="username"')
+        self.assertRegex(html, r'id="password"[^>]*minlength="8"[^>]*data-check="newpass"')
 
     def test_recommend_sorts_by_answered_budget(self):
         """ทดสอบแบบผู้ใช้จริง ข้อ 1 (4 ต.ค. 2569): รุ่นในงบที่ตอบขึ้นก่อน รุ่นเกินงบติดป้าย"""
