@@ -219,7 +219,10 @@
       f.classList.toggle('is-error', !!msg);
       if (err) err.textContent = msg;
       const errBox = f.querySelector('.field-err');
-      if (errBox && errBox.id) inp.setAttribute('aria-describedby', errBox.id);
+      if (errBox && errBox.id) {
+        const desc = inp.dataset.desc ?? (inp.dataset.desc = inp.getAttribute('aria-describedby') || '');
+        inp.setAttribute('aria-describedby', (desc + ' ' + errBox.id).trim());
+      }
       inp.setAttribute('aria-invalid', msg ? 'true' : 'false');
       if (msg && !bad) bad = inp;
     });
@@ -237,4 +240,18 @@
     };
     tabs.forEach((t) => t.addEventListener('click', () => show(t.dataset.tab)));
   }
+
+  // ---------- รถแนะนำ: แสดง 5 รุ่นแรกต่อประเภท ที่เหลือกด "ดูเพิ่ม" (4 ต.ค. 2569) ----------
+  document.querySelectorAll('section.cars').forEach((sec) => {
+    const cars = [...sec.querySelectorAll('.car')];
+    if (cars.length <= 5) return;
+    const rest = cars.slice(5);
+    rest.forEach((c) => { c.hidden = true; });
+    const wrap = document.createElement('div'); wrap.className = 'cars-more';
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'btn btn-ghost';
+    btn.textContent = 'ดูอีก ' + rest.length + ' รุ่น';
+    btn.addEventListener('click', () => { rest.forEach((c) => { c.hidden = false; }); rest[0].querySelector('h3').setAttribute('tabindex', '-1'); rest[0].querySelector('h3').focus(); wrap.remove(); });
+    wrap.appendChild(btn); sec.appendChild(wrap);
+  });
 })();

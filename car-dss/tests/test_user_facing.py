@@ -656,6 +656,60 @@ class HonestResultTests(unittest.TestCase):
                     with self.subTest(table=tid, label=lab):
                         self.assertIn(f'<th scope="row">{lab}</th><td>{c} คน</td>', table)
 
+    def test_register_explains_username_and_password_rules(self):
+        """ผู้ใช้สั่ง 4 ต.ค. 2569: บอกวิธีตั้งชื่อผู้ใช้/รหัสผ่านให้ตรงกติกาจริงของระบบ"""
+        html = flask_app_module.app.test_client().get('/register').get_data(as_text=True)
+        self.assertIn('ใช้ตัวอังกฤษ a–z ตัวเลข 0–9 หรือขีดล่าง _ ยาว 3–30 ตัว', html)
+        self.assertIn('อย่างน้อย 8 ตัว', html)
+        self.assertIn('ไม่บังคับตัวพิมพ์ใหญ่', html)
+        self.assertIn('aria-describedby="username-help"', html)
+
+    def test_recommend_sorts_by_answered_budget(self):
+        """ทดสอบแบบผู้ใช้จริง ข้อ 1 (4 ต.ค. 2569): รุ่นในงบที่ตอบขึ้นก่อน รุ่นเกินงบติดป้าย"""
+        cars = flask_app_module.load_cars()
+        out = flask_app_module.sort_cars_by_budget(cars, 'lt500000')
+        for key in ('EV', 'Hybrid', 'ICE'):
+            prices = [flask_app_module._price_to_int(c['price']) for c in out[key]]
+            flags = [bool(c.get('over_budget')) for c in out[key]]
+            with self.subTest(fuel=key):
+                self.assertEqual(len(out[key]), len(cars[key]))            # ไม่ตัดรุ่นทิ้ง
+                self.assertEqual(flags, sorted(flags))                     # ในงบก่อน เกินงบทีหลัง
+                self.assertEqual(flags, [p > 500000 for p in prices])
+        self.assertIs(flask_app_module.sort_cars_by_budget(cars, None), cars)   # ไม่รู้งบ = ลำดับเดิม
+        client = logged_in_client()
+        with client.session_transaction() as sess:
+            sess['fuel_prediction'] = {'result': 'ไฮบริด (Hybrid)', 'scores': {'EV': 30, 'Hybrid': 40, 'ICE': 30}}
+            sess['buy_input_data'] = {'budget': 'lt500000'}
+        html = client.get('/recommend').get_data(as_text=True)
+        # ทุกรุ่นในระบบราคาเกิน 5 แสน → บอกตรง ๆ ว่าไม่มีรุ่นในงบ ไม่ติดป้ายซ้ำทุกคัน
+        if not any(c for c in out['Hybrid'] if not c.get('over_budget')):
+            self.assertIn('ยังไม่มีรุ่นประเภทนี้ในระบบที่ราคาอยู่ในงบที่คุณตอบ', html)
+        with client.session_transaction() as sess:
+            sess['buy_input_data'] = {'budget': '800001-1200000'}
+        html = client.get('/recommend').get_data(as_text=True)
+        mixed = flask_app_module.sort_cars_by_budget(cars, '800001-1200000')['Hybrid']
+        self.assertEqual(html.count('class="over-budget"') >= sum(1 for c in mixed if c.get('over_budget')), True)
+        self.assertIn('เกินงบที่คุณตอบ (800,001–1,200,000 บาท)', html)
+        self.assertIn('ขึ้นก่อน', html)
+
+    def test_not_buy_result_is_not_a_dead_end(self):
+        """ทดสอบแบบผู้ใช้จริง ข้อ 2: ผล "ไม่ซื้อ" มีทางไปดูรถ · ข้อความเด้งกลับไม่ตำหนิ"""
+        client = logged_in_client()
+        with client.session_transaction() as sess:
+            sess['buy_prediction'] = {'result': 'ไม่ซื้อ', 'confidence': 0.6}
+            sess['buy_result'] = 'ไม่ซื้อ'
+        html = client.get('/result/buy').get_data(as_text=True)
+        self.assertIn('href="/#models"', html)
+        bounced = client.get('/predict/fuel', follow_redirects=True).get_data(as_text=True)
+        self.assertNotIn('ผลลัพธ์ต้องเป็น', bounced)
+        self.assertIn('ดูรุ่นรถทั้งหมดได้ที่หน้าแรก', bounced)
+
+    def test_home_route_section_removed(self):
+        """ผู้ใช้สั่ง 4 ต.ค. 2569: ตัดส่วน "คุณเป็นคนบางขุนเทียนสายไหน?" + คำถาม 3 ข้อ"""
+        html = flask_app_module.app.test_client().get('/').get_data(as_text=True)
+        for gone in ('id="route"', 'สายไหน', 'ลองตอบ 3 ข้อ'):
+            self.assertNotIn(gone, html)
+
     def test_draft_cleared_only_on_result_page(self):
         # Codex #52: คำตอบที่จำไว้ต้องไม่ถูกลบตอนกดส่ง (เซิร์ฟเวอร์อาจตีกลับ) → ลบเมื่อหน้าผลโหลดเท่านั้น
         js = open(os.path.join(BASE_DIR, 'static', 'js', 'cardss-app.js'), encoding='utf-8').read()

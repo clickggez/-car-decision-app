@@ -21,76 +21,7 @@
   })();
 
 
-  // ---------- route map + quick quiz ----------
-  (function route() {
-    const ICON = {
-      city: '<svg width="52" height="52" viewBox="0 0 48 48" fill="none" stroke="#EEF3F5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 44h40"/><rect x="8" y="16" width="12" height="28"/><rect x="24" y="6" width="14" height="38"/><path d="M12 22h4M12 28h4M12 34h4M28 12h6M28 18h6M28 24h6M28 30h6"/></svg>',
-      traffic: '<svg width="52" height="52" viewBox="0 0 48 48" fill="none" stroke="#EEF3F5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="18" width="18" height="12" rx="3"/><rect x="26" y="18" width="18" height="12" rx="3"/><circle cx="9" cy="32" r="2.5"/><circle cx="17" cy="32" r="2.5"/><circle cx="31" cy="32" r="2.5"/><circle cx="39" cy="32" r="2.5"/><path d="M8 12h6M22 12h4M34 12h6"/></svg>',
-      sea: '<svg width="52" height="52" viewBox="0 0 48 48" fill="none" stroke="#EEF3F5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 24 L24 10 L40 24"/><path d="M12 22v12h24V22"/><path d="M4 40c4-3 8-3 12 0s8 3 12 0 8-3 12 0 4 2 4 2"/></svg>',
-      south: '<svg width="52" height="52" viewBox="0 0 48 48" fill="none" stroke="#EEF3F5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 44 L22 4"/><path d="M30 44 L26 4"/><path d="M24 40v-4M24 28v-4M24 16v-4"/><circle cx="38" cy="10" r="5"/></svg>'
-    };
-    const P = [
-      { tag: 'สาย 01', icon: 'city', title: 'สายเข้าเมืองทุกวัน',
-        text: 'ขับจากพระราม 2 เข้าสาทร สีลม หรือกรุงเทพชั้นในทุกวัน เจอรถติดทั้งขาไปขากลับ บางคนอยู่คอนโดที่ติดตั้งที่ชาร์จเองไม่ได้',
-        chips: ['เวลาบนถนน', 'ค่าทางด่วน / ค่าจอด', 'ค่าน้ำมันต่อเดือน'], def: { dist: 1, trip: 0, home: 2 } },
-      { tag: 'สาย 02', icon: 'traffic', title: 'สายใช้รถในย่าน',
-        text: 'อยู่แถวท่าข้าม แสมดำ ทำงานโรงงานหรือร้านค้าใกล้บ้าน ขับระยะสั้น รับส่งลูก ไปตลาด แทบไม่ได้ขึ้นทางด่วน',
-        chips: ['ระยะทางต่อวัน', 'ราคารถ', 'ค่าซ่อมบำรุง'], def: { dist: 0, trip: 1, home: 1 } },
-      { tag: 'สาย 03', icon: 'sea', title: 'สายบ้านใกล้ทะเล',
-        text: 'บ้านแถวบางขุนเทียนชายทะเล หรือซอยที่น้ำขังหน้าฝน ใช้รถในย่านเป็นหลัก ต้องคิดเรื่องที่จอดและงบประมาณ',
-        chips: ['ที่จอดรถ', 'งบประมาณ', 'ระยะทางต่อวัน'], def: { dist: 0, trip: 0, home: 0 } },
-      { tag: 'สาย 04', icon: 'south', title: 'สายกลับบ้านต่างจังหวัด',
-        text: 'อยู่ฝั่งมหาชัย พระราม 2 คือประตูลงใต้ ถ้าขับไปเพชรบุรี หัวหิน หรือไกลกว่านั้นบ่อย ๆ ต้องคิดเรื่องระยะทางต่อครั้ง',
-        chips: ['ทริปไกลต่อเดือน', 'ปั๊ม / ที่ชาร์จระหว่างทาง'], def: { dist: 2, trip: 2, home: 2 } }
-    ];
-    const ans = { dist: 1, trip: 0, home: 1 };
-    const stops = [...document.querySelectorAll('.stop')];
-    const $ = (id) => document.getElementById(id);
-
-    // simple, explainable scoring: each answer adds points to a lane
-    const W = {
-      dist: [{ ev: 2, hev: 0, ice: 3 }, { ev: 2, hev: 2, ice: 1 }, { ev: 1, hev: 3, ice: 0 }],
-      trip: [{ ev: 2, hev: 1, ice: 1 }, { ev: 1, hev: 2, ice: 1 }, { ev: -1, hev: 2, ice: 1 }],
-      home: [{ ev: 3, hev: 0, ice: 0 }, { ev: 0, hev: 1, ice: 1 }, { ev: -3, hev: 1, ice: 2 }]
-    };
-    const WHY = {
-      ev: 'ชาร์จที่บ้านได้และส่วนใหญ่ขับในเมือง รถไฟฟ้ามักประหยัดที่สุด โดยเฉพาะตอนรถติดที่เครื่องยนต์ต้องเดินเบาเปล่า ๆ',
-      hev: 'ขับทั้งรถติดและทางไกล ไฮบริดช่วยประหยัดตอนหยุด ๆ ขยับ ๆ และไม่ต้องกังวลเรื่องจุดชาร์จระหว่างทาง',
-      ice: 'ขับไม่มากหรือต้องการรถราคาเริ่มต้นต่ำ รถน้ำมันยังคุ้มได้ ซ่อมง่าย เติมได้ทุกปั๊ม'
-    };
-    function pick() {
-      const sc = { ev: 0, hev: 0, ice: 0 };
-      for (const k in ans) { const w = W[k][ans[k]]; for (const l in sc) sc[l] += w[l]; }
-      return Object.keys(sc).sort((a, b) => sc[b] - sc[a] || ['hev', 'ev', 'ice'].indexOf(a) - ['hev', 'ev', 'ice'].indexOf(b))[0];
-    }
-    function render() {
-      document.querySelectorAll('.seg').forEach((seg) => seg.querySelectorAll('button').forEach((b) =>
-        b.setAttribute('aria-pressed', String(+b.dataset.v === ans[seg.dataset.q]))));
-      const l = pick();
-      document.querySelectorAll('.lanes-mini span').forEach((s) => s.classList.toggle('on', s.dataset.l === l));
-      $('qWhy').textContent = WHY[l];
-      document.dispatchEvent(new CustomEvent('cardss:hint', { detail: l }));
-    }
-    function setPersona(i) {
-      const p = P[i];
-      stops.forEach((b, j) => { b.setAttribute('aria-checked', String(i === j)); b.tabIndex = i === j ? 0 : -1; });
-      $('pTag').textContent = p.tag; $('pIcon').innerHTML = ICON[p.icon];
-      $('pTitle').textContent = p.title; $('pText').textContent = p.text;
-      $('pChips').innerHTML = p.chips.map((c) => `<span>${c}</span>`).join('');
-      Object.assign(ans, p.def); render();
-    }
-    stops.forEach((b, i) => {
-      b.addEventListener('click', () => setPersona(i));
-      b.addEventListener('keydown', (e) => {
-        const d = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
-        if (d) { e.preventDefault(); const n = (i + d + stops.length) % stops.length; setPersona(n); stops[n].focus(); }
-      });
-    });
-    document.querySelectorAll('.seg').forEach((seg) => seg.addEventListener('click', (e) => {
-      const b = e.target.closest('button'); if (!b) return; ans[seg.dataset.q] = +b.dataset.v; render();
-    }));
-    setPersona(0);
-  })();
+  // (ส่วน "คุณเป็นคนบางขุนเทียนสายไหน?" + คำถาม 3 ข้อ ถูกตัดออก 4 ต.ค. 2569 ตามคำสั่งผู้ใช้)
 
   // ---------- floodwater in the hero: spring-column surface ----------
   const hero = document.getElementById('hero');

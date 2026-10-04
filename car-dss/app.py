@@ -143,7 +143,8 @@ def buy_result_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if session.get('buy_result') != 'ซื้อ':
-            flash('กรุณาทำแบบประเมินซื้อ/ไม่ซื้อก่อน และผลลัพธ์ต้องเป็น "ซื้อ" จึงจะวิเคราะห์ประเภทเชื้อเพลิงได้', 'danger')
+                # 4 ต.ค. 2569 เขียนใหม่ให้ไม่ตำหนิผู้ใช้ และบอกทางไปต่อ (ทดสอบแบบผู้ใช้จริง ข้อ 2)
+            flash('ขั้นเลือกประเภทเชื้อเพลิงจะเปิดเมื่อผลขั้นที่ 1 คือ "มีแนวโน้มจะซื้อ" · ดูรุ่นรถทั้งหมดได้ที่หน้าแรก', 'info')
             return redirect(url_for('predict_buy_page'))
         return f(*args, **kwargs)
     return decorated
@@ -605,6 +606,34 @@ def build_cost_table(car_db):
     }
 
 
+# งบที่ตอบในฟอร์ม BUY → ราคาสูงสุดที่ยังอยู่ในงบ (None = ไม่จำกัด) · ค่าต้องตรง validators.ALLOWED['budget']
+BUDGET_MAX = {'lt500000': 500000, '500001-800000': 800000, '800001-1200000': 1200000,
+              '1200001-1500000': 1500000, '1500000+': None}
+BUDGET_TH = {'lt500000': 'ต่ำกว่า 500,000 บาท', '500001-800000': '500,001–800,000 บาท',
+             '800001-1200000': '800,001–1,200,000 บาท', '1200001-1500000': '1,200,001–1,500,000 บาท',
+             '1500000+': 'มากกว่า 1,500,000 บาท'}
+
+
+def sort_cars_by_budget(car_db, budget):
+    """รุ่นที่ราคาอยู่ในงบขึ้นก่อน (คงลำดับเดิมใน cars.json) แล้วตามด้วยรุ่นที่เกินงบ ติด over_budget=True
+    4 ต.ค. 2569 ผู้ใช้สั่ง (ทดสอบแบบผู้ใช้จริง ข้อ 1): ตอบงบไว้แล้วแต่หน้ารถแนะนำไม่สนงบ
+    ไม่ใช่ส่วนของโมเดล — โมเดลเลือก "ประเภท" · งบใช้แค่จัดลำดับรุ่นในประเภท · ไม่รู้งบ = คืนลำดับเดิม"""
+    if budget not in BUDGET_MAX:
+        return car_db
+    cap = BUDGET_MAX[budget]
+    out = {}
+    for key, cars in car_db.items():
+        within, over = [], []
+        for car in cars or []:
+            price = _price_to_int(car.get('price'))
+            if cap is not None and price and price > cap:
+                over.append(dict(car, over_budget=True))
+            else:
+                within.append(car)
+        out[key] = within + over
+    return out
+
+
 @app.route('/recommend')
 @login_required
 def recommend():
@@ -624,15 +653,17 @@ def recommend():
         fuel_key = 'ICE'
 
     car_db = load_cars()
-    recommended_cars = car_db.get(fuel_key, [])[:5]
-    all_cars = car_db
+    budget = (session.get('buy_input_data') or {}).get('budget')
+    all_cars = sort_cars_by_budget(car_db, budget)
+    recommended_cars = all_cars.get(fuel_key, [])[:5]
 
     return render_template('recommend.html',
                            fuel_key=fuel_key,
                            fuel_pred=fuel_pred,
                            recommended_cars=recommended_cars,
                            all_cars=all_cars,
-                           cost_table=build_cost_table(car_db))
+                           cost_table=build_cost_table(car_db),
+                           budget_th=BUDGET_TH.get(budget))
 
 
 # ============================================================

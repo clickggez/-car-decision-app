@@ -45,7 +45,7 @@
         <div class="divider"></div>
         <fieldset class="field" id="q-fit" data-required data-label="ความเหมาะสมของประเภทพลังงาน">
           <legend>ประเภทพลังงานของรถยนต์มีความเหมาะสมกับการใช้งาน<span class="req" aria-hidden="true">*</span><span class="sr">(จำเป็น)</span></legend>
-          <p class="help">คุณให้ความสำคัญแค่ไหนว่าชนิดพลังงานของรถ (น้ำมัน / ไฮบริด / ไฟฟ้า) ต้องเหมาะกับการใช้รถของคุณ · ให้คะแนน 1 ถึง 5</p>
+          <p class="help">คุณเห็นด้วยแค่ไหนว่าชนิดพลังงานของรถ (น้ำมัน / ไฮบริด / ไฟฟ้า) ต้องเหมาะกับการใช้รถของคุณ · ให้คะแนน 1 ถึง 5</p>
           <div class="scale">
             {% for v, t in [('1','ไม่เห็นด้วยอย่างยิ่ง'),('2','ไม่เห็นด้วย'),('3','เฉย ๆ'),('4','เห็นด้วย'),('5','เห็นด้วยอย่างยิ่ง')] %}
             <label><input type="radio" name="tech_env_concern" value="{{ v }}" required><span><b>{{ v }}</b><small>{{ t }}</small></span></label>

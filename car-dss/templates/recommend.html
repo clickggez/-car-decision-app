@@ -28,6 +28,8 @@
     <div class="kicker"><i></i>ขั้นที่ 3 จาก 3 · รถแนะนำ</div>
     <h1>รุ่นรถสำหรับคุณ<br><span class="hl">{{ names[fuel_key] }}</span></h1>
     <p class="lead">เปิดประเภทที่เข้ากับคุณที่สุดไว้ก่อน กดป้ายด้านล่างเพื่อเทียบกับอีก 2 ประเภท ในระบบมีรถทั้งหมด {{ total_cars }} รุ่น</p>
+    {% if budget_th %}{% set in_budget = all_cars[fuel_key] | rejectattr('over_budget') | list %}
+    <p class="fine">{% if in_budget %}รุ่นที่ราคาอยู่ในงบที่คุณตอบในขั้นที่ 1 ({{ budget_th }}) ขึ้นก่อน{% else %}ยังไม่มีรุ่นประเภทนี้ในระบบที่ราคาอยู่ในงบที่คุณตอบ ({{ budget_th }}) · ด้านล่างคือทุกรุ่นที่มี{% endif %}</p>{% endif %}
   </header>
 
   <div class="md-types" role="group" aria-label="เลือกดูรถตามประเภทเชื้อเพลิง">
@@ -39,6 +41,7 @@
   </div>
 
   {% for key, thai, code in types %}
+  {% set mixed = (all_cars[key] | rejectattr('over_budget') | list) and (all_cars[key] | selectattr('over_budget') | list) %}
   <section class="cars" id="panel-{{ key }}" data-panel="{{ key }}" {% if key != fuel_key %}hidden{% endif %} aria-label="{{ names[key] }}">
     {% for car in all_cars[key] %}
     <article class="car" data-f="{{ key }}">
@@ -53,6 +56,7 @@
       </div>
       <div class="car-money">
         <div class="price"><small>ราคาเริ่มต้น</small><b>{{ car.price }} บาท</b></div>
+        {% if car.over_budget and mixed %}<p class="over-budget">เกินงบที่คุณตอบ ({{ budget_th }})</p>{% endif %}
         <dl class="specs">
           {% if car.monthly_cost %}<dt>ค่าใช้จ่ายต่อเดือน</dt><dd>{{ car.monthly_cost }}</dd>{% endif %}
           {% if car.range_km %}<dt>{{ 'วิ่งได้ต่อการชาร์จ' if key == 'EV' else 'วิ่งได้ต่อถัง' }}</dt><dd>{{ car.range_km }} กม.</dd>{% endif %}

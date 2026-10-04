@@ -33,13 +33,15 @@
         <form method="POST" action="{{ url_for('register') }}" id="registerForm" data-auth novalidate style="display:flex;flex-direction:column;gap:20px">
           <div class="field" data-label="ชื่อผู้ใช้">
             <label for="username">ชื่อผู้ใช้</label>
-            <input class="input" type="text" id="username" name="username" autocomplete="username" required minlength="3" maxlength="30" data-check="username" value="{{ request.form.get('username', '') }}">
+            <p class="help" id="username-help">ใช้ตัวอังกฤษ a–z ตัวเลข 0–9 หรือขีดล่าง _ ยาว 3–30 ตัว เช่น somchai_88 · ไม่ต้องใช้ชื่อจริง เบอร์โทร หรืออีเมล (ใส่ @ จุด หรือภาษาไทยไม่ได้)</p>
+            <input class="input" type="text" id="username" name="username" autocomplete="username" required minlength="3" maxlength="30" data-check="username" aria-describedby="username-help" value="{{ request.form.get('username', '') }}">
             <p class="field-err" id="username-err"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg><span></span></p>
           </div>
           <div class="field" data-label="รหัสผ่าน">
             <label for="password">รหัสผ่าน</label>
+            <p class="help" id="password-help">อย่างน้อย 8 ตัว · ไม่บังคับตัวพิมพ์ใหญ่ แต่ถ้าผสมตัวพิมพ์ใหญ่ (A–Z) ตัวเลข และสัญลักษณ์ เช่น ! @ # จะปลอดภัยกว่า</p>
             <div class="input-wrap">
-              <input class="input" type="password" id="password" name="password" autocomplete="new-password" required minlength="8" data-check="newpass" data-pw-meter="pwMeter" data-pw-text="pwText" aria-describedby="pwText">
+              <input class="input" type="password" id="password" name="password" autocomplete="new-password" required minlength="8" data-check="newpass" data-pw-meter="pwMeter" data-pw-text="pwText" aria-describedby="password-help pwText">
               <button type="button" class="peek" data-peek="password" aria-pressed="false" aria-label="แสดงรหัสผ่าน">แสดง</button>
             </div>
             <div class="pw-meter" id="pwMeter" data-level="0" aria-hidden="true"><i></i><i></i><i></i><i></i></div>

@@ -345,3 +345,7 @@ main .panel,main .car{
     radial-gradient(46vw 38vw at 88% 30%,rgba(244,124,32,.24),transparent 70%),
     radial-gradient(40vw 34vw at 6% 62%,rgba(13,106,61,.42),transparent 70%),
     radial-gradient(34vw 26vw at 62% 96%,rgba(72,205,189,.16),transparent 70%)}
+
+/* 4 ต.ค. 2569 ทดสอบแบบผู้ใช้จริง: ป้ายรุ่นที่เกินงบ + ปุ่มดูรุ่นเพิ่ม */
+.over-budget{display:inline-block;margin:8px 0 0;padding:4px 10px;border:1px solid var(--glass-line);border-radius:999px;color:var(--ink-2);font-size:14px}
+.cars-more{display:flex;justify-content:center;margin-top:8px}

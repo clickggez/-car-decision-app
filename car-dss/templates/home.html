@@ -53,7 +53,7 @@
         <a class="btn btn-primary" href="{{ url_for('predict_buy_page') }}">เริ่มเลือกรถ <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></a>
         <a class="btn btn-ghost" href="#exits">ดูรายละเอียด</a>
       </div>
-      <p class="hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>ใช้เวลากรอกประมาณ 2 นาที · ได้ผลเทียบรถ 3 ประเภท</p>
+      <p class="hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>{% if not (current_user and current_user.is_authenticated) %}ต้องสมัครสมาชิกก่อน (ฟรี) · {% endif %}ใช้เวลากรอกประมาณ 2 นาที · ได้ผลเทียบรถ 3 ประเภท</p>
     </div>
     {# ระยะทางบนป้าย: วัดจากเซ็นทรัล พระราม 2 ด้วย Google Maps (ผู้ใช้ตรวจ 30 ก.ย. 2569) #}
     <div class="sign-col">
@@ -75,50 +75,6 @@
 </section>
 
 <div class="hazard" aria-hidden="true"></div>
-
-<section class="block personas" id="route">
-  <div class="wrap">
-    <div class="head"><h2>คุณเป็นคนบางขุนเทียน<br>สายไหน?</h2><p>กดจุดที่ใกล้บ้านคุณบนถนนพระราม 2 แล้วลองตอบ 3 ข้อ ดูคร่าว ๆ ว่ารถแบบไหนน่าจะเข้ากับคุณ</p></div>
-
-    <div class="route" role="radiogroup" aria-label="เลือกย่านที่อยู่">
-      <div class="route-road" aria-hidden="true"></div>
-      <div class="stops">
-        <button class="stop" type="button" role="radio" aria-checked="true" data-p="0"><i></i><b>กรุงเทพชั้นใน</b><small>สาย 01</small></button>
-        <button class="stop" type="button" role="radio" aria-checked="false" data-p="1"><i></i><b>ท่าข้าม · แสมดำ</b><small>สาย 02</small></button>
-        <button class="stop" type="button" role="radio" aria-checked="false" data-p="2"><i></i><b>บางขุนเทียน ชายทะเล</b><small>สาย 03</small></button>
-        <button class="stop" type="button" role="radio" aria-checked="false" data-p="3"><i></i><b>มหาชัย</b><small>สาย 04</small></button>
-      </div>
-      <span class="route-end route-end--r">ลงใต้ →</span>
-    </div>
-
-    <div class="route-panel">
-      <article class="card persona" aria-live="polite">
-        <div class="card-top"><span class="tag" id="pTag">สาย 01</span><span class="p-icon" id="pIcon" aria-hidden="true"></span></div>
-        <h3 id="pTitle"></h3>
-        <p id="pText"></p>
-        <div class="consider"><small>สิ่งที่ควรคิด</small><div class="chips" id="pChips"></div></div>
-      </article>
-
-      <div class="card quiz">
-        <div class="quiz-head"><h3>ลองตอบ 3 ข้อ</h3><small>เปลี่ยนคำตอบได้ ผลจะเปลี่ยนทันที</small></div>
-        <fieldset class="q"><legend>1. ขับรถวันละประมาณกี่กิโล</legend>
-          <div class="seg" data-q="dist"><button type="button" data-v="0">ไม่ถึง 30</button><button type="button" data-v="1">30–80</button><button type="button" data-v="2">เกิน 80</button></div></fieldset>
-        <fieldset class="q"><legend>2. ขับไปต่างจังหวัดบ่อยแค่ไหน</legend>
-          <div class="seg" data-q="trip"><button type="button" data-v="0">แทบไม่ไป</button><button type="button" data-v="1">เดือนละครั้ง</button><button type="button" data-v="2">ทุกสัปดาห์</button></div></fieldset>
-        <fieldset class="q"><legend>3. ชาร์จไฟที่บ้านได้ไหม</legend>
-          <div class="seg" data-q="home"><button type="button" data-v="0">ได้</button><button type="button" data-v="1">ไม่แน่ใจ</button><button type="button" data-v="2">ไม่ได้</button></div></fieldset>
-
-        <div class="hint-result" aria-live="polite">
-          <small>คำใบ้คร่าว ๆ</small>
-          <div class="lanes-mini"><span data-l="ev">ไฟฟ้า</span><span data-l="hev">ไฮบริด</span><span data-l="ice">น้ำมัน</span></div>
-          <p id="qWhy"></p>
-          <a class="btn btn-primary btn-sm" href="{{ url_for('predict_fuel_page') }}">ดูผลละเอียดจากระบบ <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></a>
-          <small class="fine">คำใบ้นี้คิดจากคำตอบ 3 ข้อเท่านั้น ไม่ใช่ผลจากโมเดลพยากรณ์</small>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
 
 <section class="block md" id="models">
   <div class="wrap">
