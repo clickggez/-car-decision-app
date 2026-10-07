@@ -39,6 +39,9 @@
   // ผู้ใช้เลือก 30 ก.ย. 2569: ขยายน้ำ 2 เท่าให้เห็นชัด (ไม่ใช่สัดส่วนจริง — ป้ายบนหน้าเว็บบอกไว้)
   const WL_EXAGGERATE = 2;
   const wlPx = () => wlCm * WL_EXAGGERATE * L / 450;
+  // ประเภทตัวถังที่เลือก (ว่าง = ทุกแบบ) — ผู้ใช้สั่ง 7 ต.ค. 2569 เลือกได้หลายแบบ หล่นเฉพาะที่เลือก
+  const bodySel = new Set();
+  const btBtns = [...document.querySelectorAll('#bt button')];
   let WD = 48, WN = 0, wdx = 6, wh = new Float32Array(0), wv = new Float32Array(0), wdrops = [], wtime = 0, nextDrip = 0;
   const WK = 0.02, WDAMP = 0.014, WSPREAD = 0.25;
   const wcol = (x) => Math.max(0, Math.min(WN - 1, Math.round(x / wdx)));
@@ -245,7 +248,9 @@
     clearTimeout(dropTimer); hideTip(true);
     for (const b of cars) Composite.remove(engine.world, b);
     cars = [];
-    const list = DATA[type].models.slice().sort(() => Math.random() - 0.5);
+    const all = DATA[type].models;
+    const pool = bodySel.size ? all.filter((m) => bodySel.has(m[2])) : all;
+    const list = pool.slice().sort(() => Math.random() - 0.5);
     let i = 0; const token = (drop.token = (drop.token || 0) + 1);
     const next = () => {
       if (token !== drop.token || i >= list.length) return;
@@ -259,8 +264,23 @@
     };
     const wait = list.map((m) => ready[`${m[0]} ${m[1]}`] || Promise.resolve());
     Promise.race([Promise.all(wait), new Promise((r) => setTimeout(r, 2500))]).then(next);
-    document.getElementById('mdCount').textContent = `${DATA[type].name} · ${DATA[type].models.length} รุ่น`;
-    document.getElementById('mdList').textContent = `${DATA[type].name}: ` + DATA[type].models.map((m) => `${m[0]} ${m[1]}${BODY_TH[m[2]] ? ' (' + BODY_TH[m[2]] + ')' : ''}`).join(', ');
+    const none = bodySel.size && !pool.length;
+    document.getElementById('mdCount').textContent = none ? `${DATA[type].name} · ไม่มีรถตัวถังที่เลือก`
+      : bodySel.size ? `${DATA[type].name} · ${pool.length} จาก ${all.length} รุ่น` : `${DATA[type].name} · ${all.length} รุ่น`;
+    document.getElementById('mdList').textContent = none ? `${DATA[type].name}: ไม่มีรุ่นที่เป็นตัวถังที่เลือก ลองเลือกตัวถังอื่นหรือกด ทั้งหมด`
+      : `${DATA[type].name}: ` + pool.map((m) => `${m[0]} ${m[1]}${BODY_TH[m[2]] ? ' (' + BODY_TH[m[2]] + ')' : ''}`).join(', ');
+  }
+
+  // ปุ่มตัวถัง: ตัวเลขรุ่นของแต่ละแบบในประเภทเชื้อเพลิงที่เลือกอยู่ + สถานะกด
+  function syncBody() {
+    btBtns.forEach((b) => {
+      const k = b.dataset.b;
+      b.setAttribute('aria-pressed', String(k === 'all' ? bodySel.size === 0 : bodySel.has(k)));
+      if (k === 'all') return;
+      const n = DATA[current].models.filter((m) => m[2] === k).length;
+      b.querySelector('small').textContent = n + ' รุ่น';
+      b.classList.toggle('is-empty', n === 0);
+    });
   }
 
   // ---------- drawing ----------
@@ -357,8 +377,16 @@
   document.querySelectorAll('.md-type').forEach((btn) => btn.addEventListener('click', () => {
     current = btn.dataset.t;
     document.querySelectorAll('.md-type').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+    syncBody();
     drop(current);
   }));
+  btBtns.forEach((btn) => btn.addEventListener('click', () => {
+    const k = btn.dataset.b;
+    if (k === 'all') bodySel.clear(); else if (bodySel.has(k)) bodySel.delete(k); else bodySel.add(k);
+    syncBody();
+    drop(current);
+  }));
+  syncBody();
   let visible = true, raf = 0, last = performance.now(), acc = 0;
   function frame(now) {
     acc += Math.min(50, now - last); last = now;

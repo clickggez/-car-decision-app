@@ -84,6 +84,17 @@
       <button class="md-type" type="button" data-t="ev" aria-pressed="false"><span class="md-in"><b>รถไฟฟ้า</b><small>{{ car_counts.get('EV', 0) }} รุ่น · EV</small></span><em class="md-match">เข้ากับคุณ</em></button>
       <button class="md-type" type="button" data-t="ice" aria-pressed="false"><span class="md-in"><b>สันดาป</b><small>{{ car_counts.get('ICE', 0) }} รุ่น · รถน้ำมัน</small></span><em class="md-match">เข้ากับคุณ</em></button>
     </div>
+    {# ประเภทตัวถัง: เลือกได้หลายแบบ · ไม่เลือกเลย = หล่นทุกแบบ · ตัวเลขรุ่นเติมโดย cardss-models.js ตามประเภทเชื้อเพลิงที่เลือก #}
+    <div class="bt-wrap">
+      <p class="wl-label" id="btLabel">ประเภทตัวถัง (เลือกได้หลายแบบ · ไม่เลือก = แสดงทุกแบบ)</p>
+      <div class="bt" id="bt" role="group" aria-labelledby="btLabel">
+        <button type="button" data-b="all" aria-pressed="true"><b>ทั้งหมด</b></button>
+        <button type="button" data-b="sedan" aria-pressed="false"><b>เก๋ง</b><small></small></button>
+        <button type="button" data-b="hatch" aria-pressed="false"><b>แฮทช์แบ็ก</b><small></small></button>
+        <button type="button" data-b="suv" aria-pressed="false"><b>SUV / ครอสโอเวอร์</b><small></small></button>
+        <button type="button" data-b="mpv" aria-pressed="false"><b>MPV 7 ที่นั่ง</b><small></small></button>
+      </div>
+    </div>
     <div class="wl-wrap">
       <p class="wl-label" id="wlLabel">ระดับน้ำท่วมบนถนน (ภาพขยายความสูงน้ำให้เห็นชัด ไม่ใช่สัดส่วนจริง)</p>
       <div class="wl" id="wl" role="group" aria-labelledby="wlLabel">

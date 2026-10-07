@@ -729,6 +729,19 @@ class HonestResultTests(unittest.TestCase):
         # ยังไม่มีหน้าดูประวัติผล → ห้ามบอกว่า "กลับมาดูย้อนหลังได้" (ผู้ใช้ตกลง 4 ต.ค. 2569)
         self.assertNotIn('ย้อนหลัง', flask_app_module.app.test_client().get('/login').get_data(as_text=True))
 
+    def test_home_body_type_buttons(self):
+        """7 ต.ค. 2569 ผู้ใช้สั่ง: ปุ่มประเภทตัวถัง เลือกได้หลายแบบ (หล่นเฉพาะที่เลือก) · เริ่มที่ ทั้งหมด"""
+        html = flask_app_module.app.test_client().get('/').get_data(as_text=True)
+        block = html[html.index('class="bt-wrap"'):html.index('class="wl-wrap"')]
+        got = re.findall(r'data-b="(\w+)" aria-pressed="(true|false)"><b>([^<]+)</b>', block)
+        self.assertEqual([(k, name) for k, _, name in got],
+                         [('all', 'ทั้งหมด'), ('sedan', 'เก๋ง'), ('hatch', 'แฮทช์แบ็ก'),
+                          ('suv', 'SUV / ครอสโอเวอร์'), ('mpv', 'MPV 7 ที่นั่ง')])
+        self.assertEqual([p for _, p, _ in got], ['true', 'false', 'false', 'false', 'false'])
+        self.assertIn('เลือกได้หลายแบบ', block)
+        js = open(os.path.join(BASE_DIR, 'static', 'js', 'cardss-models.js'), encoding='utf-8').read()
+        self.assertIn('bodySel', js)
+
     def test_home_water_levels(self):
         """30 ก.ย. 2569 ผู้ใช้สั่ง: ปุ่มระดับน้ำ 4 ระดับในส่วนรถหล่น (ปลอดภัย→ห้ามขับ) + คำแนะนำทั่วไป ไม่บอกรายคัน
         ต้องบอกว่าไม่ใช่ผลจากโมเดล และเริ่มที่ระดับปลอดภัย"""
