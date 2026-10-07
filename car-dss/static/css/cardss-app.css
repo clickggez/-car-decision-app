@@ -352,3 +352,8 @@ main .panel,main .car{
 /* 4 ต.ค. 2569 ทดสอบแบบผู้ใช้จริง: ป้ายรุ่นที่เกินงบ + ปุ่มดูรุ่นเพิ่ม */
 .over-budget{display:inline-block;margin:8px 0 0;padding:4px 10px;border:1px solid var(--glass-line);border-radius:999px;color:var(--ink-2);font-size:14px}
 .cars-more{display:flex;justify-content:center;margin-top:8px}
+
+/* หน้าแจ้งข้อผิดพลาด 404/500 (7 ต.ค. 2569) — หลักกิโลบอกรหัส คู่กับหัวข้อ */
+.error-page{display:flex;align-items:center;gap:clamp(24px,5vw,64px);flex-wrap:wrap;padding-block:clamp(40px,8vw,96px)}
+.error-stone{width:auto;justify-content:flex-start}
+.error-stone .stone{width:150px}

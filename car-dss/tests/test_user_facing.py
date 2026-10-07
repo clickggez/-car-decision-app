@@ -742,6 +742,20 @@ class HonestResultTests(unittest.TestCase):
         js = open(os.path.join(BASE_DIR, 'static', 'js', 'cardss-models.js'), encoding='utf-8').read()
         self.assertIn('bodySel', js)
 
+    def test_error_pages(self):
+        """7 ต.ค. 2569: 404 แสดงหน้าแจ้งข้อผิดพลาดดีไซน์ใหม่ สถานะ 404 จริง มีปุ่มกลับหน้าแรก"""
+        resp = flask_app_module.app.test_client().get('/ไม่มีหน้านี้-xyz')
+        self.assertEqual(resp.status_code, 404)
+        html = resp.get_data(as_text=True)
+        self.assertIn('ไม่พบหน้าที่คุณหา', html)
+        self.assertIn('<b>404</b>', html)
+        self.assertIn('href="/"', html)
+        # หน้า 500 วาดได้ (เรียกตัวจัดการตรง ๆ)
+        with flask_app_module.app.test_request_context('/'):
+            body, status = flask_app_module.internal_error(Exception('x'))
+        self.assertEqual(status, 500)
+        self.assertIn('ระบบขัดข้องชั่วคราว', body)
+
     def test_home_water_levels(self):
         """30 ก.ย. 2569 ผู้ใช้สั่ง: ปุ่มระดับน้ำ 4 ระดับในส่วนรถหล่น (ปลอดภัย→ห้ามขับ) + คำแนะนำทั่วไป ไม่บอกรายคัน
         ต้องบอกว่าไม่ใช่ผลจากโมเดล และเริ่มที่ระดับปลอดภัย"""

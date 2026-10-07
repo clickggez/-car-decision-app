@@ -1,0 +1,23 @@
+{% extends "base_cardss.html" %}
+{% block title %}{{ title }} — CarDSS{% endblock %}
+
+{# หน้าแจ้งข้อผิดพลาด 404 / 500 (ผู้ใช้สั่ง 7 ต.ค. 2569 "ทำทั้งหมด")
+   ใช้หลักกิโล .stone จากดีไซน์หน้าแรกบอกรหัส · ตัวแปร: code, title, message จาก app.page_not_found / internal_error #}
+
+{% block content %}
+<div class="wrap">
+  <section class="error-page" aria-labelledby="errTitle">
+    <div class="stones error-stone" aria-hidden="true">
+      <div class="stone"><span>รหัส</span><b>{{ code }}</b></div>
+    </div>
+    <div class="page-head">
+      <h1 id="errTitle">{{ title }}</h1>
+      <p class="lead">{{ message }}</p>
+      <div class="btn-row">
+        <a class="btn btn-primary" href="{{ url_for('index') }}">กลับหน้าแรก</a>
+        <a class="btn-text" href="{{ url_for('dashboard') }}">ดูภาพรวมข้อมูล</a>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
