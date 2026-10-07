@@ -954,7 +954,10 @@ def _car_from_form(form):
 
 @app.errorhandler(404)
 def page_not_found(e):
-    """7 ต.ค. 2569: หน้าแจ้งข้อผิดพลาดแบบดีไซน์ใหม่ + สถานะ 404 จริง (เดิม flash แล้วเด้งกลับหน้าแรก)"""
+    """7 ต.ค. 2569: หน้าแจ้งข้อผิดพลาดแบบดีไซน์ใหม่ + สถานะ 404 จริง (เดิม flash แล้วเด้งกลับหน้าแรก)
+    ไฟล์ /static/ ที่หาย (รูป/CSS/JS) ได้ข้อความสั้นแทนหน้า HTML ทั้งหน้า (Codex #57)"""
+    if request.path.startswith('/static/'):
+        return 'Not Found', 404, {'Content-Type': 'text/plain; charset=utf-8'}
     return render_template('error.html', code=404, title='ไม่พบหน้าที่คุณหา',
                            message='ลิงก์อาจพิมพ์ผิด หรือหน้านี้ถูกย้ายไปแล้ว ลองกลับไปเริ่มที่หน้าแรก'), 404
 

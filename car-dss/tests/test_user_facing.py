@@ -750,6 +750,10 @@ class HonestResultTests(unittest.TestCase):
         self.assertIn('ไม่พบหน้าที่คุณหา', html)
         self.assertIn('<b>404</b>', html)
         self.assertIn('href="/"', html)
+        # ไฟล์ static ที่หาย ต้องไม่ได้หน้า HTML ทั้งหน้า (Codex #57)
+        st = flask_app_module.app.test_client().get('/static/img/cars/ไม่มีรูปนี้.webp')
+        self.assertEqual(st.status_code, 404)
+        self.assertNotIn('<html', st.get_data(as_text=True))
         # หน้า 500 วาดได้ (เรียกตัวจัดการตรง ๆ)
         with flask_app_module.app.test_request_context('/'):
             body, status = flask_app_module.internal_error(Exception('x'))
