@@ -101,10 +101,14 @@
 
     var mi = matrix(gs, 'income'), ma = matrix(gs, 'age'), mb = matrix(gs, 'budget'), my = matrix(gs, 'buy');
     var buyLabels = D.labels.buy.map(function (b) { return BUY_TH[b] || b; });
-    stacked('income', 'exIncome', D.labels.income.map(short), mi, true, true);
-    stacked('age', 'exAge', D.labels.age, ma, true, true);
+    // เลือกประเภทเดียว = ทุกแท่งเต็มร้อยละ ไม่มีความหมาย → แสดงเป็นจำนวนคนแทน (Codex #61)
+    var pctMode = !selF.value;
+    stacked('income', 'exIncome', D.labels.income.map(short), mi, pctMode, true);
+    stacked('age', 'exAge', D.labels.age, ma, pctMode, true);
     stacked('budget', 'exBudget', D.labels.budget.map(short), mb, false, false);
-    stacked('buy', 'exBuy', buyLabels, my, true, true);
+    stacked('buy', 'exBuy', buyLabels, my, pctMode, true);
+    var units = document.querySelectorAll('#explore .ex-unit');
+    for (var u = 0; u < units.length; u++) units[u].textContent = pctMode ? '(ร้อยละ)' : '(คน)';
     fillTable('exIncomeTable', 'จำนวนผู้ตอบแยกตามรายได้ต่อเดือนและประเภทที่สนใจ', D.labels.income, mi);
     fillTable('exAgeTable', 'จำนวนผู้ตอบแยกตามช่วงอายุและประเภทที่สนใจ', D.labels.age, ma);
     fillTable('exBudgetTable', 'จำนวนผู้ตอบแยกตามงบประมาณและประเภทที่สนใจ', D.labels.budget, mb);

@@ -467,10 +467,24 @@ def load_dashboard_groups():
     if not isinstance(data, dict) or not isinstance(data.get('groups'), list) or not data['groups']:
         return None
     labels = data.get('labels') or {}
+    dims = data.get('dims') or {}
     for g in data['groups']:
+        if (g.get('gender') not in dims.get('gender', []) or g.get('car') not in dims.get('car', [])
+                or g.get('fuel') not in dims.get('fuel', []) or not isinstance(g.get('n'), int)):
+            return None
         for axis in ('age', 'income', 'budget', 'buy'):
             counts = g.get(axis)
-            if not isinstance(counts, list) or len(counts) != len(labels.get(axis, [])) or sum(counts) != g.get('n'):
+            if (not isinstance(counts, list) or len(counts) != len(labels.get(axis, []))
+                    or not all(isinstance(c, int) and c >= 0 for c in counts) or sum(counts) != g['n']):
+                return None
+    # ต้องตรงกับสรุปหลัก (dataset_overview.json) ไม่งั้นไม่แสดง ดีกว่าแสดงตัวเลขสองชุดที่ขัดกัน
+    ov = load_dataset_overview()
+    if ov:
+        if sum(g['n'] for g in data['groups']) != ov['source']['rows']:
+            return None
+        for axis in ('age', 'income'):
+            total = [sum(g[axis][i] for g in data['groups']) for i in range(len(ov[axis]['counts']))]
+            if total != ov[axis]['counts']:
                 return None
     return data
 
