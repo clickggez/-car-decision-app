@@ -34,7 +34,7 @@
   let W = 0, H = 0, GROUND = 0, L = 160, engine, walls = [], cars = [], current = 'hev', dropTimer = 0;
   // flood water over the road: same spring-column surface as the hero
   // ระดับน้ำเป็นเซนติเมตรจริง: L พิกเซล = รถยาว 4.5 ม. (LEN_REF) → 1 ซม. = L / 450 พิกเซล · ปุ่ม #wl เปลี่ยน wlCm
-  const wlBtns = [...document.querySelectorAll('#wl button')], wlNote = document.getElementById('wlNote');
+  const wlBtns = [...document.querySelectorAll('#wl button')];
   let wlCm = +((wlBtns.find((b) => b.getAttribute('aria-pressed') === 'true') || {}).dataset?.cm || 10);
   // ผู้ใช้เลือก 30 ก.ย. 2569: ขยายน้ำ 2 เท่าให้เห็นชัด (ไม่ใช่สัดส่วนจริง — ป้ายบนหน้าเว็บบอกไว้)
   const WL_EXAGGERATE = 2;
@@ -403,7 +403,6 @@
   wlBtns.forEach((btn) => btn.addEventListener('click', () => {
     wlCm = +btn.dataset.cm;
     wlBtns.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
-    wlNote.textContent = btn.dataset.note;
     if (reduce) WD = wlPx();   // ลดภาพเคลื่อนไหว: เปลี่ยนระดับทันที ไม่ค่อย ๆ ขึ้น
   }));
   // the quiz above marks which fuel type fits the visitor

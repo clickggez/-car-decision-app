@@ -770,12 +770,14 @@ class HonestResultTests(unittest.TestCase):
         """30 ก.ย. 2569 ผู้ใช้สั่ง: ปุ่มระดับน้ำ 4 ระดับในส่วนรถหล่น (ปลอดภัย→ห้ามขับ) + คำแนะนำทั่วไป ไม่บอกรายคัน
         ต้องบอกว่าไม่ใช่ผลจากโมเดล และเริ่มที่ระดับปลอดภัย"""
         html = flask_app_module.app.test_client().get('/').get_data(as_text=True)
-        block = html[html.index('id="wl"'):html.index('id="wlNote"')]
-        buttons = re.findall(r'data-cm="(\d+)" aria-pressed="(true|false)" data-note="([^"]+)"><b>([^<]+)</b>', block)
+        block = html[html.index('id="wl"'):html.index('class="wl-fine"')]
+        buttons = re.findall(r'data-cm="(\d+)" aria-pressed="(true|false)"()><b>([^<]+)</b>', block)
         self.assertEqual([(cm, name) for cm, _, _, name in buttons],
                          [('10', 'ปลอดภัย'), ('20', 'ระวัง'), ('30', 'อันตราย'), ('50', 'ห้ามขับ')])
         self.assertEqual([p for _, p, _, _ in buttons], ['true', 'false', 'false', 'false'])
-        self.assertIn('ไม่ใช่ผลจากโมเดลพยากรณ์', html[html.index('id="wlNote"'):])
+        # 9 ต.ค. 2569 ผู้ใช้สั่งลบข้อความคำแนะนำใต้ปุ่ม (wlNote) ออก
+        self.assertNotIn('id="wlNote"', html)
+        self.assertIn('ไม่ใช่ผลจากโมเดลพยากรณ์', html[html.index('class="wl-fine"'):])
 
     def test_templates_free_of_dev_residue(self):
         for name in ('base.html', 'recommend.html', 'result_buy.html', 'result_fuel.html', 'home.html'):
