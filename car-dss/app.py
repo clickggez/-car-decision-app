@@ -490,6 +490,7 @@ def dashboard():
         'dashboard.html',
         overview=load_dataset_overview(),
         car_summary=summarize_cars(),
+        buy_reliability=model_reliability('buy'),   # จำนวนคนที่ใช้ฝึก BUY (ไม่พิมพ์ตายตัว) — 9 ต.ค. 2569
     )
 
 

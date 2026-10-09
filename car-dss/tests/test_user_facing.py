@@ -742,6 +742,12 @@ class HonestResultTests(unittest.TestCase):
         js = open(os.path.join(BASE_DIR, 'static', 'js', 'cardss-models.js'), encoding='utf-8').read()
         self.assertIn('bodySel', js)
 
+    def test_dashboard_source_line_is_accurate(self):
+        """9 ต.ค. 2569: ห้ามบอกว่าข้อมูล 630 คน "ชุดเดียวกับที่ใช้สร้างระบบ" — BUY ใช้ชุดเดิม 500 คน"""
+        html = flask_app_module.app.test_client().get('/dashboard').get_data(as_text=True)
+        self.assertNotIn('ชุดเดียวกับที่ใช้สร้างระบบ', html)
+        self.assertIn('แบบจำลองแนวโน้มการซื้อใช้แบบสอบถามรอบก่อน 500 คน', html)
+
     def test_error_pages(self):
         """7 ต.ค. 2569: 404 แสดงหน้าแจ้งข้อผิดพลาดดีไซน์ใหม่ สถานะ 404 จริง มีปุ่มกลับหน้าแรก"""
         resp = flask_app_module.app.test_client().get('/ไม่มีหน้านี้-xyz')
