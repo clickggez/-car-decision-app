@@ -291,6 +291,18 @@ class DashboardPublicOverviewTests(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         return resp.get_data(as_text=True)
 
+    def test_dashboard_powerbi_image_is_honest_and_light(self):
+        """รูป Power BI บนหน้าภาพรวม: ไฟล์มีจริง เล็ก มี alt และบอกชัดว่าเป็นภาพนิ่ง ไม่ใช่การเชื่อมต่อสด"""
+        html = flask_app_module.app.test_client().get('/dashboard').get_data(as_text=True)
+        m = re.search(r'<img[^>]+powerbi_overview\.webp[^>]*>', html)
+        self.assertIsNotNone(m, 'ไม่พบรูป Power BI บนหน้าภาพรวมข้อมูล')
+        self.assertRegex(m.group(0), r'alt="[^"]{20,}"')
+        self.assertIn('ภาพนิ่ง', html)
+        self.assertIn('ไม่ได้เชื่อมต่อข้อมูลสด', html)
+        path = os.path.join(os.path.dirname(flask_app_module.__file__), 'static', 'img', 'powerbi_overview.webp')
+        self.assertTrue(os.path.isfile(path))
+        self.assertLess(os.path.getsize(path), 150_000, 'รูปใหญ่เกินสำหรับโฮสต์ฟรี')
+
     def test_no_hardcoded_numbers_in_template(self):
         html = read_template('dashboard.html')
         for fake in FAKE_DASHBOARD_MARKERS:

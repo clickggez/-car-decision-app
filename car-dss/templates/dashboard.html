@@ -70,6 +70,17 @@
   </section>
   {% endif %}
 
+  <section class="panel" aria-labelledby="hPowerBI">
+    <div class="panel-head"><h2 id="hPowerBI">ภาพรวมเดียวกัน จัดทำด้วย Power BI</h2><small>ภาพนิ่งจากรายงาน</small></div>
+    <figure class="pbi-fig">
+      <a href="{{ url_for('static', filename='img/powerbi_overview.webp') }}" target="_blank" rel="noopener" aria-label="เปิดภาพ Power BI ขนาดเต็มในแท็บใหม่">
+        <img src="{{ url_for('static', filename='img/powerbi_overview.webp') }}" loading="lazy" decoding="async"
+           alt="แผนภูมิจาก Power BI 4 ชุด ได้แก่ ประเภทเชื้อเพลิงที่ผู้มีรถสนใจ รายได้ต่อเดือน ช่วงอายุ และแนวโน้มการซื้อรถยนต์ ตัวเลขชุดเดียวกับกราฟด้านบน">
+      </a>
+      <figcaption class="muted">ภาพจากรายงาน Power BI ที่สร้างจากแบบสอบถามชุดเดียวกับกราฟด้านบน เป็นภาพนิ่ง ไม่ได้เชื่อมต่อข้อมูลสด (แตะที่ภาพเพื่อดูขนาดเต็ม)</figcaption>
+    </figure>
+  </section>
+
   <section class="panel" aria-labelledby="hCars">
     <div class="panel-head"><h2 id="hCars">รถที่ระบบใช้แนะนำ แยกตามประเภท</h2></div>
     <div class="table-wrap"><table class="table" id="carTable">

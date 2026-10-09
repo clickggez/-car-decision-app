@@ -357,3 +357,8 @@ main .panel,main .car{
 .error-page{display:flex;align-items:center;gap:clamp(24px,5vw,64px);flex-wrap:wrap;padding-block:clamp(40px,8vw,96px)}
 .error-stone{width:auto;justify-content:flex-start}
 .error-stone .stone{width:150px}
+
+.pbi-fig{margin:0}
+.pbi-fig a{display:block}
+.pbi-fig img{display:block;width:100%;height:auto;aspect-ratio:1179/714;border-radius:10px;border:1px solid var(--line,rgba(0,0,0,.12))}
+.pbi-fig figcaption{margin-top:10px;font-size:14px}
