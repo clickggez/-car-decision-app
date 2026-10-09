@@ -58,7 +58,10 @@ _old = _glob.glob(os.path.join(_HERE, "..", "files", "archive_2026-09-26", "*(50
 assert len(_old) == 1, f"ต้องมีไฟล์ชุดเดิม n=500 ไฟล์เดียว แต่เจอ {_old}"
 BUY_CSV = _old[0]
 RELIABILITY_OUT = os.path.join(CAR, "data", "model_reliability.json")
-FUEL_CSV = None   # None = ไฟล์เดียวใน files/user_from/ (ชุด n=630)
+# 9 ต.ค. 2569: files/user_from/ มี CSV 2 ไฟล์ (n630 + สำเนาชุดเดิม 500) ทำให้ survey_path() หยุด → ระบุไฟล์ n630 ตรง ๆ
+_n630 = _glob.glob(os.path.join(_HERE, "..", "files", "user_from", "survey_*_n630.csv"))
+assert len(_n630) == 1, f"ต้องมี survey_*_n630.csv ไฟล์เดียว แต่เจอ {_n630}"
+FUEL_CSV = _n630[0]
 N_SPLITS = 20
 TEST_SIZE = 0.2
 SEED = 42
