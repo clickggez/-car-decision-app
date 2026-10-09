@@ -70,6 +70,51 @@
   </section>
   {% endif %}
 
+  {% if groups %}
+  <section class="panel" id="explore" aria-labelledby="hExplore">
+    <div class="panel-head"><h2 id="hExplore">สำรวจข้อมูลตามกลุ่ม</h2><small>เลือกกลุ่มแล้วกราฟเปลี่ยนตาม</small></div>
+    <p class="muted">เลือกเพศ การมีรถ หรือประเภทเชื้อเพลิงที่สนใจ กราฟและตัวเลขด้านล่างจะนับเฉพาะกลุ่มที่เลือก (ผู้ตอบทั้งหมดรวมผู้ที่ยังไม่มีรถ ต่างจากกราฟด้านบนที่นับเฉพาะผู้มีรถ)</p>
+    <div class="ex-filters" role="group" aria-label="ตัวกรองกลุ่มผู้ตอบ">
+      <label>เพศ
+        <select id="fGender"><option value="">ทั้งหมด</option>{% for x in groups.dims.gender %}<option value="{{ x }}">{{ x }}</option>{% endfor %}</select></label>
+      <label>การมีรถ
+        <select id="fCar"><option value="">ทั้งหมด</option>{% for x in groups.dims.car %}<option value="{{ x }}">{{ 'มีรถอยู่แล้ว' if x == 'มี' else 'ยังไม่มีรถ' }}</option>{% endfor %}</select></label>
+      <label>ประเภทที่สนใจ
+        <select id="fFuel"><option value="">ทั้งหมด</option>{% for x in groups.dims.fuel %}<option value="{{ x }}">{{ fuel_th.get(x, x) }}</option>{% endfor %}</select></label>
+      <button type="button" class="btn btn-ghost" id="fReset">ล้างตัวกรอง</button>
+    </div>
+    <p class="ex-status" id="exStatus" role="status" aria-live="polite"></p>
+
+    <div class="ex-kpis" aria-label="ตัวเลขสรุปของกลุ่มที่เลือก">
+      <div class="ex-kpi"><b id="kN">—</b><span>ผู้ตอบ (คน)</span></div>
+      <div class="ex-kpi"><b id="kCar">—</b><span>มีรถอยู่แล้ว</span></div>
+      <div class="ex-kpi"><b id="kBuy">—</b><span>มีแนวโน้มจะซื้อ</span></div>
+      <div class="ex-kpi"><b id="kICE">—</b><span>สนใจรถสันดาป</span></div>
+      <div class="ex-kpi"><b id="kHybrid">—</b><span>สนใจรถไฮบริด</span></div>
+      <div class="ex-kpi"><b id="kEV">—</b><span>สนใจรถไฟฟ้า</span></div>
+    </div>
+
+    <div class="dash-grid ex-grid">
+      <div class="ex-card"><h3>สัดส่วนประเภทเชื้อเพลิงที่สนใจ</h3>
+        <div class="chart-box"><canvas id="exDonut" role="img" aria-label="สัดส่วนประเภทเชื้อเพลิงที่สนใจของกลุ่มที่เลือก รายละเอียดในตาราง"></canvas></div>
+        <table class="sr" id="exDonutTable"><caption>สัดส่วนประเภทเชื้อเพลิงที่สนใจของกลุ่มที่เลือก</caption><thead><tr><th scope="col">ประเภท</th><th scope="col">จำนวน</th></tr></thead><tbody></tbody></table></div>
+      <div class="ex-card"><h3>ประเภทที่สนใจ แยกตามรายได้ต่อเดือน (ร้อยละ)</h3>
+        <div class="chart-box tall"><canvas id="exIncome" role="img" aria-label="ประเภทเชื้อเพลิงที่สนใจ แยกตามรายได้ต่อเดือน รายละเอียดในตาราง"></canvas></div>
+        <table class="sr" id="exIncomeTable"></table></div>
+      <div class="ex-card"><h3>ประเภทที่สนใจ แยกตามช่วงอายุ (ร้อยละ)</h3>
+        <div class="chart-box tall"><canvas id="exAge" role="img" aria-label="ประเภทเชื้อเพลิงที่สนใจ แยกตามช่วงอายุ รายละเอียดในตาราง"></canvas></div>
+        <table class="sr" id="exAgeTable"></table></div>
+      <div class="ex-card"><h3>งบประมาณซื้อรถ แยกตามประเภทที่สนใจ (คน)</h3>
+        <div class="chart-box tall"><canvas id="exBudget" role="img" aria-label="งบประมาณซื้อรถ แยกตามประเภทเชื้อเพลิงที่สนใจ รายละเอียดในตาราง"></canvas></div>
+        <table class="sr" id="exBudgetTable"></table></div>
+      <div class="ex-card"><h3>แนวโน้มการซื้อ แยกตามประเภทที่สนใจ (ร้อยละ)</h3>
+        <div class="chart-box"><canvas id="exBuy" role="img" aria-label="แนวโน้มการซื้อ แยกตามประเภทเชื้อเพลิงที่สนใจ รายละเอียดในตาราง"></canvas></div>
+        <table class="sr" id="exBuyTable"></table></div>
+    </div>
+    <script type="application/json" id="exploreData">{{ groups|tojson }}</script>
+  </section>
+  {% endif %}
+
   <section class="panel" aria-labelledby="hPowerBI">
     <div class="panel-head"><h2 id="hPowerBI">ภาพรวมเดียวกัน จัดทำด้วย Power BI</h2><small>ภาพนิ่งจากรายงาน</small></div>
     <figure class="pbi-fig">
@@ -116,6 +161,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
+{% if groups %}<script src="{{ url_for('static', filename='js/cardss-explore.js') }}" defer></script>{% endif %}
 {% if overview %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {

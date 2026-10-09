@@ -61,6 +61,7 @@ USERS_LOCAL_JSON_PATH = os.path.join(DATA_DIR, 'users_local.json')
 # สรุปข้อมูลงานวิจัยสำหรับหน้า /dashboard สาธารณะ — สร้างด้วย analysis/dashboard_overview.py
 # (git ติดตามไฟล์นี้ เพราะ CSV ต้นฉบับไปไม่ถึง PythonAnywhere)
 DATASET_OVERVIEW_PATH = os.path.join(DATA_DIR, 'dataset_overview.json')
+DASHBOARD_GROUPS_PATH = os.path.join(DATA_DIR, 'dashboard_groups.json')   # ตัวเลขนับรวมต่อกลุ่ม สำหรับแดชบอร์ดกรองได้ (analysis/dashboard_groups.py)
 
 # ============================================================
 # Admin credentials (แยกจากผู้ใช้ทั่วไป)

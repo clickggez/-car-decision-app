@@ -457,6 +457,24 @@ def load_dataset_overview():
     return data
 
 
+def load_dashboard_groups():
+    """ตัวเลขนับรวมต่อกลุ่ม (เพศ × การมีรถ × ประเภทที่สนใจ) สำหรับแดชบอร์ดกรองได้ — data/dashboard_groups.json
+
+    สร้างโดย analysis/dashboard_groups.py · ไม่มีข้อมูลรายบุคคล · ตรวจว่าทุกกลุ่มรวมกันได้ n พอดี
+    ไม่มีไฟล์/ไม่ผ่านการตรวจ = None (หน้าเว็บซ่อนส่วนกรอง ห้ามเติมตัวเลขแทน)
+    """
+    data = _load_json(config.DASHBOARD_GROUPS_PATH, None)
+    if not isinstance(data, dict) or not isinstance(data.get('groups'), list) or not data['groups']:
+        return None
+    labels = data.get('labels') or {}
+    for g in data['groups']:
+        for axis in ('age', 'income', 'budget', 'buy'):
+            counts = g.get(axis)
+            if not isinstance(counts, list) or len(counts) != len(labels.get(axis, [])) or sum(counts) != g.get('n'):
+                return None
+    return data
+
+
 def _price_to_int(text):
     digits = ''.join(ch for ch in str(text) if ch.isdigit())
     return int(digits) if digits else None
@@ -491,6 +509,7 @@ def dashboard():
         overview=load_dataset_overview(),
         car_summary=summarize_cars(),
         buy_reliability=model_reliability('buy'),   # จำนวนคนที่ใช้ฝึก BUY (ไม่พิมพ์ตายตัว) — 9 ต.ค. 2569
+        groups=load_dashboard_groups(),            # แดชบอร์ดกรองได้ — 9 ต.ค. 2569
     )
 
 

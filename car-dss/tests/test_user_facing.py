@@ -105,6 +105,11 @@ def read_template(name):
         return f.read()
 
 
+def read_static(rel):
+    with open(os.path.join(os.path.dirname(TEMPLATES), 'static', rel), encoding='utf-8') as f:
+        return f.read()
+
+
 def anchors(html):
     """คืน [(href, id, ข้อความ)] ของทุกลิงก์ในหน้า"""
     out = []
@@ -302,6 +307,34 @@ class DashboardPublicOverviewTests(unittest.TestCase):
         path = os.path.join(os.path.dirname(flask_app_module.__file__), 'static', 'img', 'powerbi_overview.webp')
         self.assertTrue(os.path.isfile(path))
         self.assertLess(os.path.getsize(path), 150_000, 'รูปใหญ่เกินสำหรับโฮสต์ฟรี')
+
+    def test_explore_groups_match_overview_and_have_no_individual_rows(self):
+        """แดชบอร์ดกรองได้: ผลรวมทุกกลุ่ม == dataset_overview.json · ทุกกลุ่มมีคน >= 10 · ไม่มีข้อมูลรายบุคคล"""
+        groups = flask_app_module.load_dashboard_groups()
+        ov = flask_app_module.load_dataset_overview()
+        self.assertIsNotNone(groups, 'dashboard_groups.json หายหรือไม่ผ่านการตรวจ')
+        self.assertEqual(sum(g['n'] for g in groups['groups']), ov['source']['rows'])
+        for axis in ('age', 'income'):
+            total = [sum(g[axis][i] for g in groups['groups']) for i in range(len(ov[axis]['counts']))]
+            self.assertEqual(total, ov[axis]['counts'], axis)
+        owners = [sum(g['n'] for g in groups['groups'] if g['car'] == 'มี' and g['fuel'] == f) for f in ov['fuel']['labels']]
+        self.assertEqual(owners, ov['fuel']['counts'])
+        self.assertGreaterEqual(min(g['n'] for g in groups['groups']), 10, 'กลุ่มเล็กเกินไป เสี่ยงระบุตัวผู้ตอบ')
+        # ช่องกรองซ้อนกันได้แค่ 3 มิติ — ห้ามมี id/ชื่อ/อายุรายคน
+        for g in groups['groups']:
+            self.assertEqual(set(g), {'gender', 'car', 'fuel', 'n', 'age', 'income', 'budget', 'buy'})
+
+    def test_explore_section_rendered_with_filters(self):
+        html = flask_app_module.app.test_client().get('/dashboard').get_data(as_text=True)
+        for needle in ('id="explore"', 'id="fGender"', 'id="fCar"', 'id="fFuel"', 'id="fReset"',
+                       'id="exploreData"', 'cardss-explore.js', 'id="exDonut"', 'id="exIncome"',
+                       'id="exAge"', 'id="exBudget"', 'id="exBuy"'):
+            self.assertIn(needle, html)
+        js = read_static('js/cardss-explore.js')
+        body = re.sub(r'/\*.*?\*/', '', js, flags=re.S)                  # คอมเมนต์
+        body = re.sub(r'rgba?\([^)]*\)', '', body)                        # สี
+        body = re.sub(r'\*\s*100|max\s*=\s*100|duration:\s*\d+', '', body)  # แปลงร้อยละ / แกน / ความเร็วแอนิเมชัน
+        self.assertEqual(re.findall(r'(?<![\w.])\d{3,}(?![\w.])', body), [], 'cardss-explore.js มีตัวเลขข้อมูลฝังอยู่')
 
     def test_no_hardcoded_numbers_in_template(self):
         html = read_template('dashboard.html')
