@@ -35,6 +35,7 @@ section > .wrap{position:relative;z-index:1}
 /* ชื่อเมนูพยากรณ์ยาว (อาจารย์สั่ง 10 ต.ค. 2569) → จอกว้างตัดเป็น 2 บรรทัดแทนการล้น · จอ ≤1180px พับเป็นปุ่ม "เมนู" */
 .links a{line-height:1.35}
 .links a:not(.pill-btn){max-width:12.5em}
+.links a:not(.pill-btn):not([href*="predict"]){white-space:nowrap}
 .brand{flex:none}
 .links a:hover{color:var(--orange)}
 .pill-btn{padding:9px 20px;border:2px solid var(--ink);border-radius:999px;font-weight:600;white-space:nowrap}
