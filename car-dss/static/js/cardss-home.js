@@ -171,7 +171,7 @@
   mb.addEventListener('click', () => setMenu(!menu.classList.contains('open')));
   menu.addEventListener('click', (e) => { if (e.target.closest('a')) setMenu(false); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
-  window.addEventListener('resize', () => { if (window.innerWidth > 980) setMenu(false); });
+  window.addEventListener('resize', () => { if (window.innerWidth > 1180) setMenu(false); });  // ตรงกับจุดพับเมนูใน cardss.css
   window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { measure(); if (reduce) still(); }, 150); });
   measure();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { measure(); if (reduce) still(); });

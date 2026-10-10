@@ -275,6 +275,23 @@ class CtaLinksTests(unittest.TestCase):
         self.assertIn('/login', hrefs)
         self.assertNotIn('/recommend', hrefs, 'ยังไม่ล็อกอินไม่ควรเห็นเมนูรถแนะนำ')
 
+    def test_main_menu_uses_advisor_names(self):
+        # 10 ต.ค. 2569 อาจารย์ที่ปรึกษาสั่งเปลี่ยนชื่อเมนูพยากรณ์ 2 ปุ่ม · เช็คทั้งหน้าแรก (เมนูของตัวเอง) และหน้าใน (base_cardss.html)
+        new = {'/predict/buy': 'พยากรณ์ตัดสินใจซื้อรถยนต์',
+               '/predict/fuel': 'พยากรณ์ตัดสินใจเลือกซื้อรถยนต์ตามประเภทเชื้อเพลิง'}
+        for url in ('/', '/dashboard'):
+            html = logged_in_client().get(url).get_data(as_text=True)
+            start = html.index('id="menu"')
+            nav = html[start:html.index('</nav>', start)]
+            menu = {path_of(h): text.strip() for h, _, text in anchors(nav)}
+            for path, label in new.items():
+                with self.subTest(url=url, path=path):
+                    self.assertEqual(menu.get(path), label, f'{url} เมนู {path} ต้องชื่อ "{label}"')
+            for old in ('พยากรณ์ซื้อ/ไม่ซื้อ', '>ประเภทเชื้อเพลิง<'):
+                with self.subTest(url=url, old=old):
+                    self.assertNotIn(old, nav, f'{url} เมนูยังมีชื่อเก่า "{old}"')
+            self.assertIn('ภาพรวมข้อมูล', menu.values())
+
 
 class DashboardPublicOverviewTests(unittest.TestCase):
     """dashboard = ภาพรวมข้อมูลงานวิจัยสาธารณะ

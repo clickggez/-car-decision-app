@@ -31,9 +31,13 @@ section > .wrap{position:relative;z-index:1}
 .brand{display:flex;align-items:center;gap:14px}
 .brand b{font-family:var(--display);font-size:24px;display:block;line-height:1.1}
 .brand small{font-size:14px;color:#D4CEC1}
-.links{display:flex;align-items:center;gap:32px;font-size:15px}
+.links{display:flex;align-items:center;gap:24px;font-size:15px}
+/* ชื่อเมนูพยากรณ์ยาว (อาจารย์สั่ง 10 ต.ค. 2569) → จอกว้างตัดเป็น 2 บรรทัดแทนการล้น · จอ ≤1180px พับเป็นปุ่ม "เมนู" */
+.links a{line-height:1.35}
+.links a:not(.pill-btn){max-width:12.5em}
+.brand{flex:none}
 .links a:hover{color:var(--orange)}
-.pill-btn{padding:9px 20px;border:2px solid var(--ink);border-radius:999px;font-weight:600}
+.pill-btn{padding:9px 20px;border:2px solid var(--ink);border-radius:999px;font-weight:600;white-space:nowrap}
 .menu-btn{display:none;align-items:center;gap:8px;min-height:44px;padding:0 16px;background:transparent;color:var(--ink);border:2px solid var(--ink);border-radius:999px;font:600 16px var(--body);cursor:pointer}
 
 /* hero */
@@ -218,11 +222,17 @@ footer .wrap{display:flex;flex-direction:column;gap:40px;padding-block:60px 44px
   .hero .wrap,.project .wrap{grid-template-columns:minmax(0,1fr);gap:48px}
   .hero .copy{padding-bottom:0}
   .grid3{grid-template-columns:minmax(0,1fr)}
+}
+/* เมนูพับ: เดิมพับที่ 980px · ขยับเป็น 1180px เพราะชื่อเมนูใหม่ยาว (10 ต.ค. 2569) · ต้องตรงกับตัวเลขใน cardss-app.js และ cardss-home.js */
+@media (max-width: 1180px){
   .menu-btn{display:inline-flex}
-  .links{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;align-items:stretch;gap:0;padding:8px clamp(16px,4.5vw,64px) 20px;background:#1E2A33;border-bottom:1px solid var(--glass-line);box-shadow:0 20px 30px -10px rgba(0,0,0,.6)}
+  .links{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;align-items:stretch;gap:0;padding:8px clamp(16px,4.5vw,64px) 20px;background:#1E2A33;border-bottom:1px solid var(--glass-line);box-shadow:0 20px 30px -10px rgba(0,0,0,.6);max-height:calc(100vh - 100%);max-height:calc(100dvh - 100%);overflow-y:auto}
   .links.open{display:flex}
-  .links a{display:flex;align-items:center;min-height:52px;font-size:18px;border-bottom:1px solid var(--line)}
-  .links a.pill-btn{justify-content:center;margin-top:14px;border-bottom:2px solid var(--ink);background:var(--orange);border-color:var(--orange);color:var(--asphalt);font-weight:700}
+  .links a{display:flex;align-items:center;min-height:52px;padding-block:8px;font-size:18px;border-bottom:1px solid var(--line)}
+  .links a:not(.pill-btn){max-width:none}
+  .links a.pill-btn{justify-content:center;margin-top:14px;border-bottom:2px solid var(--ink);background:var(--orange);border-color:var(--orange);color:var(--asphalt);font-weight:700;white-space:normal;text-align:center}
+  /* เมนูที่เปิดอยู่ต้องอยู่เหนือกล่องแจ้งเตือน (.flash-list z-index 50) ไม่งั้นกดลิงก์บนสุดไม่ได้ */
+  .nav:has(.links.open){z-index:60}
 }
 @media (max-width: 640px){
   .route{grid-template-columns:44px minmax(0,1fr);grid-template-rows:1fr auto;gap:10px 16px;padding-bottom:0}

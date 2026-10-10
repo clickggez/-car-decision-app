@@ -38,7 +38,7 @@
     mb.addEventListener('click', () => setMenu(!menu.classList.contains('open')));
     menu.addEventListener('click', (e) => { if (e.target.closest('a')) setMenu(false); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
-    window.addEventListener('resize', () => { if (window.innerWidth > 980) setMenu(false); });
+    window.addEventListener('resize', () => { if (window.innerWidth > 1180) setMenu(false); });  // ตรงกับจุดพับเมนูใน cardss.css
   }
 
   // ---------- จุดสถานะหน้าล็อกอิน: ส้ม ยังไม่กรอก · เหลือง กำลังกรอก · เขียว กรอกครบ ----------
