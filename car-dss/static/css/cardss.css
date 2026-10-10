@@ -31,7 +31,7 @@ section > .wrap{position:relative;z-index:1}
 .brand{display:flex;align-items:center;gap:14px}
 .brand b{font-family:var(--display);font-size:24px;display:block;line-height:1.1}
 .brand small{font-size:14px;color:#D4CEC1}
-.links{display:flex;align-items:center;gap:24px;font-size:15px}
+.links{display:flex;align-items:center;gap:clamp(28px,2.8vw,44px);font-size:15px}
 /* ชื่อเมนูพยากรณ์ยาว (อาจารย์สั่ง 10 ต.ค. 2569) → จอกว้างตัดเป็น 2 บรรทัดแทนการล้น · จอ ≤1180px พับเป็นปุ่ม "เมนู" */
 .links a{line-height:1.35}
 .links a:not(.pill-btn){max-width:12.5em}
